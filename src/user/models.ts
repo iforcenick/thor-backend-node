@@ -1,6 +1,8 @@
 import {PaginatedResponse, mapper} from '../api';
 import {Mapper} from '../mapper';
 import * as db from '../db';
+import {Relation} from 'objection'; // for ManyToManyRelation compilation
+import * as role from './role';
 import Joi = require('joi');
 
 export class User extends db.Model {
@@ -9,31 +11,40 @@ export class User extends db.Model {
     name?: string;
     email?: string;
     password?: string;
-    createdAt?: Date;
-    updatedAt?: Date;
 
-    $beforeInsert() {
-        this.createdAt = new Date();
-        this.updatedAt = new Date();
-    }
-
-    $beforeUpdate() {
-        this.updatedAt = new Date();
-    }
+    static relationMappings = {
+        roles: {
+            relation: User.ManyToManyRelation,
+            modelClass: role.models.Role,
+            join: {
+                from: 'users.id',
+                through: {
+                    from: 'users_roles.userId',
+                    to: 'users_roles.roleId'
+                },
+                to: 'roles.id'
+            }
+        }
+    };
 }
 
 export class UserBaseInfo extends Mapper {
-    phone: string = mapper.FIELD;
-    name: string = mapper.FIELD;
-    email: string = mapper.FIELD;
+    phone: string = mapper.FIELD_STR;
+    name: string = mapper.FIELD_STR;
+    email: string = mapper.FIELD_STR;
 }
 
 export class UserResponse extends UserBaseInfo {
-    id: string = mapper.FIELD;
+    id: number = mapper.FIELD_NUM;
+    roles: Array<role.models.RoleResponse> = mapper.FIELD_ARR;
+    createdAt: Date = mapper.FIELD_DATE;
+    updatedAt: Date = mapper.FIELD_DATE;
 }
 
+mapper.registerRelation(UserResponse, 'roles', new mapper.ArrayRelation(role.models.RoleResponse));
+
 export class UserRequest extends UserBaseInfo {
-    password: string = mapper.FIELD;
+    password: string = mapper.FIELD_STR;
 }
 
 export interface PaginatedUserReponse extends PaginatedResponse {

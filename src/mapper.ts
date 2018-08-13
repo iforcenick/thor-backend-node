@@ -1,5 +1,7 @@
-export const FIELD = '';
-export const ARRAY_FIELD = [];
+export const FIELD_STR = '';
+export const FIELD_NUM = 0;
+export const FIELD_DATE = new Date();
+export const FIELD_ARR = [];
 
 const relations = {};
 

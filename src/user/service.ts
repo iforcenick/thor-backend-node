@@ -1,21 +1,28 @@
-import {AutoWired, Singleton} from 'typescript-ioc';
-import {User} from './models';
+import {AutoWired, Inject, Singleton} from 'typescript-ioc';
+import * as models from './models';
 import * as db from '../db';
+import * as role from './role';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 @Singleton
 @AutoWired
-export class UserService extends db.ModelService<User> {
-    protected modelType = User;
+export class UserService extends db.ModelService<models.User> {
+    protected modelType = models.User;
+    @Inject protected rolesService: role.service.UserService;
+    protected eager = '[roles]';
 
-    async findByPhone(phone: string) {
-        return this.modelType.query().findOne({phone: phone});
+    async findByPhone(phone: string): Promise<models.User> {
+        return await this.modelType.query().findOne({phone: phone});
     }
 
-    async findByEmail(email: string) {
-        return this.modelType.query().findOne({email: email});
+    async findByEmail(email: string): Promise<models.User>  {
+        return await this.modelType.query().findOne({email: email});
+    }
+
+    async getRole(role: role.models.Types): Promise<role.models.Role>  {
+        return await this.rolesService.find(role);
     }
 
     async checkPassword(password: string, userPassword: string) {

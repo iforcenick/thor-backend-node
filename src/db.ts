@@ -1,20 +1,52 @@
-import {Model as BaseModel} from 'objection';
+import {Model as OModel, transaction} from 'objection';
 import {AutoWired, Inject, Singleton} from 'typescript-ioc';
 import {Config} from './config';
 
-export class Model extends BaseModel {
+export {OModel};
+
+export class Model extends OModel {
+    id: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+
+    $beforeInsert() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+
+    $beforeUpdate() {
+        this.updatedAt = new Date();
+    }
 }
 
 export class ModelService<T> {
     @Inject protected config: Config;
     protected modelType;
+    protected eager = '';
 
     async get(id: string) {
-        return await this.modelType.query().findById(id);
+        return await this.modelType
+            .query()
+            .eager(this.eager)
+            .findById(id);
     }
 
-    async insert(entity): Promise<T> {
-        const response = await this.modelType.query().insert(entity.toJSON());
+    transaction(trx?: transaction<any>) {
+        if (!trx) {
+            return this.modelType.knex();
+        }
+
+        return trx;
+    }
+
+    async insert(entity: OModel, trx?: transaction<any>, eager?: boolean): Promise<T> {
+        const query = this.modelType.query(this.transaction(trx));
+        if (eager) {
+            query.eager(this.eager);
+        }
+
+        query.insert(entity.toJSON()).returning('*');
+        const response = await query;
 
         if (!(response instanceof Array)) {
             return response;

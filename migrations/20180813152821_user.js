@@ -7,8 +7,8 @@ exports.up = (knex) => {
       table.string('name');
       table.string('email');
       table.string('password');
-      table.date('createdAt');
-      table.date('updatedAt');
+      table.datetime('createdAt');
+      table.datetime('updatedAt');
     });
 };
 
