@@ -1,0 +1,32 @@
+version: '3'
+
+networks:
+  api-network:
+
+services:
+  db:
+    image: postgres
+    container_name: thorprodpostgres
+    environment:
+      - POSTGRES_PASSWORD=qwe123
+    ports:
+      - 5432:5432
+    networks:
+      - api-network
+  api:
+    image: gothor/api
+    container_name: api
+    environment:
+      - NODE_ENV=docker
+    ports:
+      - 8081:8081
+    command: npm start
+    volumes:
+      - ./config:/usr/src/app/config
+      - ./dist:/usr/src/app/dist
+    depends_on:
+      - db
+    links:
+      - db
+    networks:
+      - api-network

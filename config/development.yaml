@@ -1,0 +1,3 @@
+db:
+  connection:
+    database: development

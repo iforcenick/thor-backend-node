@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  db:
+    container_name: thordevpostgres
+  db-admin:
+    image: dpage/pgadmin4
+    container_name: thordbadmin
+    ports:
+      - 5400:80
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=postgres
+      - PGADMIN_DEFAULT_PASSWORD=qwe123
+    depends_on:
+      - db
+    networks:
+      - api-network
+  api:
+    environment:
+      - NODE_ENV=development

@@ -1,0 +1,23 @@
+---
+express:
+  port: 8081
+logs:
+  level: debug
+  colorize: true
+  filename: data/logs.log
+authorization:
+  jwtSecret: jwt
+  tokenExpirationTime: 30days
+pagination:
+  limit: 10
+db:
+  client: postgresql
+  connection:
+    host: localhost
+    port: 5432
+    user: postgres
+    password: qwe123
+    database: default
+  pool:
+    min: 2
+    max: 10
