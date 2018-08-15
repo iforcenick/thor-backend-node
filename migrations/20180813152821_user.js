@@ -2,7 +2,7 @@
 exports.up = (knex) => {
   return knex.schema
     .createTable('users', (table) => {
-      table.increments('id').primary();
+      table.uuid('id').primary();
       table.string('phone');
       table.string('name');
       table.string('email');

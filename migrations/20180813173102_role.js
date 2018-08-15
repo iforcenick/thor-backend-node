@@ -7,7 +7,7 @@ exports.up = (knex) => {
             table.datetime('updatedAt');
         })
         .createTable('users_roles', (table) => {
-            table.integer('userId');
+            table.uuid('userId');
             table.integer('roleId');
         });
 };

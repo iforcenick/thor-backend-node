@@ -4,8 +4,9 @@ import * as db from '../db';
 import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import * as role from './role';
 import Joi = require('joi');
+const guid = require('objection-guid')();
 
-export class User extends db.Model {
+export class User extends guid(db.Model) {
     static tableName = 'users';
     phone?: string;
     name?: string;
