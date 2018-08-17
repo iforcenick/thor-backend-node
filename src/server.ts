@@ -16,6 +16,7 @@ const cors = require('cors');
 const methodOverride = require('method-override');
 const bodyParser = require('body-parser');
 const passport = require('./auth/passport');
+const createNamespace = require('continuation-local-storage').createNamespace;
 
 export class ApiServer {
     @Inject private config: Config;
@@ -42,6 +43,7 @@ export class ApiServer {
         this.app.use(bodyParser.json({limit: '25mb'}));
         this.app.use(methodOverride());
         this.app.use(ApiServer.tokenExtractor);
+        this.app.use(ApiServer.tenantExtractor);
 
         this.addAuthorization();
         this.app.use(this.logger.expressWinston);
@@ -66,6 +68,18 @@ export class ApiServer {
         }
 
         next();
+    }
+
+    private static tenantExtractor(req, res, next): void {
+        const authContext = createNamespace('authContext');
+        const uuidv4 = require('uuid/v4');
+
+        authContext.run(() => {
+            const v = uuidv4();
+            console.log(v);
+            authContext.set('tenant', v);
+            next();
+        });
     }
 
     /**

@@ -6,23 +6,27 @@ import * as role from './role';
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-@Singleton
 @AutoWired
 export class UserService extends db.ModelService<models.User> {
     protected modelType = models.User;
-    @Inject protected rolesService: role.service.UserService;
+    @Inject protected rolesService: role.service.RoleService;
     protected eager = '[roles]';
 
+    constructor() {
+        // TODO: add model specific tenant filter
+        super();
+    }
+
     async findByPhone(phone: string): Promise<models.User> {
-        return await this.modelType.query().findOne({phone: phone});
+        return await this.tenantContext(this.modelType.query().findOne({phone: phone}));
     }
 
     async findByEmail(email: string): Promise<models.User>  {
-        return await this.modelType.query().findOne({email: email});
+        return await this.tenantContext(this.modelType.query().findOne({email: email}));
     }
 
     async getRole(role: role.models.Types): Promise<role.models.Role>  {
-        return await this.rolesService.find(role);
+        return await this.tenantContext(this.rolesService.find(role));
     }
 
     async checkPassword(password: string, userPassword: string) {

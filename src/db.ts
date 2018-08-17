@@ -1,7 +1,9 @@
 import {Model as OModel, transaction} from 'objection';
-import {AutoWired, Inject, Singleton} from 'typescript-ioc';
+import {Inject} from 'typescript-ioc';
 import {Config} from './config';
 const validate = require('uuid-validate');
+
+const getNamespace = require('continuation-local-storage').getNamespace;
 
 export {OModel};
 
@@ -24,16 +26,25 @@ export class ModelService<T> {
     @Inject protected config: Config;
     protected modelType;
     protected eager = '';
+    protected tenant: any;
+
+    constructor() {
+        this.tenant = getNamespace('authContext').get('tenant');
+
+        console.log(this.tenant);
+    }
 
     async get(id: string): Promise<T> {
         if (!validate(id)) {
             return undefined;
         }
 
-        return await this.modelType
+        const query = this.modelType
             .query()
             .eager(this.eager)
             .findById(id);
+
+        return await this.tenantContext(query);
     }
 
     transaction(trx?: transaction<any>) {
@@ -42,6 +53,11 @@ export class ModelService<T> {
         }
 
         return trx;
+    }
+
+    async tenantContext(query) {
+        // TODO: add where on tenantId based on this.tenant
+        return await query;
     }
 
     async insert(entity: OModel, trx?: transaction<any>, eager?: boolean): Promise<T> {
