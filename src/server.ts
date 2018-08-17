@@ -42,10 +42,12 @@ export class ApiServer {
         this.app.use(passport.initialize());
         this.app.use(bodyParser.json({limit: '25mb'}));
         this.app.use(methodOverride());
+
+        this.addAuthorization();
+
         this.app.use(ApiServer.tokenExtractor);
         this.app.use(ApiServer.tenantExtractor);
 
-        this.addAuthorization();
         this.app.use(this.logger.expressWinston);
 
         this.addControllers();
@@ -74,7 +76,11 @@ export class ApiServer {
         const authContext = createNamespace('authContext');
 
         authContext.run(() => {
-            authContext.set('tenant', '7bc0447a-ea99-4ba2-93bb-c84f5b325c50'); // TODO: extract from JWT, right now it's a value from seed tenant
+            if (req.user) {
+                authContext.set('tenant', req.user.profile.tenantId);
+                authContext.set('user', req.user);
+            }
+
             next();
         });
     }
@@ -128,7 +134,7 @@ export class ApiServer {
     }
 
     private addAuthorization() {
-        // this.app.use('/user', passport.authenticate('jwt', {session: false}));
+        this.app.use('/user', passport.authenticate('jwt', {session: false}));
     }
 
     private addControllers() {

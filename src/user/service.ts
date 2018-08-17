@@ -47,11 +47,11 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async findByPhone(phone: string): Promise<models.User> {
-        return await this.tenantContext(this.modelType.query().findOne({phone: phone}));
+        return await this.tenantContext(this.getOptions(this.modelType.query().findOne({phone: phone})));
     }
 
     async findByEmail(email: string): Promise<models.User> {
-        return await this.tenantContext(this.modelType.query().findOne({email: email}));
+        return await this.tenantContext(this.getOptions(this.modelType.query().findOne({email: email})));
     }
 
     async getRole(role: role.models.Types): Promise<role.models.Role> {
@@ -62,7 +62,8 @@ export class UserService extends db.ModelService<models.User> {
         return await bcrypt.compare(password, userPassword);
     }
 
-    async authenticate(login: string, password: string) {
+    async authenticate(login: string, password: string, tenant: string) {
+        this.tenant = tenant;
         const user = await this.findByEmail(login);
 
         if (!user) {
@@ -78,11 +79,14 @@ export class UserService extends db.ModelService<models.User> {
         return user;
     }
 
-    async generateJwt(user) {
+    async generateJwt(user: models.User) {
         return jwt.sign(
-            {
-                id: user.hyperledgerId,
-            },
+            user.toJSON(),
+            // {
+            //     id: user.id,
+            //     tenantId: user.profile.tenantId,
+            //     roles: user.profile.roles,
+            // },
             this.config.get('authorization.jwtSecret'),
             {
                 expiresIn: this.config.get('authorization.tokenExpirationTime')

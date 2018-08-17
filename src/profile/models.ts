@@ -21,6 +21,7 @@ export class Profile extends db.Model {
     dwollaUri?: string;
     dwollaSourceUri?: string;
     tenantId?: string;
+    roles?: Array<role.models.Role>;
 
     static get relationMappings() {
         return {

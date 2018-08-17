@@ -25,7 +25,7 @@ export class AuthController extends BaseController {
         let user;
 
         try {
-            user = await this.service.authenticate(data.login, data.password);
+            user = await this.service.authenticate(data.login, data.password, data.tenant);
         } catch (err) {
             this.logger.error(err);
             throw new Errors.InternalServerError(err);
@@ -45,6 +45,7 @@ export class AuthController extends BaseController {
 export interface LoginRequest {
     login: string;
     password: string;
+    tenant: string;
 }
 
 

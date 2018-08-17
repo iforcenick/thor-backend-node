@@ -3,6 +3,7 @@ const passportJWT = require('passport-jwt');
 const ExtractJWT = passportJWT.ExtractJwt;
 const JWTStrategy = passportJWT.Strategy;
 import {UserService} from '../user/service';
+import * as user from '../user/models';
 import {Config} from '../config';
 import {Container} from 'typescript-ioc';
 
@@ -13,10 +14,11 @@ passport.use(new JWTStrategy({
         secretOrKey: config.get('authorization.jwtSecret')
     },
     function (jwtPayload, cb) {
-        const service = Container.get(UserService);
-        service.get(jwtPayload.id).then((user) => {
-            return cb(null, user);
-        });
+        // const service = Container.get(UserService);
+        // service.get(jwtPayload.id).then((user) => {
+        //     return cb(null, user);
+        // });
+        return cb(null, user.User.fromJson(jwtPayload));
     }
 ));
 

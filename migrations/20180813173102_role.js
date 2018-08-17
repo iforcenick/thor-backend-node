@@ -1,14 +1,14 @@
 exports.up = (knex) => {
     return knex.schema
         .createTable('roles', (table) => {
-            table.increments('id').primary();
+            table.uuid('id').primary();
             table.string('name');
             table.datetime('createdAt');
             table.datetime('updatedAt');
         })
         .createTable('profilesRoles', (table) => {
             table.uuid('profileId');
-            table.integer('roleId');
+            table.uuid('roleId');
         });
 };
 
