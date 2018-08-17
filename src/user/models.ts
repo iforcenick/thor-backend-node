@@ -2,27 +2,33 @@ import {PaginatedResponse, mapper} from '../api';
 import {Mapper} from '../mapper';
 import * as db from '../db';
 import {Relation} from 'objection'; // for ManyToManyRelation compilation
-import * as role from './role';
+import * as profile from '../profile/models';
 import Joi = require('joi');
 
+export const enum Relations {
+    roles = 'roles',
+    profile = 'profiles',
+}
+
 export class User extends db.Model {
-    static tableName = 'users';
+    static tableName = db.Tables.users;
     phone?: string;
     name?: string;
     email?: string;
     password?: string;
+    profiles?: Array<profile.Profile>;
+
+    get profile(): profile.Profile {
+        return this.profiles[0];
+    }
 
     static relationMappings = {
-        roles: {
-            relation: db.Model.ManyToManyRelation,
-            modelClass: role.models.Role,
+        [Relations.profile]: {
+            relation: db.Model.HasManyRelation,
+            modelClass: profile.Profile,
             join: {
-                from: 'users.id',
-                through: {
-                    from: 'users_roles.userId',
-                    to: 'users_roles.roleId'
-                },
-                to: 'roles.id'
+                from: `${db.Tables.users}.id`,
+                to: `${db.Tables.profiles}.userId`
             }
         },
     };
@@ -36,12 +42,12 @@ export class UserBaseInfo extends Mapper {
 
 export class UserResponse extends UserBaseInfo {
     id: number = mapper.FIELD_NUM;
-    roles: Array<role.models.RoleResponse> = mapper.FIELD_ARR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
+    profile: profile.ProfileResponse = new profile.ProfileResponse();
 }
 
-mapper.registerRelation(UserResponse, 'roles', new mapper.ArrayRelation(role.models.RoleResponse));
+mapper.registerRelation(UserResponse, 'profile', new mapper.Relation(profile.ProfileResponse));
 
 export class UserRequest extends UserBaseInfo {
     password: string = mapper.FIELD_STR;

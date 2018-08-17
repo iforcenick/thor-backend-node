@@ -5,20 +5,27 @@ import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import Joi = require('joi');
 import {Profile} from '../profile/models';
 
+export const enum Relations {
+    profiles = 'profiles',
+}
+
 export class Tenant extends db.Model {
-    static tableName = 'tenants';
+    static tableName = db.Tables.tenants;
     name?: string;
     dwollaUri?: string;
-    static relationMappings = {
-        profiles: {
-            relation: db.Model.HasManyRelation,
-            modelClass: Profile,
-            join: {
-                from: 'tenants.id',
-                to: 'profiles.tenantId'
+
+    static get relationMappings() {
+        return {
+            [Relations.profiles]: {
+                relation: db.Model.HasManyRelation,
+                modelClass: Profile,
+                join: {
+                    from: `${db.Tables.tenants}.id`,
+                    to: `${db.Tables.profiles}.tenantId`
+                }
             }
-        }
-    };
+        };
+    }
 }
 
 export class TenantBaseInfo extends Mapper {

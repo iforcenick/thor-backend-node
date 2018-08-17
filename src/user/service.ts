@@ -2,6 +2,8 @@ import {AutoWired, Inject} from 'typescript-ioc';
 import * as models from './models';
 import * as db from '../db';
 import * as role from './role';
+import * as profile from '../profile/models';
+import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
 
 const bcrypt = require('bcrypt');
@@ -11,22 +13,34 @@ const jwt = require('jsonwebtoken');
 export class UserService extends db.ModelService<models.User> {
     protected modelType = models.User;
     protected rolesService: role.service.RoleService;
-    protected eager = '[roles]';
+    protected profileService: ProfileService;
 
-    constructor(@Inject rolesService: role.service.RoleService) {
-        // TODO: add model specific user filter
+    constructor(@Inject rolesService: role.service.RoleService, @Inject profileService: ProfileService) {
         super();
         this.rolesService = rolesService;
+        this.profileService = profileService;
     }
 
-    async create(user: models.User): Promise<models.User> {
+    getOptions(query) {
+        query.eager(`${models.Relations.profile}(tenant).[${profile.Relations.roles}]`, {
+            tenant: (builder) => {
+                builder.where('tenantId', this.getTenantId());
+            }
+        });
+        // query.debug();
+
+        return query;
+    }
+
+    async createWithProfile(user: models.User): Promise<models.User> {
         const roleEntity = await this.getRole(role.models.Types.admin);
 
         await transaction(models.User.knex(), async (trx) => {
             user = await this.insert(user, trx);
+            const profileEntity = await this.profileService.createProfile(user.toJSON(), [roleEntity], trx);
             await user
-                .$relatedQuery('roles', trx)
-                .relate(roleEntity.id);
+                .$relatedQuery(models.Relations.profile, trx)
+                .relate(profileEntity.id);
         });
 
         return user;

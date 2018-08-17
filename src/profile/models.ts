@@ -4,33 +4,56 @@ import * as db from '../db';
 import Joi = require('joi');
 import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import * as tenant from '../tenant/models';
-import {User} from '../user/models';
+import * as user from '../user/models';
+import * as role from '../user/role';
+
+export const enum Relations {
+    user = 'user',
+    tenant = 'tenant',
+    roles = 'roles',
+}
 
 export class Profile extends db.Model {
-    static tableName = 'profiles';
+    static tableName = db.Tables.profiles;
     name?: string;
     phone?: string;
     email?: string;
     dwollaUri?: string;
     dwollaSourceUri?: string;
-    static relationMappings = {
-        user: {
-            relation: db.Model.BelongsToOneRelation,
-            modelClass: User,
-            join: {
-                from: 'profiles.userId',
-                to: 'users.id'
-            }
-        },
-        tenant: {
-            relation: db.Model.BelongsToOneRelation,
-            modelClass: tenant.Tenant,
-            join: {
-                from: 'profiles.tenantId',
-                to: 'tenants.id'
-            }
-        }
-    };
+    tenantId?: string;
+
+    static get relationMappings() {
+        return {
+            [Relations.user]: {
+                relation: db.Model.BelongsToOneRelation,
+                modelClass: user.User,
+                join: {
+                    from: `${db.Tables.profiles}.userId`,
+                    to: `${db.Tables.users}.id`
+                }
+            },
+            [Relations.tenant]: {
+                relation: db.Model.BelongsToOneRelation,
+                modelClass: tenant.Tenant,
+                join: {
+                    from: `${db.Tables.profiles}.tenantId`,
+                    to: `${db.Tables.tenants}.id`
+                }
+            },
+            [Relations.roles]: {
+                relation: db.Model.ManyToManyRelation,
+                modelClass: role.models.Role,
+                join: {
+                    from: `${db.Tables.profiles}.id`,
+                    through: {
+                        from: `${db.Tables.profilesRoles}.profileId`,
+                        to: `${db.Tables.profilesRoles}.roleId`
+                    },
+                    to: `${db.Tables.roles}.id`
+                }
+            },
+        };
+    }
 }
 
 export class ProfileBaseInfo extends Mapper {
@@ -43,9 +66,12 @@ export class ProfileResponse extends ProfileBaseInfo {
     id: string = mapper.FIELD_STR;
     userId: string = mapper.FIELD_STR;
     tenantId: string = mapper.FIELD_STR;
+    [Relations.roles]: Array<role.models.RoleResponse> = mapper.FIELD_ARR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
 }
+
+mapper.registerRelation(ProfileResponse, [Relations.roles], new mapper.ArrayRelation(role.models.RoleResponse));
 
 export class ProfileRequest extends ProfileBaseInfo {
 }

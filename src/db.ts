@@ -3,7 +3,7 @@ import {Inject} from 'typescript-ioc';
 import {Config} from './config';
 const validate = require('uuid-validate');
 const uuid = require('uuid');
-
+const guid = require('objection-guid')();
 const getNamespace = require('continuation-local-storage').getNamespace;
 
 export {OModel};
@@ -24,15 +24,26 @@ export class Model extends OModel {
     }
 }
 
+export const enum Tables {
+    users = 'users',
+    profiles = 'profiles',
+    tenants = 'tenants',
+    roles = 'roles',
+    profilesRoles = 'profilesRoles',
+}
+
 // WARNING: @Inject only through constructor not field annotation to persist namespace context
 export class ModelService<T> {
     @Inject protected config: Config;
     protected modelType;
-    protected eager = '';
     protected tenant: any;
 
     constructor() {
         this.tenant = getNamespace('authContext').get('tenant');
+    }
+
+    getOptions(query) {
+        return query;
     }
 
     async get(id: string): Promise<T> {
@@ -42,8 +53,9 @@ export class ModelService<T> {
 
         const query = this.modelType
             .query()
-            .eager(this.eager)
             .findById(id);
+
+        this.getOptions(query);
 
         return await this.tenantContext(query);
     }
@@ -62,13 +74,9 @@ export class ModelService<T> {
     }
 
     async insert(entity: OModel, trx?: transaction<any>, eager?: boolean): Promise<T> {
-        const query = this.modelType.query(this.transaction(trx));
-        if (eager) {
-            query.eager(this.eager);
-        }
-
-        query.insert(entity.toJSON()).returning('*');
-        const response = await query;
+        const response = await this.modelType
+            .query(this.transaction(trx))
+            .insert(entity.toJSON()).returning('*');
 
         if (!(response instanceof Array)) {
             return response;

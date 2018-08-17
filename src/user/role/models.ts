@@ -8,7 +8,7 @@ export enum Types {
 }
 
 export class Role extends db.Model {
-    static tableName = 'roles';
+    static tableName = db.Tables.roles;
     name?: string;
 }
 

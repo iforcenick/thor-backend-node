@@ -6,8 +6,8 @@ exports.up = (knex) => {
             table.datetime('createdAt');
             table.datetime('updatedAt');
         })
-        .createTable('users_roles', (table) => {
-            table.uuid('userId');
+        .createTable('profilesRoles', (table) => {
+            table.uuid('profileId');
             table.integer('roleId');
         });
 };
@@ -15,5 +15,5 @@ exports.up = (knex) => {
 exports.down = (knex) => {
     return knex.schema
         .dropTableIfExists('roles')
-        .dropTableIfExists('users_roles');
+        .dropTableIfExists('profilesRoles');
 };

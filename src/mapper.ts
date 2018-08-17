@@ -1,3 +1,5 @@
+import * as _ from 'lodash';
+
 export const FIELD_STR = '';
 export const FIELD_NUM = 0;
 export const FIELD_DATE = new Date();
@@ -44,7 +46,7 @@ export class Mapper {
 
             const entityArray = [];
             for (const entry of data[key]) {
-                entityArray.push(relation.mapper.map(entry));
+                entityArray.push(_.clone(relation.mapper.map(entry)));
             }
 
             this[key] = entityArray;

@@ -35,7 +35,7 @@ export class UserController extends BaseController {
 
         try {
             user.password = await this.service.hashPassword(user.password);
-            user = await this.service.create(user);
+            user = await this.service.createWithProfile(user);
             user = await this.service.get(user.id);
         } catch (err) {
             this.logger.error(err);
