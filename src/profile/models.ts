@@ -2,11 +2,11 @@ import {PaginatedResponse, mapper} from '../api';
 import {Mapper} from '../mapper';
 import * as db from '../db';
 import Joi = require('joi');
+import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import * as tenant from '../tenant/models';
 import {User} from '../user/models';
-const guid = require('objection-guid')();
 
-export class Profile extends guid(db.Model) {
+export class Profile extends db.Model {
     static tableName = 'profiles';
     name?: string;
     phone?: string;
@@ -15,11 +15,19 @@ export class Profile extends guid(db.Model) {
     dwollaSourceUri?: string;
     static relationMappings = {
         user: {
-            relation: Profile.BelongsToOneRelation,
+            relation: db.Model.BelongsToOneRelation,
             modelClass: User,
             join: {
                 from: 'profiles.userId',
                 to: 'users.id'
+            }
+        },
+        tenant: {
+            relation: db.Model.BelongsToOneRelation,
+            modelClass: tenant.Tenant,
+            join: {
+                from: 'profiles.tenantId',
+                to: 'tenants.id'
             }
         }
     };

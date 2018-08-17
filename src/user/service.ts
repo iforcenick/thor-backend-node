@@ -2,6 +2,7 @@ import {AutoWired, Inject} from 'typescript-ioc';
 import * as models from './models';
 import * as db from '../db';
 import * as role from './role';
+import {transaction} from 'objection';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -16,6 +17,19 @@ export class UserService extends db.ModelService<models.User> {
         // TODO: add model specific user filter
         super();
         this.rolesService = rolesService;
+    }
+
+    async create(user: models.User): Promise<models.User> {
+        const roleEntity = await this.getRole(role.models.Types.admin);
+
+        await transaction(models.User.knex(), async (trx) => {
+            user = await this.insert(user, trx);
+            await user
+                .$relatedQuery('roles', trx)
+                .relate(roleEntity.id);
+        });
+
+        return user;
     }
 
     async findByPhone(phone: string): Promise<models.User> {

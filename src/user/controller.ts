@@ -4,8 +4,6 @@ import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import {UserService} from './service';
 import * as models from './models';
-import * as role from './role';
-import {transaction} from 'objection';
 
 @Path('/user')
 export class UserController extends BaseController {
@@ -36,15 +34,8 @@ export class UserController extends BaseController {
         let user = models.User.fromJson(parsedData);
 
         try {
-            await transaction(models.User.knex(), async (trx) => {
-                user.password = await this.service.hashPassword(user.password);
-                const roleEntity = await this.service.getRole(role.models.Types.admin);
-                user = await this.service.insert(user, trx);
-                await user
-                    .$relatedQuery('roles', trx)
-                    .relate(roleEntity.id);
-            });
-
+            user.password = await this.service.hashPassword(user.password);
+            user = await this.service.create(user);
             user = await this.service.get(user.id);
         } catch (err) {
             this.logger.error(err);

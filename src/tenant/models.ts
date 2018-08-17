@@ -4,15 +4,14 @@ import * as db from '../db';
 import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import Joi = require('joi');
 import {Profile} from '../profile/models';
-const guid = require('objection-guid')();
 
-export class Tenant extends guid(db.Model) {
+export class Tenant extends db.Model {
     static tableName = 'tenants';
     name?: string;
     dwollaUri?: string;
     static relationMappings = {
         profiles: {
-            relation: Tenant.HasManyRelation,
+            relation: db.Model.HasManyRelation,
             modelClass: Profile,
             join: {
                 from: 'tenants.id',

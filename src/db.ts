@@ -2,6 +2,7 @@ import {Model as OModel, transaction} from 'objection';
 import {Inject} from 'typescript-ioc';
 import {Config} from './config';
 const validate = require('uuid-validate');
+const uuid = require('uuid');
 
 const getNamespace = require('continuation-local-storage').getNamespace;
 
@@ -15,6 +16,7 @@ export class Model extends OModel {
     $beforeInsert() {
         this.createdAt = new Date();
         this.updatedAt = new Date();
+        this.id = uuid.v4();
     }
 
     $beforeUpdate() {
