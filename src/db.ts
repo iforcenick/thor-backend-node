@@ -1,6 +1,7 @@
 import {Model as OModel, transaction} from 'objection';
 import {AutoWired, Inject, Singleton} from 'typescript-ioc';
 import {Config} from './config';
+const validate = require('uuid-validate');
 
 export {OModel};
 
@@ -24,7 +25,11 @@ export class ModelService<T> {
     protected modelType;
     protected eager = '';
 
-    async get(id: string) {
+    async get(id: string): Promise<T> {
+        if (!validate(id)) {
+            return undefined;
+        }
+
         return await this.modelType
             .query()
             .eager(this.eager)

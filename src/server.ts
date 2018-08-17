@@ -3,9 +3,11 @@ import {Config} from './config';
 import {Logger} from './logger';
 import {Inject} from 'typescript-ioc';
 import {AuthController} from './auth/controller';
-import express = require('express');
 import {UserController} from './user/controller';
 import {Model} from 'objection';
+import {TenantController} from './tenant/controller';
+import {ProfileController} from './profile/controller';
+import express = require('express');
 
 const knex = require('knex');
 const morgan = require('morgan');
@@ -32,7 +34,9 @@ export class ApiServer {
             this.app.use(morgan('dev'));
         }
 
-        this.app.use(express.static(path.join(__dirname, 'public'), {maxAge: 31557600000}));
+        this.app.use(
+            express.static(path.join(__dirname, 'public'), {maxAge: 31557600000})
+        );
         this.app.use(cors());
         this.app.use(passport.initialize());
         this.app.use(bodyParser.json({limit: '25mb'}));
@@ -43,37 +47,15 @@ export class ApiServer {
         this.app.use(this.logger.expressWinston);
 
         this.addControllers();
-        Server.swagger(this.app, './dist/swagger.json', '/api-docs', 'localhost:' + this.port, ['http']);
+        Server.swagger(
+            this.app,
+            './dist/swagger.json',
+            '/api-docs',
+            'localhost:' + this.port,
+            ['http']
+        );
 
         this.app.use(this.errorHandler.bind(this));
-    }
-
-    private setupDB() {
-        this.knex = knex(this.config.get('db'));
-        this.knex.migrate.latest();
-        Model.knex(this.knex);
-    }
-
-    private addAuthorization() {
-        // this.app.use('/user', passport.authenticate('jwt', {session: false}));
-    }
-
-    private addControllers() {
-        Server.buildServices(this.app, UserController, AuthController);
-    }
-
-    private errorHandler(err, req, res, next): void {
-        this.logger.error(err);
-
-        if (res.headersSent) { // important to allow default error handler to close connection if headers already sent
-            return next(err);
-        }
-
-        const code = err.statusCode ? err.statusCode : 500;
-
-        res.set('Content-Type', 'application/json');
-        res.status(code);
-        res.json({error: err.message, code: code});
     }
 
     private static tokenExtractor(req, res, next): void {
@@ -97,7 +79,11 @@ export class ApiServer {
                     return reject(err);
                 }
 
-                this.logger.info(`Listening to http://${this.server.address().address}:${this.server.address().port}`);
+                this.logger.info(
+                    `Listening to http://${this.server.address().address}:${
+                        this.server.address().port
+                        }`
+                );
                 return resolve();
             });
         });
@@ -122,5 +108,40 @@ export class ApiServer {
     public startTest() {
         this.server = this.app.listen(this.port);
         return this.server;
+    }
+
+    private setupDB() {
+        this.knex = knex(this.config.get('db'));
+        this.knex.migrate.latest();
+        Model.knex(this.knex);
+    }
+
+    private addAuthorization() {
+        // this.app.use('/user', passport.authenticate('jwt', {session: false}));
+    }
+
+    private addControllers() {
+        Server.buildServices(
+            this.app,
+            UserController,
+            AuthController,
+            TenantController,
+            ProfileController
+        );
+    }
+
+    private errorHandler(err, req, res, next): void {
+        this.logger.error(err);
+
+        if (res.headersSent) {
+            // important to allow default error handler to close connection if headers already sent
+            return next(err);
+        }
+
+        const code = err.statusCode ? err.statusCode : 500;
+
+        res.set('Content-Type', 'application/json');
+        res.status(code);
+        res.json({error: err.message, code: code});
     }
 }

@@ -49,6 +49,7 @@
     "typescript-ioc": "^1.2.3",
     "typescript-rest": "^1.5.2",
     "typescript-rest-swagger": "0.0.18",
+    "uuid-validate": "0.0.3",
     "winston": "^2.4.2"
   },
   "devDependencies": {
