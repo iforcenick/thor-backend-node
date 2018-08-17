@@ -7,11 +7,15 @@ import * as models from './models';
 import * as role from './role';
 import {transaction} from 'objection';
 
-
 @Path('/user')
 export class UserController extends BaseController {
     @Inject private logger: Logger;
-    @Inject private service: UserService;
+    private service: UserService;
+
+    constructor(@Inject service: UserService) {
+        super();
+        this.service = service;
+    }
 
     @GET
     @Path(':id')

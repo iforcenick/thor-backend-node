@@ -1,4 +1,4 @@
-import {AutoWired, Inject, Singleton} from 'typescript-ioc';
+import {AutoWired, Inject} from 'typescript-ioc';
 import * as models from './models';
 import * as db from '../db';
 import * as role from './role';
@@ -9,23 +9,24 @@ const jwt = require('jsonwebtoken');
 @AutoWired
 export class UserService extends db.ModelService<models.User> {
     protected modelType = models.User;
-    @Inject protected rolesService: role.service.RoleService;
+    protected rolesService: role.service.RoleService;
     protected eager = '[roles]';
 
-    constructor() {
-        // TODO: add model specific tenant filter
+    constructor(@Inject rolesService: role.service.RoleService) {
+        // TODO: add model specific user filter
         super();
+        this.rolesService = rolesService;
     }
 
     async findByPhone(phone: string): Promise<models.User> {
         return await this.tenantContext(this.modelType.query().findOne({phone: phone}));
     }
 
-    async findByEmail(email: string): Promise<models.User>  {
+    async findByEmail(email: string): Promise<models.User> {
         return await this.tenantContext(this.modelType.query().findOne({email: email}));
     }
 
-    async getRole(role: role.models.Types): Promise<role.models.Role>  {
+    async getRole(role: role.models.Types): Promise<role.models.Role> {
         return await this.tenantContext(this.rolesService.find(role));
     }
 

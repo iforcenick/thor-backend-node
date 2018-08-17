@@ -72,12 +72,9 @@ export class ApiServer {
 
     private static tenantExtractor(req, res, next): void {
         const authContext = createNamespace('authContext');
-        const uuidv4 = require('uuid/v4');
 
         authContext.run(() => {
-            const v = uuidv4();
-            console.log(v);
-            authContext.set('tenant', v);
+            authContext.set('tenant', '7bc0447a-ea99-4ba2-93bb-c84f5b325c50'); // TODO: extract from JWT, right now it's a value from seed tenant
             next();
         });
     }
@@ -137,8 +134,8 @@ export class ApiServer {
     private addControllers() {
         Server.buildServices(
             this.app,
-            UserController,
             AuthController,
+            UserController,
             TenantController,
             ProfileController
         );

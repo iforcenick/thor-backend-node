@@ -22,6 +22,7 @@ export class Model extends OModel {
     }
 }
 
+// WARNING: @Inject only through constructor not field annotation to persist namespace context
 export class ModelService<T> {
     @Inject protected config: Config;
     protected modelType;
@@ -30,8 +31,6 @@ export class ModelService<T> {
 
     constructor() {
         this.tenant = getNamespace('authContext').get('tenant');
-
-        console.log(this.tenant);
     }
 
     async get(id: string): Promise<T> {
@@ -74,5 +73,9 @@ export class ModelService<T> {
         } else {
             return response[0];
         }
+    }
+
+    getTenantId(): string {
+        return this.tenant;
     }
 }

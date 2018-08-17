@@ -10,7 +10,12 @@ import {ProfileService} from './service';
 @Path('/profile')
 export class ProfileController extends BaseController {
     @Inject private logger: Logger;
-    @Inject private service: ProfileService;
+    private service: ProfileService;
+
+    constructor(@Inject service: ProfileService) {
+        super();
+        this.service = service;
+    }
 
     @GET
     @Path(':id')

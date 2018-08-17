@@ -10,8 +10,13 @@ import * as models from './models';
 @Path('/auth')
 export class AuthController extends BaseController {
     @Inject private logger: Logger;
-    @Inject private service: UserService;
     @Inject private config: Config;
+    private service: UserService;
+
+    constructor(@Inject service: UserService) {
+        super();
+        this.service = service;
+    }
 
     @POST
     @Path('/login')

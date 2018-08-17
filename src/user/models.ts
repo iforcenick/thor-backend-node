@@ -3,6 +3,7 @@ import {Mapper} from '../mapper';
 import * as db from '../db';
 import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import * as role from './role';
+import * as tenant from '../tenant/models';
 import Joi = require('joi');
 const guid = require('objection-guid')();
 
@@ -25,7 +26,7 @@ export class User extends guid(db.Model) {
                 },
                 to: 'roles.id'
             }
-        }
+        },
     };
 }
 

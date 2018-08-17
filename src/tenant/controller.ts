@@ -10,7 +10,12 @@ import {TenantService} from './service';
 @Path('/tenant')
 export class TenantController extends BaseController {
     @Inject private logger: Logger;
-    @Inject private service: TenantService;
+    private service: TenantService;
+
+    constructor(@Inject service: TenantService) {
+        super();
+        this.service = service;
+    }
 
     @GET
     @Path(':id')
