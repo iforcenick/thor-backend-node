@@ -6,9 +6,6 @@ exports.seed = (knex, Promise) => {
             return knex('users').insert([
                 {
                     id: '8251efb9-18b5-476e-a2a0-27e38a4da750',
-                    name: 'SuperAdmin',
-                    phone: '6666666',
-                    email: 'superadmin@test.com',
                     password: '$2b$10$TscOBpPG51MVLUtsmTkMnuOsdxMKGOHVUnj4kwmyI2ldF5uerGxx2', // 123
                     createdAt: new Date(),
                     updatedAt: new Date(),
@@ -19,7 +16,8 @@ exports.seed = (knex, Promise) => {
                         id: '7f11b5b2-c9f8-4e3f-920d-0248daaa216e',
                         userId: '8251efb9-18b5-476e-a2a0-27e38a4da750',
                         tenantId: '7bc0447a-ea99-4ba2-93bb-c84f5b325c50',
-                        name: 'SuperAdmin',
+                        firstName: 'Super',
+                        lastName: 'Admin',
                         phone: '6666666',
                         email: 'superadmin@test.com',
                         createdAt: new Date(),
