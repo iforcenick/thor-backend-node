@@ -10,11 +10,13 @@
 * build
 * npm run build:docker
 * npm run start:docker-dev
+* if run for the first time check ```doker logs thor_api``` and if there are any connection errors run ```docker stop thor_api
+and ```npm run start:docker-dev```
 
 ### Configuring PostgreSQL
 * connect to http://localhost:5400/browser/
 * login as postgres/qwe123
-* create db for environment (so development for dev, default for others for now)
+* add server, connect to thor_db
 
 ### Migrations
 * create: knex migrate:make NAME

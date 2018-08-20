@@ -13,7 +13,8 @@
     "swagger": "swaggerGen -c ./swagger.config.json",
     "build:docker": "docker build -t gothor/api .",
     "start:docker": "docker-compose up",
-    "start:docker-dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d"
+    "start:docker-dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d",
+    "stop:docker": "docker-compose down --remove-orphans"
   },
   "repository": {
     "type": "git",

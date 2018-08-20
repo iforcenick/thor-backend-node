@@ -1,0 +1,6 @@
+---
+db:
+  client: postgresql
+  connection:
+    host: thor_db
+    database: development

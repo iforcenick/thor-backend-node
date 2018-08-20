@@ -6,16 +6,17 @@ networks:
 services:
   db:
     image: postgres
-    container_name: thorprodpostgres
+    container_name: thor_db
     environment:
       - POSTGRES_PASSWORD=qwe123
+      - POSTGRES_DB=production
     ports:
       - 5432:5432
     networks:
       - api-network
   api:
     image: gothor/api
-    container_name: api
+    container_name: thor_api
     environment:
       - NODE_ENV=docker
     ports:

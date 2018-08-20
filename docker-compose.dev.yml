@@ -2,10 +2,11 @@ version: '3'
 
 services:
   db:
-    container_name: thordevpostgres
+    environment:
+      - POSTGRES_DB=development
   db-admin:
     image: dpage/pgadmin4
-    container_name: thordbadmin
+    container_name: thor_db_admin
     ports:
       - 5400:80
     environment:
@@ -17,4 +18,4 @@ services:
       - api-network
   api:
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=development-docker

@@ -26,6 +26,6 @@ export class Config {
     }
 
     static isDev() {
-        return process.env['NODE_ENV'] == 'development';
+        return process.env['NODE_ENV'].startsWith('development');
     }
 }

@@ -17,7 +17,7 @@ db:
     port: 5432
     user: postgres
     password: qwe123
-    database: default
+    database: production
   pool:
     min: 2
     max: 10
