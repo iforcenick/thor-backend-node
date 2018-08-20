@@ -23,6 +23,16 @@ export class Profile extends db.Model {
     tenantId?: string;
     roles?: Array<role.models.Role>;
 
+    hasRole(role: role.models.Types) {
+        for (const r of this.roles) {
+            if (r.name == role) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     static get relationMappings() {
         return {
             [Relations.user]: {

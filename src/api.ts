@@ -1,6 +1,9 @@
+import {Errors} from 'typescript-rest';
 import Joi = require('joi');
 import {ValidationError} from './errors';
 import * as mapper from './mapper';
+import * as user from './user/models';
+import * as role from './user/role';
 
 export {mapper};
 
@@ -16,6 +19,23 @@ export interface PaginatedResponse {
 }
 
 export class BaseController {
+    static _requireRole(req: any, role: role.models.Types) {
+        const user: user.User = req.user;
+        if (!user || !user.hasRole(role)) {
+            throw new Errors.ForbiddenError();
+        }
+
+        return req;
+    }
+
+    static requireAdmin(req: any) {
+        return BaseController._requireRole(req, role.models.Types.admin);
+    }
+
+    static requireCustomer(req: any) {
+        return BaseController._requireRole(req, role.models.Types.customer);
+    }
+
     validate(data, schema) {
         return new Promise((resolve, reject) => {
             Joi.validate(data, schema, (err, value) => {

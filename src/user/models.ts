@@ -3,6 +3,7 @@ import {Mapper} from '../mapper';
 import * as db from '../db';
 import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import * as profile from '../profile/models';
+import * as role from './role';
 import Joi = require('joi');
 
 export const enum Relations {
@@ -20,6 +21,10 @@ export class User extends db.Model {
 
     get profile(): profile.Profile {
         return this.profiles[0];
+    }
+
+    hasRole(role: role.models.Types) {
+        return this.profile.hasRole(role);
     }
 
     static relationMappings = {

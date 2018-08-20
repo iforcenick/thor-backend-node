@@ -1,4 +1,4 @@
-import {Errors, GET, Path, PathParam, POST} from 'typescript-rest';
+import {Errors, GET, Path, PathParam, POST, Preprocessor} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
@@ -17,6 +17,7 @@ export class UserController extends BaseController {
 
     @GET
     @Path(':id')
+    @Preprocessor(BaseController.requireAdmin)
     async getUser(@PathParam('id') id: string): Promise<models.UserResponse> {
         const user = await this.service.get(id);
 
@@ -29,6 +30,7 @@ export class UserController extends BaseController {
 
     @POST
     @Path('')
+    @Preprocessor(BaseController.requireAdmin)
     async createUser(data: models.UserRequest): Promise<models.UserResponse> {
         const parsedData = await this.validate(data, models.userRequestSchema);
         let user = models.User.fromJson(parsedData);
