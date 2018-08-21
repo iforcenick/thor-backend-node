@@ -1,8 +1,8 @@
-import {PaginatedResponse, mapper} from '../api';
-import {Mapper} from '../mapper';
+import { PaginatedResponse, mapper } from '../api';
+import { Mapper } from '../mapper';
 import * as db from '../db';
 import Joi = require('joi');
-import {Relation} from 'objection'; // for ManyToManyRelation compilation
+import { Relation } from 'objection'; // for ManyToManyRelation compilation
 import * as tenant from '../tenant/models';
 import * as user from '../user/models';
 import * as role from '../user/role';
@@ -10,7 +10,7 @@ import * as role from '../user/role';
 export const enum Relations {
     user = 'user',
     tenant = 'tenant',
-    roles = 'roles',
+    roles = 'roles'
 }
 
 export class Profile extends db.Model {
@@ -27,7 +27,7 @@ export class Profile extends db.Model {
     city?: string;
     postalCode?: string;
     street?: string;
-    userId?:string;
+    userId?: string;
     roles?: Array<role.models.Role>;
 
     hasRole(role: role.models.Types) {
@@ -69,7 +69,7 @@ export class Profile extends db.Model {
                     },
                     to: `${db.Tables.roles}.id`
                 }
-            },
+            }
         };
     }
 }
@@ -99,10 +99,13 @@ export class ProfileResponse extends ProfileBaseInfo {
     updatedAt: Date = mapper.FIELD_DATE;
 }
 
-mapper.registerRelation(ProfileResponse, [Relations.roles], new mapper.ArrayRelation(role.models.RoleResponse));
+mapper.registerRelation(
+    ProfileResponse,
+    [Relations.roles],
+    new mapper.ArrayRelation(role.models.RoleResponse)
+);
 
-export class ProfileRequest extends ProfileBaseInfo {
-}
+export class ProfileRequest extends ProfileBaseInfo {}
 
 export interface PaginatedProfileReponse extends PaginatedResponse {
     items: Array<ProfileResponse>;
@@ -111,5 +114,5 @@ export interface PaginatedProfileReponse extends PaginatedResponse {
 export const profileRequestSchema = Joi.object().keys({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
-    dwollaUri: Joi.string(),
+    dwollaUri: Joi.string()
 });

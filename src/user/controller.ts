@@ -68,7 +68,6 @@ export class UserController extends BaseController {
                 Profile.fromJson({ ...profileData, userId: user.id })
             );
             user = await this.service.get(user.id);
-            console.log(user);
         } catch (err) {
             this.logger.error(err);
             throw new Errors.InternalServerError(err.message);

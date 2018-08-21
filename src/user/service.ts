@@ -74,7 +74,7 @@ export class UserService extends db.ModelService<models.User> {
             .join('profiles', 'users.id', 'profiles.userId')
             .where('profiles.email', email)
             .first()
-            .eager('profiles');
+            .eager('profiles.roles');
     }
 
     async getRole(role: role.models.Types): Promise<role.models.Role> {
