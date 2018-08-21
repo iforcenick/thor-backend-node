@@ -1,11 +1,11 @@
-import { AutoWired, Inject } from 'typescript-ioc';
+import {AutoWired, Inject} from 'typescript-ioc';
 import * as models from './models';
 import * as db from '../db';
 import * as role from './role';
 import * as profile from '../profile/models';
-import { ProfileService } from '../profile/service';
-import { transaction } from 'objection';
-import { Profile } from '../profile/models';
+import {Profile} from '../profile/models';
+import {ProfileService} from '../profile/service';
+import {transaction} from 'objection';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -15,6 +15,7 @@ export class UserService extends db.ModelService<models.User> {
     protected modelType = models.User;
     protected rolesService: role.service.RoleService;
     protected profileService: ProfileService;
+
     constructor(
         @Inject rolesService: role.service.RoleService,
         @Inject profileService: ProfileService
@@ -35,7 +36,7 @@ export class UserService extends db.ModelService<models.User> {
         );
         // query.debug();
 
-        return query.skipUndefined();
+        return query;
     }
 
     async getAll() {
@@ -64,7 +65,7 @@ export class UserService extends db.ModelService<models.User> {
 
     async findByPhone(phone: string): Promise<models.User> {
         return await this.tenantContext(
-            this.getOptions(this.modelType.query().findOne({ phone: phone }))
+            this.getOptions(this.modelType.query().findOne({phone: phone}))
         );
     }
 
@@ -102,12 +103,7 @@ export class UserService extends db.ModelService<models.User> {
 
     async generateJwt(user: models.User) {
         return jwt.sign(
-            {
-                id: user.id,
-                tenantId: user.profile.tenantId,
-                roles: user.profile.roles,
-                ...user.toJSON()
-            },
+            user.toJSON(),
             this.config.get('authorization.jwtSecret'),
             {
                 expiresIn: this.config.get('authorization.tokenExpirationTime')
