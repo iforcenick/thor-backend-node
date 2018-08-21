@@ -1,21 +1,18 @@
-import {PaginatedResponse, mapper} from '../api';
-import {Mapper} from '../mapper';
+import { PaginatedResponse, mapper } from '../api';
+import { Mapper } from '../mapper';
 import * as db from '../db';
-import {Relation} from 'objection'; // for ManyToManyRelation compilation
+import { Relation } from 'objection'; // for ManyToManyRelation compilation
 import * as profile from '../profile/models';
 import * as role from './role';
 import Joi = require('joi');
 
 export const enum Relations {
     roles = 'roles',
-    profile = 'profiles',
+    profile = 'profiles'
 }
 
 export class User extends db.Model {
     static tableName = db.Tables.users;
-    phone?: string;
-    name?: string;
-    email?: string;
     password?: string;
     profiles?: Array<profile.Profile>;
 
@@ -35,15 +32,11 @@ export class User extends db.Model {
                 from: `${db.Tables.users}.id`,
                 to: `${db.Tables.profiles}.userId`
             }
-        },
+        }
     };
 }
 
-export class UserBaseInfo extends Mapper {
-    phone: string = mapper.FIELD_STR;
-    name: string = mapper.FIELD_STR;
-    email: string = mapper.FIELD_STR;
-}
+export class UserBaseInfo extends Mapper {}
 
 export class UserResponse extends UserBaseInfo {
     id: number = mapper.FIELD_NUM;
@@ -52,7 +45,11 @@ export class UserResponse extends UserBaseInfo {
     profile: profile.ProfileResponse = new profile.ProfileResponse();
 }
 
-mapper.registerRelation(UserResponse, 'profile', new mapper.Relation(profile.ProfileResponse));
+mapper.registerRelation(
+    UserResponse,
+    'profile',
+    new mapper.Relation(profile.ProfileResponse)
+);
 
 export class UserRequest extends UserBaseInfo {
     password: string = mapper.FIELD_STR;
@@ -63,8 +60,5 @@ export interface PaginatedUserReponse extends PaginatedResponse {
 }
 
 export const userRequestSchema = Joi.object().keys({
-    phone: Joi.string().required(),
-    password: Joi.string().required(),
-    name: Joi.string().required(),
-    email: Joi.string().email().required(),
+    password: Joi.string().required()
 });

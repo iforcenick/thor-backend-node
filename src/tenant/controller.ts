@@ -7,7 +7,7 @@ import {transaction} from 'objection';
 import {TenantService} from './service';
 
 
-@Path('/tenant')
+@Path('/tenants')
 export class TenantController extends BaseController {
     @Inject private logger: Logger;
     private service: TenantService;

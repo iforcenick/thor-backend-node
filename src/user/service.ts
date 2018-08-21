@@ -1,10 +1,11 @@
-import {AutoWired, Inject} from 'typescript-ioc';
+import { AutoWired, Inject } from 'typescript-ioc';
 import * as models from './models';
 import * as db from '../db';
 import * as role from './role';
 import * as profile from '../profile/models';
-import {ProfileService} from '../profile/service';
-import {transaction} from 'objection';
+import { ProfileService } from '../profile/service';
+import { transaction } from 'objection';
+import { Profile } from '../profile/models';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -14,30 +15,45 @@ export class UserService extends db.ModelService<models.User> {
     protected modelType = models.User;
     protected rolesService: role.service.RoleService;
     protected profileService: ProfileService;
-
-    constructor(@Inject rolesService: role.service.RoleService, @Inject profileService: ProfileService) {
+    constructor(
+        @Inject rolesService: role.service.RoleService,
+        @Inject profileService: ProfileService
+    ) {
         super();
         this.rolesService = rolesService;
         this.profileService = profileService;
     }
 
     getOptions(query) {
-        query.eager(`${models.Relations.profile}(tenant).[${profile.Relations.roles}]`, {
-            tenant: (builder) => {
-                builder.where('tenantId', this.getTenantId());
+        query.eager(
+            `${models.Relations.profile}(tenant).[${profile.Relations.roles}]`,
+            {
+                tenant: builder => {
+                    builder.where('tenantId', this.getTenantId());
+                }
             }
-        });
+        );
         // query.debug();
 
-        return query;
+        return query.skipUndefined();
     }
 
-    async createWithProfile(user: models.User): Promise<models.User> {
-        const roleEntity = await this.getRole(role.models.Types.admin);
+    async getAll() {
+        return await this.modelType.query();
+    }
 
-        await transaction(models.User.knex(), async (trx) => {
+    async createWithProfile(
+        user: models.User,
+        profile: Profile
+    ): Promise<models.User> {
+        const roleEntity = await this.getRole(role.models.Types.customer);
+        await transaction(models.User.knex(), async trx => {
             user = await this.insert(user, trx);
-            const profileEntity = await this.profileService.createProfile(user.toJSON(), [roleEntity], trx);
+            const profileEntity = await this.profileService.createProfile(
+                profile,
+                [roleEntity],
+                trx
+            );
             await user
                 .$relatedQuery(models.Relations.profile, trx)
                 .relate(profileEntity.id);
@@ -47,11 +63,18 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async findByPhone(phone: string): Promise<models.User> {
-        return await this.tenantContext(this.getOptions(this.modelType.query().findOne({phone: phone})));
+        return await this.tenantContext(
+            this.getOptions(this.modelType.query().findOne({ phone: phone }))
+        );
     }
 
     async findByEmail(email: string): Promise<models.User> {
-        return await this.tenantContext(this.getOptions(this.modelType.query().findOne({email: email})));
+        return await this.modelType
+            .query()
+            .join('profiles', 'users.id', 'profiles.userId')
+            .where('profiles.email', email)
+            .first()
+            .eager('profiles');
     }
 
     async getRole(role: role.models.Types): Promise<role.models.Role> {
@@ -65,7 +88,6 @@ export class UserService extends db.ModelService<models.User> {
     async authenticate(login: string, password: string, tenant: string) {
         this.tenant = tenant;
         const user = await this.findByEmail(login);
-
         if (!user) {
             return null;
         }
@@ -75,18 +97,17 @@ export class UserService extends db.ModelService<models.User> {
         if (check !== true) {
             return null;
         }
-
         return user;
     }
 
     async generateJwt(user: models.User) {
         return jwt.sign(
-            user.toJSON(),
-            // {
-            //     id: user.id,
-            //     tenantId: user.profile.tenantId,
-            //     roles: user.profile.roles,
-            // },
+            {
+                id: user.id,
+                tenantId: user.profile.tenantId,
+                roles: user.profile.roles,
+                ...user.toJSON()
+            },
             this.config.get('authorization.jwtSecret'),
             {
                 expiresIn: this.config.get('authorization.tokenExpirationTime')

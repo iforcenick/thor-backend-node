@@ -15,12 +15,19 @@ export const enum Relations {
 
 export class Profile extends db.Model {
     static tableName = db.Tables.profiles;
-    name?: string;
+    firstName?: string;
+    lastName?: string;
     phone?: string;
     email?: string;
     dwollaUri?: string;
     dwollaSourceUri?: string;
     tenantId?: string;
+    country?: string;
+    state?: string;
+    city?: string;
+    postalCode?: string;
+    street?: string;
+    userId?:string;
     roles?: Array<role.models.Role>;
 
     hasRole(role: role.models.Types) {
@@ -71,6 +78,16 @@ export class ProfileBaseInfo extends Mapper {
     name: string = mapper.FIELD_STR;
     dwollaUri: string = mapper.FIELD_STR;
     dwollaSourceUri: string = mapper.FIELD_STR;
+    firstName: string = mapper.FIELD_STR;
+    lastName: string = mapper.FIELD_STR;
+    phone: string = mapper.FIELD_STR;
+    email: string = mapper.FIELD_STR;
+    tenantId: string = mapper.FIELD_STR;
+    country: string = mapper.FIELD_STR;
+    state: string = mapper.FIELD_STR;
+    city: string = mapper.FIELD_STR;
+    postalCode: string = mapper.FIELD_STR;
+    street: string = mapper.FIELD_STR;
 }
 
 export class ProfileResponse extends ProfileBaseInfo {
@@ -92,6 +109,7 @@ export interface PaginatedProfileReponse extends PaginatedResponse {
 }
 
 export const profileRequestSchema = Joi.object().keys({
-    name: Joi.string().required(),
+    firstName: Joi.string().required(),
+    lastName: Joi.string().required(),
     dwollaUri: Joi.string(),
 });
