@@ -1,8 +1,8 @@
-import { PaginatedResponse, mapper } from '../api';
-import { Mapper } from '../mapper';
+import {PaginatedResponse, mapper} from '../api';
+import {Mapper} from '../mapper';
 import * as db from '../db';
 import Joi = require('joi');
-import { Relation } from 'objection'; // for ManyToManyRelation compilation
+import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import * as tenant from '../tenant/models';
 import * as user from '../user/models';
 import * as role from '../user/role';
@@ -10,7 +10,7 @@ import * as role from '../user/role';
 export const enum Relations {
     user = 'user',
     tenant = 'tenant',
-    roles = 'roles'
+    roles = 'roles',
 }
 
 export class Profile extends db.Model {
@@ -47,16 +47,16 @@ export class Profile extends db.Model {
                 modelClass: user.User,
                 join: {
                     from: `${db.Tables.profiles}.userId`,
-                    to: `${db.Tables.users}.id`
-                }
+                    to: `${db.Tables.users}.id`,
+                },
             },
             [Relations.tenant]: {
                 relation: db.Model.BelongsToOneRelation,
                 modelClass: tenant.Tenant,
                 join: {
                     from: `${db.Tables.profiles}.tenantId`,
-                    to: `${db.Tables.tenants}.id`
-                }
+                    to: `${db.Tables.tenants}.id`,
+                },
             },
             [Relations.roles]: {
                 relation: db.Model.ManyToManyRelation,
@@ -65,11 +65,11 @@ export class Profile extends db.Model {
                     from: `${db.Tables.profiles}.id`,
                     through: {
                         from: `${db.Tables.profilesRoles}.profileId`,
-                        to: `${db.Tables.profilesRoles}.roleId`
+                        to: `${db.Tables.profilesRoles}.roleId`,
                     },
-                    to: `${db.Tables.roles}.id`
-                }
-            }
+                    to: `${db.Tables.roles}.id`,
+                },
+            },
         };
     }
 }
@@ -114,5 +114,5 @@ export interface PaginatedProfileReponse extends PaginatedResponse {
 export const profileRequestSchema = Joi.object().keys({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
-    dwollaUri: Joi.string()
+    dwollaUri: Joi.string(),
 });

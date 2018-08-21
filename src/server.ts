@@ -1,12 +1,12 @@
-import { Server } from 'typescript-rest';
-import { Config } from './config';
-import { Logger } from './logger';
-import { Inject } from 'typescript-ioc';
-import { AuthController } from './auth/controller';
-import { UserController } from './user/controller';
-import { Model } from 'objection';
-import { TenantController } from './tenant/controller';
-import { ProfileController } from './profile/controller';
+import {Server} from 'typescript-rest';
+import {Config} from './config';
+import {Logger} from './logger';
+import {Inject} from 'typescript-ioc';
+import {AuthController} from './auth/controller';
+import {UserController} from './user/controller';
+import {Model} from 'objection';
+import {TenantController} from './tenant/controller';
+import {ProfileController} from './profile/controller';
 import express = require('express');
 
 const knex = require('knex');
@@ -38,12 +38,12 @@ export class ApiServer {
 
         this.app.use(
             express.static(path.join(__dirname, 'public'), {
-                maxAge: 31557600000
+                maxAge: 31557600000,
             })
         );
         this.app.use(cors());
         this.app.use(passport.initialize());
-        this.app.use(bodyParser.json({ limit: '25mb' }));
+        this.app.use(bodyParser.json({limit: '25mb'}));
         this.app.use(methodOverride());
 
         this.addAuthorization();
@@ -137,10 +137,7 @@ export class ApiServer {
     }
 
     private addAuthorization() {
-        this.app.use(
-            '/users',
-            passport.authenticate('jwt', { session: false })
-        );
+        this.app.use('/users', passport.authenticate('jwt', {session: false}));
     }
 
     private addControllers() {
@@ -165,6 +162,6 @@ export class ApiServer {
 
         res.set('Content-Type', 'application/json');
         res.status(code);
-        res.json({ error: err.message, code: code });
+        res.json({error: err.message, code: code});
     }
 }

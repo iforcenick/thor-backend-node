@@ -1,9 +1,9 @@
-import { AutoWired, Inject } from 'typescript-ioc';
+import {AutoWired, Inject} from 'typescript-ioc';
 import * as models from './models';
 import * as db from '../db';
-import { transaction } from 'objection';
+import {transaction} from 'objection';
 import * as role from '../user/role';
-import { RoleService } from '../user/role/service';
+import {RoleService} from '../user/role/service';
 
 @AutoWired
 export class ProfileService extends db.ModelService<models.Profile> {

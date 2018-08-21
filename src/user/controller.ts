@@ -4,15 +4,15 @@ import {
     Path,
     PathParam,
     POST,
-    Preprocessor
+    Preprocessor,
 } from 'typescript-rest';
-import { BaseController } from '../api';
-import { Logger } from '../logger';
-import { Inject } from 'typescript-ioc';
-import { UserService } from './service';
+import {BaseController} from '../api';
+import {Logger} from '../logger';
+import {Inject} from 'typescript-ioc';
+import {UserService} from './service';
 import * as models from './models';
-import { Profile } from '../profile/models';
-import { ProfileService } from '../profile/service';
+import {Profile} from '../profile/models';
+import {ProfileService} from '../profile/service';
 
 @Path('/users')
 export class UserController extends BaseController {
@@ -53,8 +53,8 @@ export class UserController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async createUser(data: models.UserRequest): Promise<models.UserResponse> {
-        const { password, ...profileData } = data;
-        const userData = { password };
+        const {password, ...profileData} = data;
+        const userData = {password};
         const parsedUserData = await this.validate(
             userData,
             models.userRequestSchema
@@ -65,7 +65,7 @@ export class UserController extends BaseController {
             user.password = await this.service.hashPassword(user.password);
             user = await this.service.createWithProfile(user, profile);
             await this.profileService.createBaseProfile(
-                Profile.fromJson({ ...profileData, userId: user.id })
+                Profile.fromJson({...profileData, userId: user.id})
             );
             user = await this.service.get(user.id);
         } catch (err) {

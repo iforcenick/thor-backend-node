@@ -1,9 +1,9 @@
-import { Errors, Path, POST } from 'typescript-rest';
-import { BaseController } from '../api';
-import { Inject } from 'typescript-ioc';
-import { Logger } from '../logger';
-import { UserService } from '../user/service';
-import { Config } from '../config';
+import {Errors, Path, POST} from 'typescript-rest';
+import {BaseController} from '../api';
+import {Inject} from 'typescript-ioc';
+import {Logger} from '../logger';
+import {UserService} from '../user/service';
+import {Config} from '../config';
 import * as models from './models';
 
 @Path('/auth')

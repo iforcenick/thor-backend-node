@@ -1,14 +1,14 @@
-import { PaginatedResponse, mapper } from '../api';
-import { Mapper } from '../mapper';
+import {PaginatedResponse, mapper} from '../api';
+import {Mapper} from '../mapper';
 import * as db from '../db';
-import { Relation } from 'objection'; // for ManyToManyRelation compilation
+import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import * as profile from '../profile/models';
 import * as role from './role';
 import Joi = require('joi');
 
 export const enum Relations {
     roles = 'roles',
-    profile = 'profiles'
+    profile = 'profiles',
 }
 
 export class User extends db.Model {
@@ -30,9 +30,9 @@ export class User extends db.Model {
             modelClass: profile.Profile,
             join: {
                 from: `${db.Tables.users}.id`,
-                to: `${db.Tables.profiles}.userId`
-            }
-        }
+                to: `${db.Tables.profiles}.userId`,
+            },
+        },
     };
 }
 
@@ -60,5 +60,5 @@ export interface PaginatedUserReponse extends PaginatedResponse {
 }
 
 export const userRequestSchema = Joi.object().keys({
-    password: Joi.string().required()
+    password: Joi.string().required(),
 });
