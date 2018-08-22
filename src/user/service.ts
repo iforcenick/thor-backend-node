@@ -31,7 +31,7 @@ export class UserService extends db.ModelService<models.User> {
             {
                 tenant: builder => {
                     builder.where('tenantId', this.getTenantId());
-                }
+                },
             }
         );
         // query.debug();
@@ -40,7 +40,7 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async getAll() {
-        return await this.modelType.query();
+        return await this.tenantContext(this.getOptions(this.modelType.query()));
     }
 
     async createWithProfile(
@@ -106,7 +106,7 @@ export class UserService extends db.ModelService<models.User> {
             user.toJSON(),
             this.config.get('authorization.jwtSecret'),
             {
-                expiresIn: this.config.get('authorization.tokenExpirationTime')
+                expiresIn: this.config.get('authorization.tokenExpirationTime'),
             }
         );
     }
