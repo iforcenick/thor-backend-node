@@ -5,8 +5,9 @@ import {Inject} from 'typescript-ioc';
 import * as models from './models';
 import {transaction} from 'objection';
 import {TenantService} from './service';
+import {Security} from 'typescript-rest-swagger';
 
-
+@Security('api_key')
 @Path('/tenants')
 export class TenantController extends BaseController {
     @Inject private logger: Logger;

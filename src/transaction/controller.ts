@@ -6,7 +6,9 @@ import * as models from './models';
 import {TransactionService} from './service';
 import {UserService} from '../user/service';
 import {JobService} from '../job/service';
+import {Security} from 'typescript-rest-swagger';
 
+@Security('api_key')
 @Path('/transactions')
 export class TransactionController extends BaseController {
     @Inject private logger: Logger;

@@ -5,8 +5,9 @@ import {Inject} from 'typescript-ioc';
 import * as models from './models';
 import {transaction} from 'objection';
 import {ProfileService} from './service';
+import {Security} from 'typescript-rest-swagger';
 
-
+@Security('api_key')
 @Path('/profiles')
 export class ProfileController extends BaseController {
     @Inject private logger: Logger;

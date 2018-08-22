@@ -7,7 +7,9 @@ import * as models from './models';
 import {Profile} from '../profile/models';
 import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
+import {Security} from 'typescript-rest-swagger';
 
+@Security('api_key')
 @Path('/users')
 export class UserController extends BaseController {
     @Inject private logger: Logger;

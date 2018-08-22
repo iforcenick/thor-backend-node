@@ -4,7 +4,9 @@ import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
 import {JobService} from './service';
+import {Security} from 'typescript-rest-swagger';
 
+@Security('api_key')
 @Path('/jobs')
 export class JobController extends BaseController {
     @Inject private logger: Logger;
