@@ -3,9 +3,9 @@ import * as models from './models';
 import * as db from '../db';
 import * as role from './role';
 import * as profile from '../profile/models';
-import {Profile} from '../profile/models';
 import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
+import * as _ from 'lodash';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -30,8 +30,11 @@ export class UserService extends db.ModelService<models.User> {
             `${models.Relations.profile}(tenant).[${profile.Relations.roles}]`,
             {
                 tenant: builder => {
-                    builder.where('tenantId', this.getTenantId());
-                },
+                    const tenantId = this.getTenantId();
+                    builder.orWhere(function() {
+                        this.where('tenantId', tenantId).orWhere('tenantId', null);
+                    });
+                }
             }
         );
         // query.debug();
@@ -43,21 +46,21 @@ export class UserService extends db.ModelService<models.User> {
         return await this.tenantContext(this.getOptions(this.modelType.query()));
     }
 
-    async createWithProfile(
-        user: models.User,
-        profile: Profile
-    ): Promise<models.User> {
-        const roleEntity = await this.getRole(role.models.Types.customer);
-        await transaction(models.User.knex(), async trx => {
+    async createWithProfile(user: models.User, profile: profile.Profile): Promise<models.User> {
+        const customerRole = await this.getRole(role.models.Types.customer);
+        await transaction(this.transaction(), async trx => {
             user = await this.insert(user, trx);
-            const profileEntity = await this.profileService.createProfile(
-                profile,
-                [roleEntity],
-                trx
-            );
+            const baseProfile = _.clone(profile);
+            const profileEntity = await this.profileService.createProfile(profile, [customerRole], trx);
+            const baseProfileEntity = await this.profileService.createProfile(baseProfile, [customerRole], trx, true);
+
             await user
                 .$relatedQuery(models.Relations.profile, trx)
                 .relate(profileEntity.id);
+
+            await user
+                .$relatedQuery(models.Relations.profile, trx)
+                .relate(baseProfileEntity.id);
         });
 
         return user;

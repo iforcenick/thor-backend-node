@@ -80,7 +80,7 @@ export class ApiServer {
 
         authContext.run(() => {
             if (req.user) {
-                authContext.set('tenant', req.user.profile.tenantId);
+                authContext.set('tenant', req.user.tenantProfile.tenantId);
                 authContext.set('user', req.user);
             }
 

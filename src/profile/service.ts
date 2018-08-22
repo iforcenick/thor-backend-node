@@ -16,12 +16,14 @@ export class ProfileService extends db.ModelService<models.Profile> {
         this.roleService = roleService;
     }
 
-    async createProfile(
-        profile: models.Profile,
-        roles: Array<any>,
-        trx?: transaction<any>
-    ) {
-        profile.tenantId = this.getTenantId();
+    async createProfile(profile: models.Profile,
+                        roles: Array<any>,
+                        trx?: transaction<any>,
+                        baseProfile?: boolean) {
+        if (!baseProfile) {
+            profile.tenantId = this.getTenantId();
+        }
+
         profile = await this.insert(profile, trx);
 
         for (const role of roles) {
@@ -29,19 +31,6 @@ export class ProfileService extends db.ModelService<models.Profile> {
                 .$relatedQuery(models.Relations.roles, trx)
                 .relate(role.id);
         }
-
-        return profile;
-    }
-
-    async createBaseProfile(profile: models.Profile, trx?: transaction<any>) {
-        profile = await this.insert(profile, trx);
-        const roleEntity = await this.roleService.find(
-            role.models.Types.customer
-        );
-
-        await profile
-            .$relatedQuery(models.Relations.roles, trx)
-            .relate(roleEntity.id);
 
         return profile;
     }

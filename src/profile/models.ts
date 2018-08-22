@@ -76,13 +76,10 @@ export class Profile extends db.Model {
 
 export class ProfileBaseInfo extends Mapper {
     name: string = mapper.FIELD_STR;
-    dwollaUri: string = mapper.FIELD_STR;
-    dwollaSourceUri: string = mapper.FIELD_STR;
     firstName: string = mapper.FIELD_STR;
     lastName: string = mapper.FIELD_STR;
     phone: string = mapper.FIELD_STR;
     email: string = mapper.FIELD_STR;
-    tenantId: string = mapper.FIELD_STR;
     country: string = mapper.FIELD_STR;
     state: string = mapper.FIELD_STR;
     city: string = mapper.FIELD_STR;
@@ -105,7 +102,8 @@ mapper.registerRelation(
     new mapper.ArrayRelation(role.models.RoleResponse)
 );
 
-export class ProfileRequest extends ProfileBaseInfo {}
+export class ProfileRequest extends ProfileBaseInfo {
+}
 
 export interface PaginatedProfileReponse extends PaginatedResponse {
     items: Array<ProfileResponse>;
@@ -114,5 +112,6 @@ export interface PaginatedProfileReponse extends PaginatedResponse {
 export const profileRequestSchema = Joi.object().keys({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
-    dwollaUri: Joi.string(),
+    phone: Joi.string().required(),
+    email: Joi.string().required(),
 });

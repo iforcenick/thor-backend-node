@@ -17,11 +17,27 @@ export class User extends db.Model {
     profiles?: Array<profile.Profile>;
 
     get profile(): profile.Profile {
-        return this.profiles[0];
+        for (const profile of this.profiles) {
+            if (!profile.tenantId) {
+                return profile;
+            }
+        }
+
+        return undefined;
+    }
+
+    get tenantProfile(): profile.Profile {
+        for (const profile of this.profiles) {
+            if (profile.tenantId) {
+                return profile;
+            }
+        }
+
+        return undefined;
     }
 
     hasRole(role: role.models.Types) {
-        return this.profile.hasRole(role);
+        return this.tenantProfile.hasRole(role);
     }
 
     static relationMappings = {
@@ -36,23 +52,23 @@ export class User extends db.Model {
     };
 }
 
-export class UserBaseInfo extends Mapper {}
+export class UserBaseInfo extends Mapper {
+}
 
 export class UserResponse extends UserBaseInfo {
     id: number = mapper.FIELD_NUM;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
     profile: profile.ProfileResponse = new profile.ProfileResponse();
+    tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
 }
 
-mapper.registerRelation(
-    UserResponse,
-    'profile',
-    new mapper.Relation(profile.ProfileResponse)
-);
+mapper.registerRelation(UserResponse, 'profile', new mapper.Relation(profile.ProfileResponse));
+mapper.registerRelation(UserResponse, 'tenantProfile', new mapper.Relation(profile.ProfileResponse));
 
 export class UserRequest extends UserBaseInfo {
     password: string = mapper.FIELD_STR;
+    profile: profile.ProfileRequest = new profile.ProfileRequest();
 }
 
 export interface PaginatedUserReponse extends PaginatedResponse {
@@ -61,4 +77,5 @@ export interface PaginatedUserReponse extends PaginatedResponse {
 
 export const userRequestSchema = Joi.object().keys({
     password: Joi.string().required(),
+    profile: profile.profileRequestSchema.required(),
 });

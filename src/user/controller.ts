@@ -13,6 +13,7 @@ import {UserService} from './service';
 import * as models from './models';
 import {Profile} from '../profile/models';
 import {ProfileService} from '../profile/service';
+import {transaction} from 'objection';
 
 @Path('/users')
 export class UserController extends BaseController {
@@ -20,10 +21,8 @@ export class UserController extends BaseController {
     private service: UserService;
     private profileService: ProfileService;
 
-    constructor(
-        @Inject service: UserService,
-        @Inject profileService: ProfileService
-    ) {
+    constructor(@Inject service: UserService,
+                @Inject profileService: ProfileService) {
         super();
         this.service = service;
         this.profileService = profileService;
@@ -53,20 +52,18 @@ export class UserController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async createUser(data: models.UserRequest): Promise<models.UserResponse> {
-        const {password, ...profileData} = data;
-        const userData = {password};
-        const parsedUserData = await this.validate(
-            userData,
+        const parsedData = await this.validate(
+            data,
             models.userRequestSchema
         );
-        let user = models.User.fromJson(parsedUserData);
-        const profile = Profile.fromJson(profileData);
+
+        let user = models.User.fromJson({});
+        user.password = parsedData['password'];
+        const profile = Profile.fromJson(parsedData['profile']);
+
         try {
             user.password = await this.service.hashPassword(user.password);
             user = await this.service.createWithProfile(user, profile);
-            await this.profileService.createBaseProfile(
-                Profile.fromJson({...profileData, userId: user.id})
-            );
             user = await this.service.get(user.id);
         } catch (err) {
             this.logger.error(err);
