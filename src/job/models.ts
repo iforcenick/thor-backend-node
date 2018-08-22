@@ -34,6 +34,7 @@ export class JobBaseInfo extends Mapper {
     value: number = mapper.FIELD_NUM;
     name: string = mapper.FIELD_STR;
     description: string = mapper.FIELD_STR;
+    tenantId: string = mapper.FIELD_STR;
 }
 
 export class JobResponse extends JobBaseInfo {
@@ -48,4 +49,9 @@ export interface PaginatedJobReponse extends PaginatedResponse {
     items: Array<JobResponse>;
 }
 
-export const JobRequestSchema = Joi.object().keys({});
+export const jobRequestSchema = Joi.object().keys({
+    value: Joi.number().greater(0).precision(2).required(),
+    name: Joi.string().required(),
+    description: Joi.string().required(),
+
+});

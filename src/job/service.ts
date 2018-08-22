@@ -9,4 +9,9 @@ export class JobService extends db.ModelService<models.Job> {
     async tenantContext(query) {
         return await query.where('tenantId', this.getTenantId());
     }
+
+    async createJob(data: models.Job) {
+        data.tenantId = this.getTenantId();
+        return this.insert(data);
+    }
 }
