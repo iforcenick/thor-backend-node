@@ -1,4 +1,4 @@
-import {Errors, GET, Path, PathParam, POST, Preprocessor} from 'typescript-rest';
+import {Errors, GET, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
@@ -30,22 +30,19 @@ export class JobController extends BaseController {
             throw new Errors.InternalServerError(err.message);
         }
     }
+
+    /**
+     * @param page page to be queried, starting from 0
+     * @param limit transactions per page
+     */
     @GET
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async getJobs(): Promise<models.PaginatedJobReponse> {
-        const transactions = await this.service.list();
+    async getJobs(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<models.PaginatedJobReponse> {
+        const jobs = await this.service.list(page, limit);
 
-        return this.paginate(
-            {
-                total: 0,
-                limit: 0,
-                page: 0,
-                pages: 0,
-            },
-            transactions.map(transaction => {
-                return this.map(models.JobResponse, transaction);
-            })
-        );
+        return this.paginate(jobs.pagination, jobs.rows.map(job => {
+                return this.map(models.JobResponse, job);
+        }));
     }
 }
