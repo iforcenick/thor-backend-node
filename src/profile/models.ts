@@ -30,16 +30,6 @@ export class Profile extends db.Model {
     userId?: string;
     roles?: Array<role.models.Role>;
 
-    hasRole(role: role.models.Types) {
-        for (const r of this.roles) {
-            if (r.name == role) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     static get relationMappings() {
         return {
             [Relations.user]: {
@@ -72,10 +62,19 @@ export class Profile extends db.Model {
             },
         };
     }
+
+    hasRole(role: role.models.Types) {
+        for (const r of this.roles) {
+            if (r.name == role) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 
 export class ProfileBaseInfo extends Mapper {
-    name: string = mapper.FIELD_STR;
     firstName: string = mapper.FIELD_STR;
     lastName: string = mapper.FIELD_STR;
     phone: string = mapper.FIELD_STR;
@@ -96,11 +95,7 @@ export class ProfileResponse extends ProfileBaseInfo {
     updatedAt: Date = mapper.FIELD_DATE;
 }
 
-mapper.registerRelation(
-    ProfileResponse,
-    [Relations.roles],
-    new mapper.ArrayRelation(role.models.RoleResponse)
-);
+mapper.registerRelation(ProfileResponse, [Relations.roles], new mapper.ArrayRelation(role.models.RoleResponse));
 
 export class ProfileRequest extends ProfileBaseInfo {
 }
@@ -114,4 +109,9 @@ export const profileRequestSchema = Joi.object().keys({
     lastName: Joi.string().required(),
     phone: Joi.string().required(),
     email: Joi.string().required(),
+    country: Joi.string(),
+    state: Joi.string(),
+    city: Joi.string(),
+    postalCode: Joi.string(),
+    street: Joi.string(),
 });
