@@ -1,4 +1,4 @@
-import {AutoWired, Inject, Singleton} from 'typescript-ioc';
+import {AutoWired} from 'typescript-ioc';
 import * as models from './models';
 import * as db from '../db';
 

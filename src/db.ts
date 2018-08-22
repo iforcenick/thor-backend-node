@@ -1,6 +1,7 @@
 import {Model as OModel, transaction} from 'objection';
 import {Inject} from 'typescript-ioc';
 import {Config} from './config';
+
 const validate = require('uuid-validate');
 const uuid = require('uuid');
 const getNamespace = require('continuation-local-storage').getNamespace;
@@ -29,6 +30,8 @@ export const enum Tables {
     tenants = 'tenants',
     roles = 'roles',
     profilesRoles = 'profilesRoles',
+    transactions = 'transactions',
+    jobs = 'jobs',
 }
 
 // WARNING: @Inject only through constructor not field annotation to persist namespace context
@@ -45,6 +48,10 @@ export class ModelService<T> {
         return query;
     }
 
+    getListOptions(query) {
+        return query;
+    }
+
     async get(id: string): Promise<T> {
         if (!validate(id)) {
             return undefined;
@@ -55,6 +62,15 @@ export class ModelService<T> {
             .findById(id);
 
         this.getOptions(query);
+
+        return await this.tenantContext(query);
+    }
+
+    async list(): Promise<Array<T>> {
+        const query = this.modelType
+            .query();
+
+        this.getListOptions(query);
 
         return await this.tenantContext(query);
     }
