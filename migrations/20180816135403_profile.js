@@ -5,13 +5,22 @@ exports.up = (knex) => {
             table.uuid('id').primary();
             table.uuid('userId');
             table.uuid('tenantId');
-            table.string('phone');
-            table.string('name');
+            table.string('firstName');
+            table.string('lastName');
             table.string('email');
+            table.string('phone');
+            table.string('country');
+            table.string('state');
+            table.string('city');
+            table.string('postalCode');
+            table.string('street');
             table.string('dwollaUri');
             table.string('dwollaSourceUri');
             table.datetime('createdAt');
             table.datetime('updatedAt');
+
+            table.foreign('userId').references('users.id')
+            table.foreign('tenantId').references('tenants.id')
         });
 };
 exports.down = (knex) => {

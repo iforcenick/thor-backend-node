@@ -3,7 +3,6 @@ import {Inject} from 'typescript-ioc';
 import {Config} from './config';
 const validate = require('uuid-validate');
 const uuid = require('uuid');
-const guid = require('objection-guid')();
 const getNamespace = require('continuation-local-storage').getNamespace;
 
 export {OModel};

@@ -13,18 +13,31 @@ export const enum Relations {
 
 export class User extends db.Model {
     static tableName = db.Tables.users;
-    phone?: string;
-    name?: string;
-    email?: string;
     password?: string;
     profiles?: Array<profile.Profile>;
 
     get profile(): profile.Profile {
-        return this.profiles[0];
+        for (const profile of this.profiles) {
+            if (!profile.tenantId) {
+                return profile;
+            }
+        }
+
+        return undefined;
+    }
+
+    get tenantProfile(): profile.Profile {
+        for (const profile of this.profiles) {
+            if (profile.tenantId) {
+                return profile;
+            }
+        }
+
+        return undefined;
     }
 
     hasRole(role: role.models.Types) {
-        return this.profile.hasRole(role);
+        return this.tenantProfile.hasRole(role);
     }
 
     static relationMappings = {
@@ -33,16 +46,13 @@ export class User extends db.Model {
             modelClass: profile.Profile,
             join: {
                 from: `${db.Tables.users}.id`,
-                to: `${db.Tables.profiles}.userId`
-            }
+                to: `${db.Tables.profiles}.userId`,
+            },
         },
     };
 }
 
 export class UserBaseInfo extends Mapper {
-    phone: string = mapper.FIELD_STR;
-    name: string = mapper.FIELD_STR;
-    email: string = mapper.FIELD_STR;
 }
 
 export class UserResponse extends UserBaseInfo {
@@ -50,12 +60,15 @@ export class UserResponse extends UserBaseInfo {
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
     profile: profile.ProfileResponse = new profile.ProfileResponse();
+    tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
 }
 
 mapper.registerRelation(UserResponse, 'profile', new mapper.Relation(profile.ProfileResponse));
+mapper.registerRelation(UserResponse, 'tenantProfile', new mapper.Relation(profile.ProfileResponse));
 
 export class UserRequest extends UserBaseInfo {
     password: string = mapper.FIELD_STR;
+    profile: profile.ProfileRequest = new profile.ProfileRequest();
 }
 
 export interface PaginatedUserReponse extends PaginatedResponse {
@@ -63,8 +76,6 @@ export interface PaginatedUserReponse extends PaginatedResponse {
 }
 
 export const userRequestSchema = Joi.object().keys({
-    phone: Joi.string().required(),
     password: Joi.string().required(),
-    name: Joi.string().required(),
-    email: Joi.string().email().required(),
+    profile: profile.profileRequestSchema.required(),
 });

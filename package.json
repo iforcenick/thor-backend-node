@@ -9,7 +9,7 @@
     "test": "cross-env NODE_ENV=test mocha",
     "build": "tsc",
     "watch": "tsc -w",
-    "db:reset": "knex migrate:rollback && knex migrate:latest && knex seed:run",
+    "db": "knex migrate:latest && knex seed:run",
     "swagger": "swaggerGen -c ./swagger.config.json",
     "build:docker": "docker build -t gothor/api .",
     "start:docker": "docker-compose up",

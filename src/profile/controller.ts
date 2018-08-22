@@ -7,7 +7,7 @@ import {transaction} from 'objection';
 import {ProfileService} from './service';
 
 
-@Path('/profile')
+@Path('/profiles')
 export class ProfileController extends BaseController {
     @Inject private logger: Logger;
     private service: ProfileService;

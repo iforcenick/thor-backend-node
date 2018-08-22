@@ -17,6 +17,7 @@ const methodOverride = require('method-override');
 const bodyParser = require('body-parser');
 const passport = require('./auth/passport');
 const createNamespace = require('continuation-local-storage').createNamespace;
+const jwt = require('jsonwebtoken');
 
 export class ApiServer {
     @Inject private config: Config;
@@ -36,7 +37,9 @@ export class ApiServer {
         }
 
         this.app.use(
-            express.static(path.join(__dirname, 'public'), {maxAge: 31557600000})
+            express.static(path.join(__dirname, 'public'), {
+                maxAge: 31557600000,
+            })
         );
         this.app.use(cors());
         this.app.use(passport.initialize());
@@ -77,7 +80,7 @@ export class ApiServer {
 
         authContext.run(() => {
             if (req.user) {
-                authContext.set('tenant', req.user.profile.tenantId);
+                authContext.set('tenant', req.user.tenantProfile.tenantId);
                 authContext.set('user', req.user);
             }
 
@@ -99,7 +102,7 @@ export class ApiServer {
                 this.logger.info(
                     `Listening to http://${this.server.address().address}:${
                         this.server.address().port
-                        }`
+                    }`
                 );
                 return resolve();
             });
@@ -134,7 +137,7 @@ export class ApiServer {
     }
 
     private addAuthorization() {
-        this.app.use('/user', passport.authenticate('jwt', {session: false}));
+        this.app.use('/users', passport.authenticate('jwt', {session: false}));
     }
 
     private addControllers() {

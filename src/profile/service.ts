@@ -1,23 +1,29 @@
-import {AutoWired} from 'typescript-ioc';
+import {AutoWired, Inject} from 'typescript-ioc';
 import * as models from './models';
 import * as db from '../db';
-import {transaction} from "objection";
+import {transaction} from 'objection';
+import * as role from '../user/role';
+import {RoleService} from '../user/role/service';
 
 @AutoWired
 export class ProfileService extends db.ModelService<models.Profile> {
     protected modelType = models.Profile;
+    protected roleService: RoleService;
 
-    constructor() {
-        // TODO: add model specific profile filter
+    constructor(@Inject roleService: RoleService) {
         super();
+        // TODO: add model specific profile filter
+        this.roleService = roleService;
     }
 
-    async createProfile(data: any, roles: Array<any>, trx?: transaction<any>) {
-        let profile = new models.Profile();
-        profile.email = data.email;
-        profile.name = data.name;
-        profile.phone = data.phone;
-        profile.tenantId = this.getTenantId();
+    async createProfile(profile: models.Profile,
+                        roles: Array<any>,
+                        trx?: transaction<any>,
+                        baseProfile?: boolean) {
+        if (!baseProfile) {
+            profile.tenantId = this.getTenantId();
+        }
+
         profile = await this.insert(profile, trx);
 
         for (const role of roles) {

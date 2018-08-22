@@ -6,7 +6,6 @@ import {UserService} from '../user/service';
 import {Config} from '../config';
 import * as models from './models';
 
-
 @Path('/auth')
 export class AuthController extends BaseController {
     @Inject private logger: Logger;
@@ -25,7 +24,11 @@ export class AuthController extends BaseController {
         let user;
 
         try {
-            user = await this.service.authenticate(data.login, data.password, data.tenant);
+            user = await this.service.authenticate(
+                data.login,
+                data.password,
+                data.tenant
+            );
         } catch (err) {
             this.logger.error(err);
             throw new Errors.InternalServerError(err);
@@ -33,10 +36,10 @@ export class AuthController extends BaseController {
 
         if (!user) {
             this.logger.debug('User ' + data.login + ' not found');
-            throw new Errors.UnauthorizedError;
+            throw new Errors.UnauthorizedError();
         }
-
         const mapped = this.map(models.AuthUserResponse, user);
+        // const mapped = {};
         mapped.token = await this.service.generateJwt(user);
         return mapped;
     }
@@ -47,5 +50,3 @@ export interface LoginRequest {
     password: string;
     tenant: string;
 }
-
-
