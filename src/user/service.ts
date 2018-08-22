@@ -6,6 +6,7 @@ import * as profile from '../profile/models';
 import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
 import * as _ from 'lodash';
+import * as Errors from '../../node_modules/typescript-rest/dist/server-errors';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -16,27 +17,21 @@ export class UserService extends db.ModelService<models.User> {
     protected rolesService: role.service.RoleService;
     protected profileService: ProfileService;
 
-    constructor(
-        @Inject rolesService: role.service.RoleService,
-        @Inject profileService: ProfileService
-    ) {
+    constructor(@Inject rolesService: role.service.RoleService, @Inject profileService: ProfileService) {
         super();
         this.rolesService = rolesService;
         this.profileService = profileService;
     }
 
     getOptions(query) {
-        query.eager(
-            `${models.Relations.profile}(tenant).[${profile.Relations.roles}]`,
-            {
-                tenant: builder => {
-                    const tenantId = this.getTenantId();
-                    builder.orWhere(function() {
-                        this.where('tenantId', tenantId).orWhere('tenantId', null);
-                    });
-                }
-            }
-        );
+        query.eager(`${models.Relations.profile}(tenant).[${profile.Relations.roles}]`, {
+            tenant: builder => {
+                const tenantId = this.getTenantId();
+                builder.orWhere(function () {
+                    this.where('tenantId', tenantId).orWhere('tenantId', null);
+                });
+            },
+        });
         // query.debug();
 
         return query;
@@ -54,22 +49,16 @@ export class UserService extends db.ModelService<models.User> {
             const profileEntity = await this.profileService.createProfile(profile, [customerRole], trx);
             const baseProfileEntity = await this.profileService.createProfile(baseProfile, [customerRole], trx, true);
 
-            await user
-                .$relatedQuery(models.Relations.profile, trx)
-                .relate(profileEntity.id);
+            await user.$relatedQuery(models.Relations.profile, trx).relate(profileEntity.id);
 
-            await user
-                .$relatedQuery(models.Relations.profile, trx)
-                .relate(baseProfileEntity.id);
+            await user.$relatedQuery(models.Relations.profile, trx).relate(baseProfileEntity.id);
         });
 
         return user;
     }
 
     async findByPhone(phone: string): Promise<models.User> {
-        return await this.tenantContext(
-            this.getOptions(this.modelType.query().findOne({phone: phone}))
-        );
+        return await this.tenantContext(this.getOptions(this.modelType.query().findOne({phone: phone})));
     }
 
     async findByEmail(email: string): Promise<models.User> {
@@ -105,16 +94,18 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async generateJwt(user: models.User) {
-        return jwt.sign(
-            user.toJSON(),
-            this.config.get('authorization.jwtSecret'),
-            {
-                expiresIn: this.config.get('authorization.tokenExpirationTime'),
-            }
-        );
+        return jwt.sign(user.toJSON(), this.config.get('authorization.jwtSecret'), {
+            expiresIn: this.config.get('authorization.tokenExpirationTime'),
+        });
     }
 
     async hashPassword(password) {
         return await bcrypt.hash(password, 10);
+    }
+
+    async patch(id, data) {
+        const user: models.User = await this.get(id);
+        const profile = user.tenantProfile;
+        return profile.$query().update(data);
     }
 }

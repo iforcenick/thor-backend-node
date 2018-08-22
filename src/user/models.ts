@@ -74,8 +74,11 @@ export class UserRequest extends UserBaseInfo {
 export interface PaginatedUserReponse extends PaginatedResponse {
     items: Array<UserResponse>;
 }
-
 export const userRequestSchema = Joi.object().keys({
     password: Joi.string().required(),
     profile: profile.profileRequestSchema.required(),
+});
+
+export const userPatchSchema = Joi.object().keys({
+    profile: profile.profilePatchSchema.required(),
 });

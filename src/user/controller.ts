@@ -1,11 +1,4 @@
-import {
-    Errors,
-    GET,
-    Path,
-    PathParam,
-    POST,
-    Preprocessor,
-} from 'typescript-rest';
+import {Errors, GET, Path, PATCH, PathParam, POST, Preprocessor} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
@@ -21,8 +14,7 @@ export class UserController extends BaseController {
     private service: UserService;
     private profileService: ProfileService;
 
-    constructor(@Inject service: UserService,
-                @Inject profileService: ProfileService) {
+    constructor(@Inject service: UserService, @Inject profileService: ProfileService) {
         super();
         this.service = service;
         this.profileService = profileService;
@@ -52,10 +44,7 @@ export class UserController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async createUser(data: models.UserRequest): Promise<models.UserResponse> {
-        const parsedData = await this.validate(
-            data,
-            models.userRequestSchema
-        );
+        const parsedData = await this.validate(data, models.userRequestSchema);
 
         let user = models.User.fromJson({});
         user.password = parsedData['password'];
@@ -71,5 +60,18 @@ export class UserController extends BaseController {
         }
 
         return this.map(models.UserResponse, user);
+    }
+
+    @PATCH
+    @Path(':id/profile')
+    async patchUser(@PathParam('id') id: string, data) {
+        const parsedData = await this.validate(data, models.userPatchSchema);
+        try {
+            await this.service.patch(id, parsedData['profile']);
+            return;
+        } catch (e) {
+            this.logger.error(e);
+            throw new Errors.InternalServerError(e);
+        }
     }
 }
