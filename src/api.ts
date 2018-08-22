@@ -4,6 +4,7 @@ import {ValidationError} from './errors';
 import * as mapper from './mapper';
 import * as user from './user/models';
 import * as role from './user/role';
+import * as db from './db';
 
 export {mapper};
 
@@ -52,7 +53,7 @@ export class BaseController {
         return new mapper().map(data);
     }
 
-    paginate(pagination, data) {
+    paginate(pagination: db.Pagination, data) {
         return {
             'items': data,
             'pagination': {

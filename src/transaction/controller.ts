@@ -1,4 +1,4 @@
-import {Errors, GET, Path, PathParam, POST, Preprocessor} from 'typescript-rest';
+import {Errors, GET, Param, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
@@ -33,18 +33,29 @@ export class TransactionController extends BaseController {
         return this.map(models.TransactionResponse, transaction);
     }
 
+    /**
+     * Transactions can be filtered by createdAt date, both dateFrom and dateTill needs to be provided
+     * @param page page to be queried, starting from 0
+     * @param limit transactions per page
+     * @param dateFrom starting Date() of transactions e.g. 2018-08-22T14:44:27.727Z
+     * @param dateTill end Date() of transactions, e.g. 2018-08-22T14:44:27.727Z
+     */
     @GET
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async getTransactions(): Promise<models.PaginatedTransactionReponse> {
-        const transactions = await this.service.list();
+    async getTransactions(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number,
+                          @QueryParam('dateFrom') dateFrom?: Date, @QueryParam('dateTill') dateTill?: Date): Promise<models.PaginatedTransactionReponse> {
+        let filter;
 
-        return this.paginate({
-            'total': 0,
-            'limit': 0,
-            'page': 0,
-            'pages': 0,
-        }, transactions.map((transaction) => {
+        if (dateFrom && dateTill) {
+            filter = (builder) => {
+                builder.whereBetween('createdAt', [dateFrom, dateTill]);
+            };
+        }
+
+        const transactions = await this.service.list(page, limit, filter);
+
+        return this.paginate(transactions.pagination, transactions.rows.map((transaction) => {
             return this.map(models.TransactionResponse, transaction);
         }));
     }

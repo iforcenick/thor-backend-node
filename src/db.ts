@@ -34,6 +34,30 @@ export const enum Tables {
     jobs = 'jobs',
 }
 
+export class Pagination {
+    total: number;
+    limit: number;
+    page: number;
+    pages: number;
+
+    constructor(page, limit, total: number) {
+        this.page = page;
+        this.limit = limit;
+        this.total = total;
+        this.pages = Math.ceil(total / limit);
+    }
+}
+
+export class Paginated<T> {
+    pagination: Pagination;
+    rows: Array<T>;
+
+    constructor(pagination: Pagination, rows: Array<T>) {
+        this.pagination = pagination;
+        this.rows = rows;
+    }
+}
+
 // WARNING: @Inject only through constructor not field annotation to persist namespace context
 export class ModelService<T> {
     @Inject protected config: Config;
@@ -52,6 +76,14 @@ export class ModelService<T> {
         return query;
     }
 
+    paginationLimit(limit?: number) {
+        if (!limit) {
+            return this.config.get('pagination.limit');
+        }
+
+        return limit;
+    }
+
     async get(id: string): Promise<T> {
         if (!validate(id)) {
             return undefined;
@@ -66,13 +98,27 @@ export class ModelService<T> {
         return await this.tenantContext(query);
     }
 
-    async list(): Promise<Array<T>> {
+    async list(page, limit?: number, filter?: any): Promise<Paginated<T>> {
+        if (!page) {
+            page = 0;
+        }
+
+        limit = this.paginationLimit(limit);
         const query = this.modelType
             .query();
 
-        this.getListOptions(query);
+        if (filter) {
+            query.where(filter);
+        }
 
-        return await this.tenantContext(query);
+        this.getListOptions(query);
+        query.page(page, limit);
+
+        const result = await this.tenantContext(query);
+        return new Paginated(
+            new Pagination(page, limit, result.total),
+            result.results
+        );
     }
 
     transaction(trx?: transaction<any>) {
