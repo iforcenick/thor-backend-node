@@ -13,14 +13,17 @@ exports.up = (knex) => {
             table.string('state');
             table.string('city');
             table.string('postalCode');
-            table.string('street');
+            table.string('address1');
+            table.string('address2');
+            table.string('dateOfBirth');
             table.string('dwollaUri');
             table.string('dwollaSourceUri');
+            table.string('dwollaStatus');
             table.datetime('createdAt');
             table.datetime('updatedAt');
 
-            table.foreign('userId').references('users.id')
-            table.foreign('tenantId').references('tenants.id')
+            table.foreign('userId').references('users.id');
+            table.foreign('tenantId').references('tenants.id');
         });
 };
 exports.down = (knex) => {

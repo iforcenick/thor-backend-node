@@ -21,14 +21,20 @@ export class Profile extends db.Model {
     email?: string;
     dwollaUri?: string;
     dwollaSourceUri?: string;
+    dwollaStatus?: string;
     tenantId?: string;
     country?: string;
     state?: string;
     city?: string;
     postalCode?: string;
     street?: string;
+    dateOfBirth?: string;
     userId?: string;
     roles?: Array<role.models.Role>;
+
+    get externalStatus() {
+        return this.dwollaStatus;
+    }
 
     static get relationMappings() {
         return {
@@ -83,13 +89,16 @@ export class ProfileBaseInfo extends Mapper {
     state: string = mapper.FIELD_STR;
     city: string = mapper.FIELD_STR;
     postalCode: string = mapper.FIELD_STR;
-    street: string = mapper.FIELD_STR;
+    address1: string = mapper.FIELD_STR;
+    address2: string = mapper.FIELD_STR;
+    dateOfBirth: string = mapper.FIELD_STR;
 }
 
 export class ProfileResponse extends ProfileBaseInfo {
     id: string = mapper.FIELD_STR;
     userId: string = mapper.FIELD_STR;
     tenantId: string = mapper.FIELD_STR;
+    externalStatus: string = mapper.FIELD_STR;
     roles: Array<role.models.RoleResponse> = mapper.FIELD_ARR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
@@ -98,6 +107,7 @@ export class ProfileResponse extends ProfileBaseInfo {
 mapper.registerRelation(ProfileResponse, Relations.roles, new mapper.ArrayRelation(role.models.RoleResponse));
 
 export class ProfileRequest extends ProfileBaseInfo {
+    ssn: string = mapper.FIELD_STR;
 }
 
 export interface PaginatedProfileReponse extends PaginatedResponse {
@@ -109,20 +119,14 @@ export const profileRequestSchema = Joi.object().keys({
     lastName: Joi.string().required(),
     phone: Joi.string().required(),
     email: Joi.string().required(),
-    country: Joi.string(),
-    state: Joi.string(),
-    city: Joi.string(),
-    postalCode: Joi.string(),
-    street: Joi.string(),
+    dateOfBirth: Joi.string().required(),
+    ssn: Joi.string().required(),
+    country: Joi.string().required(),
+    state: Joi.string().required(),
+    city: Joi.string().required(),
+    postalCode: Joi.string().required(),
+    address1: Joi.string().required(),
+    address2: Joi.string(),
 });
-export const profilePatchSchema = Joi.object().keys({
-    firstName: Joi.string(),
-    lastName: Joi.string(),
-    phone: Joi.string(),
-    email: Joi.string(),
-    country: Joi.string(),
-    state: Joi.string(),
-    city: Joi.string(),
-    postalCode: Joi.string(),
-    street: Joi.string(),
-});
+
+export const profilePatchSchema = profileRequestSchema;

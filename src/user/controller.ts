@@ -8,11 +8,13 @@ import {Profile} from '../profile/models';
 import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
 import {Security} from 'typescript-rest-swagger';
+import * as dwolla from '../dwolla';
 
 @Security('api_key')
 @Path('/users')
 export class UserController extends BaseController {
     @Inject private logger: Logger;
+    @Inject private dwollaClient: dwolla.Client;
     private service: UserService;
     private profileService: ProfileService;
 
@@ -53,6 +55,13 @@ export class UserController extends BaseController {
         const profile = Profile.fromJson(parsedData['profile']);
 
         try {
+            await this.dwollaClient.authorize();
+            const customer = new dwolla.customer.Customer(dwolla.customer.factoryFromProfile(profile));
+            delete profile['ssn'];
+            profile.dwollaUri = await this.dwollaClient.createCustomer(customer);
+            const dwollaCustomer = await this.dwollaClient.getCustomer(profile.dwollaUri);
+            profile.dwollaStatus = dwollaCustomer.status;
+
             user.password = await this.service.hashPassword(user.password);
             user = await this.service.createWithProfile(user, profile);
             user = await this.service.get(user.id);

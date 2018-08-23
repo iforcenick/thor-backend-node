@@ -45,11 +45,13 @@ export class UserService extends db.ModelService<models.User> {
         await transaction(this.transaction(), async trx => {
             user = await this.insert(user, trx);
             const baseProfile = _.clone(profile);
+            baseProfile.dwollaUri = undefined;
+            baseProfile.dwollaStatus = undefined;
+            baseProfile.dwollaSourceUri = undefined;
             const profileEntity = await this.profileService.createProfile(profile, [customerRole], trx);
             const baseProfileEntity = await this.profileService.createProfile(baseProfile, [customerRole], trx, true);
 
             await user.$relatedQuery(models.Relations.profile, trx).relate(profileEntity.id);
-
             await user.$relatedQuery(models.Relations.profile, trx).relate(baseProfileEntity.id);
         });
 
