@@ -13,6 +13,5 @@ export class Role extends db.Model {
 }
 
 export class RoleResponse extends Mapper {
-    id: number = mapper.FIELD_NUM;
     name: string = mapper.FIELD_STR;
 }

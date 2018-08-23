@@ -2,6 +2,7 @@ import {UserResponse} from '../user/models';
 import Joi = require('joi');
 
 export class AuthUserResponse extends UserResponse {
+    token: string;
 }
 
 export const loginRequestSchema = Joi.object().keys({

@@ -77,6 +77,21 @@ export class UserService extends db.ModelService<models.User> {
         return await bcrypt.compare(password, userPassword);
     }
 
+    async changePassword(user: models.User, newPassword, oldPassword: string) {
+        const isOldPasswordValid = await this.checkPassword(oldPassword, user.password);
+        if (!isOldPasswordValid) {
+            throw Error('Invalid old password');
+        }
+
+        const isNewOldPasswordSame = await this.checkPassword(newPassword, user.password);
+        if (isNewOldPasswordSame) {
+            throw Error('New password is the same as the old one');
+        }
+
+        const newPasswordHash = await this.hashPassword(newPassword);
+        return user.$query().patch({password: newPasswordHash});
+    }
+
     async authenticate(login: string, password: string, tenant: string) {
         this.tenant = tenant;
         const user = await this.findByEmail(login);

@@ -1,4 +1,4 @@
-import {Context, ContextRequest, Errors, Path, POST, ServiceContext} from 'typescript-rest';
+import {Context, ContextRequest, Errors, PATCH, Path, POST, ServiceContext} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
 import {Logger} from '../logger';
@@ -6,6 +6,7 @@ import {UserService} from '../user/service';
 import {Config} from '../config';
 import * as models from './models';
 import {User} from '../user/models';
+import {Security} from "typescript-rest-swagger";
 
 @Path('/auth')
 export class AuthController extends BaseController {
@@ -18,23 +19,29 @@ export class AuthController extends BaseController {
         this.service = service;
     }
 
-    @POST
+    @Security('api_key')
+    @PATCH
     @Path('/password')
     async changePassword(@ContextRequest context: ServiceContext, data: PasswordRequest) {
         const parsedData = await this.validate(data, models.passwordRequestSchema);
-        const {oldPassword, newPassword, confirmPassword} = parsedData;
-        const user: User = context['user'];
+        const oldPassword = parsedData['oldPassword'];
+        const newPassword = parsedData['newPassword'];
+        const confirmPassword = parsedData['confirmPassword'];
+        const user = await this.service.get(context['user'].id);
+
         if (newPassword !== confirmPassword) {
-            throw new Errors.BadRequestError('Passwords does not match');
+            throw new Errors.ConflictError('Passwords do not match');
         }
+
         try {
-            await user.changePassword(newPassword, oldPassword);
+            await this.service.changePassword(user, newPassword, oldPassword);
         } catch (e) {
             this.logger.debug(e.message);
-            throw new Errors.UnauthorizedError();
+            throw new Errors.ConflictError(e.message);
         }
         return;
     }
+
     @POST
     @Path('/login')
     async login(data: LoginRequest): Promise<models.AuthUserResponse> {
@@ -53,7 +60,6 @@ export class AuthController extends BaseController {
             throw new Errors.UnauthorizedError();
         }
         const mapped = this.map(models.AuthUserResponse, user);
-        // const mapped = {};
         mapped.token = await this.service.generateJwt(user);
         return mapped;
     }

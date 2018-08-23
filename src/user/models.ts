@@ -7,8 +7,6 @@ import * as role from './role';
 import Joi = require('joi');
 import _ from 'lodash';
 
-const bcrypt = require('bcrypt');
-
 export const enum Relations {
     roles = 'roles',
     profile = 'profiles',
@@ -51,29 +49,6 @@ export class User extends db.Model {
 
     $formatJson(json: Pojo): Pojo {
         return _.omit(json, 'password');
-    }
-
-    async changePassword(newPassword, oldPassword) {
-        const user = await this.$query();
-        this.password = user.password;
-        const isOldPasswordValid = await user.checkPassword(oldPassword);
-        if (!isOldPasswordValid) {
-            throw Error('old password does not match');
-        }
-        const isNewOldPasswordSame = await this.checkPassword(newPassword);
-        if (isNewOldPasswordSame) {
-            throw Error('passwords are the same');
-        }
-        const newPasswordHash = await this.hashPassword(newPassword);
-        return this.$query().patch({password: newPasswordHash});
-    }
-
-    async checkPassword(password: string) {
-        return await bcrypt.compare(password, this.password);
-    }
-
-    async hashPassword(password) {
-        return await bcrypt.hash(password, 10);
     }
 
     hasRole(role: role.models.Types) {

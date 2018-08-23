@@ -90,12 +90,12 @@ export class ProfileResponse extends ProfileBaseInfo {
     id: string = mapper.FIELD_STR;
     userId: string = mapper.FIELD_STR;
     tenantId: string = mapper.FIELD_STR;
-    [Relations.roles]: Array<role.models.RoleResponse> = mapper.FIELD_ARR;
+    roles: Array<role.models.RoleResponse> = mapper.FIELD_ARR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
 }
 
-mapper.registerRelation(ProfileResponse, [Relations.roles], new mapper.ArrayRelation(role.models.RoleResponse));
+mapper.registerRelation(ProfileResponse, Relations.roles, new mapper.ArrayRelation(role.models.RoleResponse));
 
 export class ProfileRequest extends ProfileBaseInfo {
 }

@@ -40,7 +40,7 @@ export class JobController extends BaseController {
     @GET
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async getJobs(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<models.PaginatedJobReponse> {
+    async getJobs(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<models.PaginatedJobResponse> {
         const jobs = await this.service.list(page, limit);
 
 
