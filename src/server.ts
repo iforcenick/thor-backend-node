@@ -37,9 +37,7 @@ export class ApiServer {
             this.app.use(morgan('dev'));
         }
 
-        this.app.use(
-            express.static(path.join(__dirname, 'public'), {maxAge: 31557600000})
-        );
+        this.app.use(express.static(path.join(__dirname, 'public'), {maxAge: 31557600000}));
         this.app.use(cors());
         this.app.use(passport.initialize());
         this.app.use(bodyParser.json({limit: '25mb'}));
@@ -53,13 +51,7 @@ export class ApiServer {
         this.app.use(this.logger.expressWinston);
 
         this.addControllers();
-        Server.swagger(
-            this.app,
-            './dist/swagger.json',
-            '/api-docs',
-            'localhost:' + this.port,
-            ['http']
-        );
+        Server.swagger(this.app, './dist/swagger.json', '/api-docs', 'localhost:' + this.port, ['http']);
 
         this.app.use(this.errorHandler.bind(this));
     }
@@ -98,11 +90,7 @@ export class ApiServer {
                     return reject(err);
                 }
 
-                this.logger.info(
-                    `Listening to http://${this.server.address().address}:${
-                        this.server.address().port
-                    }`
-                );
+                this.logger.info(`Listening to http://${this.server.address().address}:${this.server.address().port}`);
                 return resolve();
             });
         });
@@ -139,6 +127,7 @@ export class ApiServer {
         this.app.use('/users', passport.authenticate('jwt', {session: false}));
         this.app.use('/jobs', passport.authenticate('jwt', {session: false}));
         this.app.use('/transactions', passport.authenticate('jwt', {session: false}));
+        this.app.use('/auth/password', passport.authenticate('jwt', {session: false}));
     }
 
     private addControllers() {
@@ -149,7 +138,7 @@ export class ApiServer {
             TenantController,
             ProfileController,
             JobController,
-            TransactionController,
+            TransactionController
         );
     }
 

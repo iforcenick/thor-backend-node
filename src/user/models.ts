@@ -1,10 +1,13 @@
 import {PaginatedResponse, mapper} from '../api';
 import {Mapper} from '../mapper';
 import * as db from '../db';
-import {Relation} from 'objection'; // for ManyToManyRelation compilation
+import {Relation, Pojo} from 'objection'; // for ManyToManyRelation compilation
 import * as profile from '../profile/models';
 import * as role from './role';
 import Joi = require('joi');
+import _ from 'lodash';
+
+const bcrypt = require('bcrypt');
 
 export const enum Relations {
     roles = 'roles',
@@ -13,6 +16,16 @@ export const enum Relations {
 
 export class User extends db.Model {
     static tableName = db.Tables.users;
+    static relationMappings = {
+        [Relations.profile]: {
+            relation: db.Model.HasManyRelation,
+            modelClass: profile.Profile,
+            join: {
+                from: `${db.Tables.users}.id`,
+                to: `${db.Tables.profiles}.userId`,
+            },
+        },
+    };
     password?: string;
     profiles?: Array<profile.Profile>;
 
@@ -36,20 +49,36 @@ export class User extends db.Model {
         return undefined;
     }
 
+    $formatJson(json: Pojo): Pojo {
+        return _.omit(json, 'password');
+    }
+
+    async changePassword(newPassword, oldPassword) {
+        const user = await this.$query();
+        this.password = user.password;
+        const isOldPasswordValid = await user.checkPassword(oldPassword);
+        if (!isOldPasswordValid) {
+            throw Error('old password does not match');
+        }
+        const isNewOldPasswordSame = await this.checkPassword(newPassword);
+        if (isNewOldPasswordSame) {
+            throw Error('passwords are the same');
+        }
+        const newPasswordHash = await this.hashPassword(newPassword);
+        return this.$query().patch({password: newPasswordHash});
+    }
+
+    async checkPassword(password: string) {
+        return await bcrypt.compare(password, this.password);
+    }
+
+    async hashPassword(password) {
+        return await bcrypt.hash(password, 10);
+    }
+
     hasRole(role: role.models.Types) {
         return this.tenantProfile.hasRole(role);
     }
-
-    static relationMappings = {
-        [Relations.profile]: {
-            relation: db.Model.HasManyRelation,
-            modelClass: profile.Profile,
-            join: {
-                from: `${db.Tables.users}.id`,
-                to: `${db.Tables.profiles}.userId`,
-            },
-        },
-    };
 }
 
 export class UserBaseInfo extends Mapper {
@@ -74,6 +103,7 @@ export class UserRequest extends UserBaseInfo {
 export interface PaginatedUserReponse extends PaginatedResponse {
     items: Array<UserResponse>;
 }
+
 export const userRequestSchema = Joi.object().keys({
     password: Joi.string().required(),
     profile: profile.profileRequestSchema.required(),

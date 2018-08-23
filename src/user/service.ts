@@ -6,7 +6,6 @@ import * as profile from '../profile/models';
 import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
 import * as _ from 'lodash';
-import * as Errors from '../../node_modules/typescript-rest/dist/server-errors';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');

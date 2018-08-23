@@ -9,3 +9,8 @@ export const loginRequestSchema = Joi.object().keys({
     password: Joi.string().required(),
     tenant: Joi.string().required(),
 });
+export const passwordRequestSchema = Joi.object().keys({
+    oldPassword: Joi.string().required(),
+    newPassword: Joi.string().required(),
+    confirmPassword: Joi.string().required(),
+});
