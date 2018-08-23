@@ -1,4 +1,4 @@
-import {Errors, GET, Path, PATCH, PathParam, POST, Preprocessor} from 'typescript-rest';
+import {Errors, GET, Path, PATCH, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
@@ -37,11 +37,24 @@ export class UserController extends BaseController {
         return this.map(models.UserResponse, user);
     }
 
+    /**
+     * @param page page to be queried, starting from 0
+     * @param limit transactions per page
+     */
     @GET
     @Path('')
-    async getUserList(): Promise<models.PaginatedUserReponse> {
-        const users = await this.service.getAll();
-        return users;
+    async getUserList(
+        @QueryParam('page') page?: number,
+        @QueryParam('limit') limit?: number
+    ): Promise<models.PaginatedUserReponse> {
+        const users = await this.service.list(page, limit);
+
+        return this.paginate(
+            users.pagination,
+            users.rows.map(job => {
+                return this.map(models.UserResponse, job);
+            })
+        );
     }
 
     @POST

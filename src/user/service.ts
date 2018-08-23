@@ -36,6 +36,10 @@ export class UserService extends db.ModelService<models.User> {
         return query;
     }
 
+    getListOptions(query) {
+        return this.getOptions(query);
+    }
+
     async getAll() {
         return await this.tenantContext(this.getOptions(this.modelType.query()));
     }
