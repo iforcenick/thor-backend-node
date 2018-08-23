@@ -45,7 +45,7 @@ export class JobResponse extends JobBaseInfo {
 
 export class JobRequest extends JobBaseInfo {}
 
-export interface PaginatedJobReponse extends PaginatedResponse {
+export interface PaginatedJobResponse extends PaginatedResponse {
     items: Array<JobResponse>;
 }
 

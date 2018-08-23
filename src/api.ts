@@ -55,13 +55,13 @@ export class BaseController {
 
     paginate(pagination: db.Pagination, data) {
         return {
-            'items': data,
-            'pagination': {
-                'total': pagination.total,
-                'limit': pagination.limit,
-                'page': pagination.page,
-                'pages': pagination.pages,
-            }
+            items: data,
+            pagination: {
+                total: pagination.total,
+                limit: pagination.limit,
+                page: pagination.page,
+                pages: pagination.pages,
+            },
         };
     }
 }

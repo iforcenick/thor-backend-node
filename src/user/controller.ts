@@ -37,7 +37,7 @@ export class UserController extends BaseController {
 
     @GET
     @Path('')
-    async getUserList() {
+    async getUserList(): Promise<models.PaginatedUserReponse> {
         const users = await this.service.getAll();
         return users;
     }
@@ -66,7 +66,7 @@ export class UserController extends BaseController {
 
     @PATCH
     @Path(':id/profile')
-    async patchUser(@PathParam('id') id: string, data) {
+    async patchUser(@PathParam('id') id: string, data: models.UserRequest) {
         const parsedData = await this.validate(data, models.userPatchSchema);
         try {
             await this.service.patch(id, parsedData['profile']);

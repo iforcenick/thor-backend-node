@@ -89,23 +89,20 @@ export class ModelService<T> {
             return undefined;
         }
 
-        const query = this.modelType
-            .query()
-            .findById(id);
+        const query = this.modelType.query().findById(id);
 
         this.getOptions(query);
 
         return await this.tenantContext(query);
     }
 
-    async list(page, limit?: number, filter?: any): Promise<Paginated<T>> {
+    async list(page?: number, limit?: number, filter?: any): Promise<Paginated<T>> {
         if (!page) {
             page = 0;
         }
 
         limit = this.paginationLimit(limit);
-        const query = this.modelType
-            .query();
+        const query = this.modelType.query();
 
         if (filter) {
             query.where(filter);
@@ -115,10 +112,7 @@ export class ModelService<T> {
         query.page(page, limit);
 
         const result = await this.tenantContext(query);
-        return new Paginated(
-            new Pagination(page, limit, result.total),
-            result.results
-        );
+        return new Paginated(new Pagination(page, limit, result.total), result.results);
     }
 
     transaction(trx?: transaction<any>) {
@@ -137,7 +131,8 @@ export class ModelService<T> {
     async insert(entity: OModel, trx?: transaction<any>, eager?: boolean): Promise<T> {
         const response = await this.modelType
             .query(this.transaction(trx))
-            .insert(entity.toJSON()).returning('*');
+            .insert(entity.toJSON())
+            .returning('*');
 
         if (!(response instanceof Array)) {
             return response;
