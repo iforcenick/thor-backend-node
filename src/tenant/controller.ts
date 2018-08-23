@@ -5,7 +5,7 @@ import {Inject} from 'typescript-ioc';
 import * as models from './models';
 import {transaction} from 'objection';
 import {TenantService} from './service';
-import {Security} from 'typescript-rest-swagger';
+import {Security, Tags} from 'typescript-rest-swagger';
 
 @Security('api_key')
 @Path('/tenants')
@@ -20,6 +20,7 @@ export class TenantController extends BaseController {
 
     @GET
     @Path(':id')
+    @Tags('tenants')
     async getTenant(@PathParam('id') id: string): Promise<models.TenantResponse> {
         const tenant = await this.service.get(id);
         if (!tenant) {
@@ -31,6 +32,7 @@ export class TenantController extends BaseController {
 
     @POST
     @Path('')
+    @Tags('tenants')
     async createTenant(data: models.TenantRequest): Promise<models.TenantResponse> {
         const parsedData = await this.validate(data, models.tenantRequestSchema);
         let tenant = models.Tenant.fromJson(parsedData);

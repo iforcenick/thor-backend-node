@@ -7,7 +7,7 @@ import * as models from './models';
 import {Profile} from '../profile/models';
 import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
-import {Security} from 'typescript-rest-swagger';
+import {Security, Tags} from 'typescript-rest-swagger';
 import * as dwolla from '../dwolla';
 
 @Security('api_key')
@@ -27,6 +27,7 @@ export class UserController extends BaseController {
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
+    @Tags('users')
     async getUser(@PathParam('id') id: string): Promise<models.UserResponse> {
         const user = await this.service.get(id);
 
@@ -43,6 +44,7 @@ export class UserController extends BaseController {
      */
     @GET
     @Path('')
+    @Tags('users')
     async getUserList(
         @QueryParam('page') page?: number,
         @QueryParam('limit') limit?: number
@@ -60,6 +62,7 @@ export class UserController extends BaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
+    @Tags('users')
     async createUser(data: models.UserRequest): Promise<models.UserResponse> {
         const parsedData = await this.validate(data, models.userRequestSchema);
 
@@ -88,6 +91,7 @@ export class UserController extends BaseController {
 
     @PATCH
     @Path(':id/profile')
+    @Tags('users')
     async patchUser(@PathParam('id') id: string, data: models.UserRequest) {
         const parsedData = await this.validate(data, models.userPatchSchema);
         try {

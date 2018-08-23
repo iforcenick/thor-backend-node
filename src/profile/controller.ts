@@ -5,7 +5,7 @@ import {Inject} from 'typescript-ioc';
 import * as models from './models';
 import {transaction} from 'objection';
 import {ProfileService} from './service';
-import {Security} from 'typescript-rest-swagger';
+import {Security, Tags} from 'typescript-rest-swagger';
 
 @Security('api_key')
 @Path('/profiles')
@@ -20,6 +20,7 @@ export class ProfileController extends BaseController {
 
     @GET
     @Path(':id')
+    @Tags('profiles')
     async getProfile(@PathParam('id') id: string): Promise<models.ProfileResponse> {
         const profile = await this.service.get(id);
         if (!profile) {
@@ -31,6 +32,7 @@ export class ProfileController extends BaseController {
 
     @POST
     @Path('')
+    @Tags('profiles')
     async createProfile(data: models.ProfileRequest): Promise<models.ProfileResponse> {
         const parsedData = await this.validate(data, models.profileRequestSchema);
         let profile = models.Profile.fromJson(parsedData);

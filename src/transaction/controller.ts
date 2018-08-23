@@ -6,7 +6,7 @@ import * as models from './models';
 import {TransactionService} from './service';
 import {UserService} from '../user/service';
 import {JobService} from '../job/service';
-import {Security} from 'typescript-rest-swagger';
+import {Security, Tags} from 'typescript-rest-swagger';
 
 @Security('api_key')
 @Path('/transactions')
@@ -26,6 +26,7 @@ export class TransactionController extends BaseController {
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
+    @Tags('transactions')
     async getTransaction(@PathParam('id') id: string): Promise<models.TransactionResponse> {
         const transaction = await this.service.get(id);
         if (!transaction) {
@@ -45,6 +46,7 @@ export class TransactionController extends BaseController {
     @GET
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
+    @Tags('transactions')
     async getTransactions(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number,
                           @QueryParam('dateFrom') dateFrom?: Date, @QueryParam('dateTill') dateTill?: Date): Promise<models.PaginatedTransactionReponse> {
         let filter;
@@ -65,6 +67,7 @@ export class TransactionController extends BaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
+    @Tags('transactions')
     async createTransaction(data: models.TransactionRequest): Promise<models.TransactionResponse> {
         const parsedData = await this.validate(data, models.transactionRequestSchema);
         let transaction = models.Transaction.fromJson(parsedData);

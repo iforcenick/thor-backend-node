@@ -6,7 +6,7 @@ import {UserService} from '../user/service';
 import {Config} from '../config';
 import * as models from './models';
 import {User} from '../user/models';
-import {Security} from "typescript-rest-swagger";
+import {Security, Tags} from 'typescript-rest-swagger';
 
 @Path('/auth')
 export class AuthController extends BaseController {
@@ -22,6 +22,7 @@ export class AuthController extends BaseController {
     @Security('api_key')
     @PATCH
     @Path('/password')
+    @Tags('auth')
     async changePassword(@ContextRequest context: ServiceContext, data: PasswordRequest) {
         const parsedData = await this.validate(data, models.passwordRequestSchema);
         const oldPassword = parsedData['oldPassword'];
@@ -44,6 +45,7 @@ export class AuthController extends BaseController {
 
     @POST
     @Path('/login')
+    @Tags('auth')
     async login(data: LoginRequest): Promise<models.AuthUserResponse> {
         await this.validate(data, models.loginRequestSchema);
         let user;

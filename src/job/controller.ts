@@ -4,7 +4,7 @@ import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
 import {JobService} from './service';
-import {Security} from 'typescript-rest-swagger';
+import {Security, Tags} from 'typescript-rest-swagger';
 
 @Security('api_key')
 @Path('/jobs')
@@ -20,6 +20,7 @@ export class JobController extends BaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
+    @Tags('jobs')
     async create(data: models.JobRequest) {
         const parsedData = await this.validate(data, models.jobRequestSchema);
 
@@ -40,6 +41,7 @@ export class JobController extends BaseController {
     @GET
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
+    @Tags('jobs')
     async getJobs(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<models.PaginatedJobResponse> {
         const jobs = await this.service.list(page, limit);
 
