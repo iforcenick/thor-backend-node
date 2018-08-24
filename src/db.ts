@@ -1,6 +1,7 @@
 import {Model as OModel, transaction} from 'objection';
 import {Inject} from 'typescript-ioc';
 import {Config} from './config';
+import {Errors} from '../node_modules/typescript-rest';
 
 const validate = require('uuid-validate');
 const uuid = require('uuid');
@@ -86,7 +87,7 @@ export class ModelService<T> {
 
     async get(id: string): Promise<T> {
         if (!validate(id)) {
-            return undefined;
+            throw new Errors.BadRequestError();
         }
 
         const query = this.modelType.query().findById(id);
@@ -94,6 +95,14 @@ export class ModelService<T> {
         this.getOptions(query);
 
         return await this.tenantContext(query);
+    }
+
+    async getForAllTenants(id: string): Promise<T> {
+        if (!validate(id)) {
+            return undefined;
+        }
+        const query = this.modelType.query().findById(id);
+        return await this.getOptions(query);
     }
 
     async list(page?: number, limit?: number, filter?: any): Promise<Paginated<T>> {
@@ -142,9 +151,7 @@ export class ModelService<T> {
     }
 
     async update(entity: OModel, trx?: transaction<any>): Promise<any> {
-        return await entity
-            .$query(this.transaction(trx))
-            .patch(entity.toJSON());
+        return await entity.$query(this.transaction(trx)).patch(entity.toJSON());
     }
 
     getTenantId(): string {

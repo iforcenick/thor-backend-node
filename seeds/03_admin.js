@@ -9,6 +9,7 @@ exports.seed = (knex, Promise) => {
                     password: '$2b$10$TscOBpPG51MVLUtsmTkMnuOsdxMKGOHVUnj4kwmyI2ldF5uerGxx2', // 123
                     createdAt: new Date(),
                     updatedAt: new Date(),
+                    deletedAt: null,
                 }
             ]).then(() => {
                 return knex('profiles').insert([
@@ -22,6 +23,7 @@ exports.seed = (knex, Promise) => {
                         email: 'superadmin@test.com',
                         createdAt: new Date(),
                         updatedAt: new Date(),
+                        deletedAt: null,
                     }
                 ])
             }).then(() => {

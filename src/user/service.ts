@@ -23,7 +23,7 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     getOptions(query) {
-        query.eager(`${models.Relations.profile}(tenant).[${profile.Relations.roles}]`, {
+        query.whereNull('deletedAt').eager(`${models.Relations.profile}(tenant).[${profile.Relations.roles}]`, {
             tenant: builder => {
                 const tenantId = this.getTenantId();
                 builder.orWhere(function () {
@@ -31,7 +31,6 @@ export class UserService extends db.ModelService<models.User> {
                 });
             },
         });
-        // query.debug();
 
         return query;
     }
@@ -62,6 +61,16 @@ export class UserService extends db.ModelService<models.User> {
         return user;
     }
 
+    async delete(id: string) {
+        const user = await this.getForAllTenants(id);
+        user.deletedAt = new Date();
+        await transaction(this.transaction(), async trx => {
+            user.profiles.forEach(async p => {
+                await this.profileService.anonymize(p, trx);
+            });
+            await this.update(user, trx);
+        });
+    }
     async findByPhone(phone: string): Promise<models.User> {
         return await this.tenantContext(this.getOptions(this.modelType.query().findOne({phone: phone})));
     }

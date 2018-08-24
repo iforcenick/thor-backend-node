@@ -29,10 +29,12 @@ export class Profile extends db.Model {
     state?: string;
     city?: string;
     postalCode?: string;
-    street?: string;
+    address1?: string;
+    address2?: string;
     dateOfBirth?: string;
     userId?: string;
     roles?: Array<role.models.Role>;
+    deletedAt?: Date;
 
     get externalStatus() {
         return this.dwollaStatus;

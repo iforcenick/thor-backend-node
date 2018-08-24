@@ -6,6 +6,7 @@ exports.seed = function (knex, Promise) {
                 password: '$2b$10$TscOBpPG51MVLUtsmTkMnuOsdxMKGOHVUnj4kwmyI2ldF5uerGxx2', // 123
                 createdAt: new Date(),
                 updatedAt: new Date(),
+                deletedAt: null,
             },
         ])
         .then(() => {
@@ -19,6 +20,7 @@ exports.seed = function (knex, Promise) {
                     email: 'contr@ct.or',
                     createdAt: new Date(),
                     updatedAt: new Date(),
+                    deletedAt: null,
                 },
             ]);
         })
@@ -34,6 +36,7 @@ exports.seed = function (knex, Promise) {
                     email: 'contr@ct.or',
                     createdAt: new Date(),
                     updatedAt: new Date(),
+                    deletedAt: null,
                 },
             ]);
         })

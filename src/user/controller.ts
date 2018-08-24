@@ -9,6 +9,8 @@ import {
     QueryParam,
     ContextRequest,
     ServiceContext,
+    DELETE,
+    HttpError,
 } from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
@@ -65,8 +67,8 @@ export class UserController extends BaseController {
 
         return this.paginate(
             users.pagination,
-            users.rows.map(job => {
-                return this.map(models.UserResponse, job);
+            users.rows.map(user => {
+                return this.map(models.UserResponse, user);
             })
         );
     }
@@ -148,9 +150,27 @@ export class UserController extends BaseController {
         const parsedData = await this.validate(data, models.userPatchSchema);
         try {
             const user = await this.service.get(id);
+            if (!user) {
+                throw new Errors.NotFoundError();
+            }
             const profile = user.tenantProfile;
             profile.$set(parsedData['profile']);
             await this.service.profileService.update(profile);
+        } catch (e) {
+            this.logger.error(e);
+            if (e instanceof HttpError) {
+                throw e;
+            }
+            throw new Errors.InternalServerError(e);
+        }
+    }
+
+    @DELETE
+    @Path('')
+    @Tags('users')
+    async delete(@ContextRequest context: ServiceContext) {
+        try {
+            await this.service.delete(context['user'].id);
         } catch (e) {
             this.logger.error(e);
             throw new Errors.InternalServerError(e);

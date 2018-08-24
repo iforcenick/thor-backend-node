@@ -25,6 +25,7 @@ export class User extends db.Model {
         },
     };
     password?: string;
+    deletedAt?: Date;
     profiles?: Array<profile.Profile>;
 
     get profile(): profile.Profile {
