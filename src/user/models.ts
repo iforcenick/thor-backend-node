@@ -56,6 +56,19 @@ export class User extends db.Model {
     }
 }
 
+export class FundingSourceBaseInfo extends Mapper {
+    routingNumber: string = mapper.FIELD_STR;
+    accountNumber: string = mapper.FIELD_STR;
+}
+
+export class FundingSourceResponse extends FundingSourceBaseInfo {
+    id: string = mapper.FIELD_STR;
+    createdAt: Date = mapper.FIELD_DATE;
+    updatedAt: Date = mapper.FIELD_DATE;
+}
+
+export class FundingSourceRequest extends FundingSourceBaseInfo {}
+
 export class UserBaseInfo extends Mapper {
 }
 
@@ -86,4 +99,9 @@ export const userRequestSchema = Joi.object().keys({
 
 export const userPatchSchema = Joi.object().keys({
     profile: profile.profilePatchSchema.required(),
+});
+
+export const fundingSourceRequestSchema = Joi.object().keys({
+    routingNumber: Joi.string().required(),
+    accountNumber: Joi.string().required(),
 });

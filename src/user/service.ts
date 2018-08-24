@@ -14,7 +14,7 @@ const jwt = require('jsonwebtoken');
 export class UserService extends db.ModelService<models.User> {
     protected modelType = models.User;
     protected rolesService: role.service.RoleService;
-    protected profileService: ProfileService;
+    public profileService: ProfileService;
 
     constructor(@Inject rolesService: role.service.RoleService, @Inject profileService: ProfileService) {
         super();

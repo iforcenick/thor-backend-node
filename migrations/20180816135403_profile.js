@@ -19,6 +19,8 @@ exports.up = (knex) => {
             table.string('dwollaUri');
             table.string('dwollaSourceUri');
             table.string('dwollaStatus');
+            table.string('dwollaRouting');
+            table.string('dwollaAccount');
             table.datetime('createdAt');
             table.datetime('updatedAt');
 

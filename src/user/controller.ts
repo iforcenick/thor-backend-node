@@ -45,10 +45,8 @@ export class UserController extends BaseController {
     @GET
     @Path('')
     @Tags('users')
-    async getUserList(
-        @QueryParam('page') page?: number,
-        @QueryParam('limit') limit?: number
-    ): Promise<models.PaginatedUserReponse> {
+    async getUserList(@QueryParam('page') page?: number,
+                      @QueryParam('limit') limit?: number): Promise<models.PaginatedUserReponse> {
         const users = await this.service.list(page, limit);
 
         return this.paginate(
@@ -87,6 +85,38 @@ export class UserController extends BaseController {
         }
 
         return this.map(models.UserResponse, user);
+    }
+
+    @POST
+    @Path(':id/fundingSource')
+    @Preprocessor(BaseController.requireAdmin)
+    @Tags('users')
+    async createUserFundingSource(@PathParam('id') id: string, data: models.FundingSourceRequest) {
+        const parsedData = await this.validate(data, models.fundingSourceRequestSchema);
+        const user = await this.service.get(id);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+
+        const profile = user.tenantProfile;
+
+        try {
+            await this.dwollaClient.authorize();
+            profile.dwollaSourceUri = await this.dwollaClient.createFundingSource(
+                profile.dwollaUri,
+                parsedData['routingNumber'],
+                parsedData['accountNumber'],
+                'checking',
+                'default'
+            );
+
+            profile.dwollaRouting = parsedData['routingNumber'];
+            profile.dwollaAccount = parsedData['accountNumber'];
+            await this.service.profileService.update(profile);
+        } catch (err) {
+            this.logger.error(err);
+            throw new Errors.InternalServerError(err.message);
+        }
     }
 
     @PATCH

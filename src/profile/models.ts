@@ -22,6 +22,8 @@ export class Profile extends db.Model {
     dwollaUri?: string;
     dwollaSourceUri?: string;
     dwollaStatus?: string;
+    dwollaRouting?: string;
+    dwollaAccount?: string;
     tenantId?: string;
     country?: string;
     state?: string;
@@ -34,6 +36,14 @@ export class Profile extends db.Model {
 
     get externalStatus() {
         return this.dwollaStatus;
+    }
+
+    get accountRouting() {
+        return this.dwollaRouting;
+    }
+
+    get accountNumber() {
+        return this.dwollaAccount;
     }
 
     static get relationMappings() {
@@ -99,6 +109,8 @@ export class ProfileResponse extends ProfileBaseInfo {
     userId: string = mapper.FIELD_STR;
     tenantId: string = mapper.FIELD_STR;
     externalStatus: string = mapper.FIELD_STR;
+    accountRouting: string = mapper.FIELD_STR;
+    accountNumber: string = mapper.FIELD_STR;
     roles: Array<role.models.RoleResponse> = mapper.FIELD_ARR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;

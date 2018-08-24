@@ -128,7 +128,7 @@ export class ModelService<T> {
         return await query;
     }
 
-    async insert(entity: OModel, trx?: transaction<any>, eager?: boolean): Promise<T> {
+    async insert(entity: OModel, trx?: transaction<any>): Promise<T> {
         const response = await this.modelType
             .query(this.transaction(trx))
             .insert(entity.toJSON())
@@ -139,6 +139,12 @@ export class ModelService<T> {
         } else {
             return response[0];
         }
+    }
+
+    async update(entity: OModel, trx?: transaction<any>): Promise<any> {
+        return await entity
+            .$query(this.transaction(trx))
+            .patch(entity.toJSON());
     }
 
     getTenantId(): string {
