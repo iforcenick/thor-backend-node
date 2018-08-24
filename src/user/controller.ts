@@ -79,7 +79,6 @@ export class UserController extends BaseController {
         const parsedData = await this.validate(data, models.userRequestSchema);
 
         let user = models.User.fromJson({});
-        user.password = parsedData['password'];
         const profile = Profile.fromJson(parsedData['profile']);
 
         try {
@@ -90,7 +89,6 @@ export class UserController extends BaseController {
             const dwollaCustomer = await this.dwollaClient.getCustomer(profile.dwollaUri);
             profile.dwollaStatus = dwollaCustomer.status;
 
-            user.password = await this.service.hashPassword(user.password);
             user = await this.service.createWithProfile(user, profile);
             user = await this.service.get(user.id);
         } catch (err) {

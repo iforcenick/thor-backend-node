@@ -54,7 +54,7 @@ export class AuthController extends BaseController {
             user = await this.service.authenticate(data.login, data.password, data.tenant);
         } catch (err) {
             this.logger.error(err);
-            throw new Errors.InternalServerError(err);
+            throw new Errors.UnauthorizedError('register first');
         }
 
         if (!user) {

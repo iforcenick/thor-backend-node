@@ -93,7 +93,6 @@ export interface PaginatedUserReponse extends PaginatedResponse {
 }
 
 export const userRequestSchema = Joi.object().keys({
-    password: Joi.string().required(),
     profile: profile.profileRequestSchema.required(),
 });
 
