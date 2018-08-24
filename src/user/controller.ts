@@ -1,4 +1,15 @@
-import {Errors, GET, Path, PATCH, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
+import {
+    Errors,
+    GET,
+    Path,
+    PATCH,
+    PathParam,
+    POST,
+    Preprocessor,
+    QueryParam,
+    ContextRequest,
+    ServiceContext,
+} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
@@ -46,8 +57,10 @@ export class UserController extends BaseController {
     @GET
     @Path('')
     @Tags('users')
-    async getUserList(@QueryParam('page') page?: number,
-                      @QueryParam('limit') limit?: number): Promise<models.PaginatedUserReponse> {
+    async getUserList(
+        @QueryParam('page') page?: number,
+        @QueryParam('limit') limit?: number
+    ): Promise<models.PaginatedUserReponse> {
         const users = await this.service.list(page, limit);
 
         return this.paginate(
@@ -132,11 +145,30 @@ export class UserController extends BaseController {
     @PATCH
     @Path(':id/profile')
     @Tags('users')
-    async patchUser(@PathParam('id') id: string, data: models.UserRequest) {
+    @Preprocessor(BaseController.requireAdmin)
+    async patchAnyUser(@PathParam('id') id: string, data: models.UserRequest) {
         const parsedData = await this.validate(data, models.userPatchSchema);
         try {
-            await this.service.patch(id, parsedData['profile']);
-            return;
+            const user = await this.service.get(id);
+            const profile = user.tenantProfile;
+            profile.$set(parsedData['profile']);
+            await this.service.profileService.update(profile);
+        } catch (e) {
+            this.logger.error(e);
+            throw new Errors.InternalServerError(e);
+        }
+    }
+
+    @PATCH
+    @Path('profile')
+    @Tags('users')
+    async patchUser(@ContextRequest context: ServiceContext, data: models.UserRequest) {
+        const parsedData = await this.validate(data, models.userPatchSchema);
+        try {
+            const user = await this.service.get(context['user'].id);
+            const profile = user.tenantProfile;
+            profile.$set(parsedData['profile']);
+            await this.service.profileService.update(profile);
         } catch (e) {
             this.logger.error(e);
             throw new Errors.InternalServerError(e);

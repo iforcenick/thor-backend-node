@@ -122,10 +122,4 @@ export class UserService extends db.ModelService<models.User> {
     async hashPassword(password) {
         return await bcrypt.hash(password, 10);
     }
-
-    async patch(id, data) {
-        const user: models.User = await this.get(id);
-        const profile = user.tenantProfile;
-        return profile.$query().update(data);
-    }
 }

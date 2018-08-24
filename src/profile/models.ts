@@ -141,4 +141,17 @@ export const profileRequestSchema = Joi.object().keys({
     address2: Joi.string(),
 });
 
-export const profilePatchSchema = profileRequestSchema;
+export const profilePatchSchema = Joi.object().keys({
+    firstName: Joi.string(),
+    lastName: Joi.string(),
+    phone: Joi.string(),
+    email: Joi.string(),
+    dateOfBirth: Joi.string(),
+    ssn: Joi.string(),
+    country: Joi.string(),
+    state: Joi.string(),
+    city: Joi.string(),
+    postalCode: Joi.string(),
+    address1: Joi.string(),
+    address2: Joi.string(),
+});
