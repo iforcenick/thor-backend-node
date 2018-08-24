@@ -9,6 +9,7 @@ import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
 import {Security, Tags} from 'typescript-rest-swagger';
 import * as dwolla from '../dwolla';
+import {ValidationError} from '../errors';
 
 @Security('api_key')
 @Path('/users')
@@ -81,6 +82,15 @@ export class UserController extends BaseController {
             user = await this.service.get(user.id);
         } catch (err) {
             this.logger.error(err);
+            if (err.body) {
+                const {body} = err;
+                if (body.code) {
+                    const {code} = body;
+                    if (code === 'ValidationError') {
+                        throw new ValidationError(body._embedded.errors[0].message);
+                    }
+                }
+            }
             throw new Errors.InternalServerError(err.message);
         }
 
