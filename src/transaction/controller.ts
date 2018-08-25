@@ -1,8 +1,12 @@
-import {Errors, GET, Param, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
+import {
+    ContextRequest, Errors, GET, Param, Path, PathParam, POST, Preprocessor, QueryParam,
+    ServiceContext
+} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
+import * as transfer from './transfer/models';
 import {TransactionService} from './service';
 import {UserService} from '../user/service';
 import {JobService} from '../job/service';
@@ -68,7 +72,7 @@ export class TransactionController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('transactions')
-    async createTransaction(data: models.TransactionRequest): Promise<models.TransactionResponse> {
+    async createTransaction(data: models.TransactionRequest, @ContextRequest context: ServiceContext): Promise<models.TransactionResponse> {
         const parsedData = await this.validate(data, models.transactionRequestSchema);
         let transaction = models.Transaction.fromJson(parsedData);
         const user = await this.userService.get(transaction.userId);
@@ -82,6 +86,7 @@ export class TransactionController extends BaseController {
         }
 
         try {
+            transaction.adminId = context['user'].id;
             transaction = await this.service.createTransaction(transaction);
             transaction = await this.service.get(transaction.id);
         } catch (err) {
@@ -90,6 +95,47 @@ export class TransactionController extends BaseController {
         }
 
         transaction.job = job;
+
+        return this.map(models.TransactionResponse, transaction);
+    }
+
+    @POST
+    @Path(':id/transfer')
+    @Preprocessor(BaseController.requireAdmin)
+    @Tags('transactions')
+    async createTransactionTransfer(@PathParam('id') id: string, @ContextRequest context: ServiceContext): Promise<models.TransactionResponse> {
+        const transaction = await this.service.get(id);
+        if (!transaction) {
+            throw new Errors.NotFoundError;
+        }
+
+        try {
+            const user = await this.userService.get(context['user'].id);
+
+            if (!transaction.transferId) {
+                try {
+                    await this.service.prepareTransfer(transaction, user);
+                } catch (e) {
+                    if (e instanceof models.InvalidTransferData) {
+                        throw new Errors.NotAcceptableError(e.message);
+                    }
+
+                    throw e;
+                }
+
+            } else {
+                transaction.transfer = await this.service.transferService.get(transaction.transferId);
+            }
+
+            if (transaction.transfer.status !== transfer.Statuses.new) {
+                throw new Errors.NotAcceptableError('Transfer already pending');
+            }
+
+            await this.service.createExternalTransfer(transaction);
+        } catch (e) {
+            this.logger.error(e);
+            throw new Errors.InternalServerError(e.message);
+        }
 
         return this.map(models.TransactionResponse, transaction);
     }

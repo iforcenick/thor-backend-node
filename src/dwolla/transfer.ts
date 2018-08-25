@@ -1,6 +1,6 @@
 import {IItem} from './base';
 
-export interface ITransaction extends IItem {
+export interface ITransfer extends IItem {
     _links: any;
     amount: any;
     metadata: any;
@@ -9,22 +9,22 @@ export interface ITransaction extends IItem {
 
     getSource(): string;
 
-    setSource(source): ITransaction;
+    setSource(source): ITransfer;
 
     getDestination(): string;
 
-    setDestination(destination): ITransaction;
+    setDestination(destination): ITransfer;
 
     getAmount(): number;
 
-    setAmount(value: number): ITransaction;
+    setAmount(value: number): ITransfer;
 
     getCurrency(): string;
 
-    setCurrency(currency): ITransaction;
+    setCurrency(currency): ITransfer;
 }
 
-export class Transaction implements ITransaction {
+export class Transaction implements ITransfer {
     public _links: any;
     public amount: any;
     public metadata: any;
@@ -61,7 +61,7 @@ export class Transaction implements ITransaction {
         }
     }
 
-    public setLocalization(url): ITransaction {
+    public setLocalization(url): ITransfer {
         this.localization = url;
         return this;
     }
@@ -70,7 +70,7 @@ export class Transaction implements ITransaction {
         return this._links.source.href;
     }
 
-    public setSource(source: string): ITransaction {
+    public setSource(source: string): ITransfer {
         this._links.source.href = source;
         return this;
     }
@@ -79,7 +79,7 @@ export class Transaction implements ITransaction {
         return this._links.destination.href;
     }
 
-    public setDestination(destination: string): ITransaction {
+    public setDestination(destination: string): ITransfer {
         this._links.destination.href = destination;
         return this;
     }
@@ -88,7 +88,7 @@ export class Transaction implements ITransaction {
         return this.amount.value;
     }
 
-    public setAmount(value: number): ITransaction {
+    public setAmount(value: number): ITransfer {
         this.amount.value = value;
         return this;
     }
@@ -97,12 +97,12 @@ export class Transaction implements ITransaction {
         return this.amount.currency;
     }
 
-    public setCurrency(currency: string): ITransaction {
+    public setCurrency(currency: string): ITransfer {
         this.amount.currency = currency;
         return this;
     }
 }
 
-export const factory = (data): ITransaction => {
+export const factory = (data): ITransfer => {
     return new Transaction(data);
 };

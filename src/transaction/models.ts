@@ -6,16 +6,19 @@ import Joi = require('joi');
 import * as tenant from '../tenant/models';
 import * as user from '../user/models';
 import * as job from '../job/models';
+import * as transfer from './transfer/models';
 
 export const enum Relations {
     user = 'user',
     tenant = 'tenant',
     admin = 'admin',
     job = 'job',
+    transfer = 'transfer',
 }
 
 export const enum Statuses {
     new = 'new',
+    processing = 'processing',
 }
 
 export class Transaction extends db.Model {
@@ -23,11 +26,17 @@ export class Transaction extends db.Model {
     userId?: string;
     adminId?: string;
     tenantId?: string;
+    transferId?: string;
     jobId?: string;
     quantity?: number;
     status?: string;
     user?: user.User;
     job?: job.Job;
+    transfer?: transfer.Transfer;
+
+    get value() {
+        return this.quantity * this.job.value; // TODO: add money logic
+    }
 
     static get relationMappings() {
         return {
@@ -63,6 +72,14 @@ export class Transaction extends db.Model {
                     to: `${db.Tables.jobs}.id`
                 }
             },
+            [Relations.transfer]: {
+                relation: db.Model.BelongsToOneRelation,
+                modelClass: transfer.Transfer,
+                join: {
+                    from: `${db.Tables.transactions}.transferId`,
+                    to: `${db.Tables.transfers}.id`
+                }
+            },
         };
     }
 }
@@ -79,11 +96,13 @@ export class TransactionResponse extends TransactionBaseInfo {
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
     job: job.JobResponse = new job.JobResponse();
+    value: number = mapper.FIELD_NUM;
 }
 
 mapper.registerRelation(TransactionResponse, Relations.job, new mapper.Relation(job.JobResponse));
 
-export class TransactionRequest extends TransactionBaseInfo {}
+export class TransactionRequest extends TransactionBaseInfo {
+}
 
 export interface PaginatedTransactionReponse extends PaginatedResponse {
     items: Array<TransactionResponse>;
@@ -94,3 +113,5 @@ export const transactionRequestSchema = Joi.object().keys({
     jobId: Joi.string().required(),
     quantity: Joi.number().required(),
 });
+
+export class InvalidTransferData extends Error {}

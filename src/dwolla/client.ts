@@ -1,7 +1,7 @@
 import * as dwolla from 'dwolla-v2';
 import * as customer from './customer';
 import * as funding from './funding';
-import * as transaction from './transaction';
+import * as transaction from './transfer';
 import {Config} from '../config';
 import {AutoWired, Inject} from 'typescript-ioc';
 
@@ -13,6 +13,7 @@ export class Client {
     private environment: string;
     private _client: any;
     private client: any;
+    private authorized: boolean;
 
     constructor() {
         this.key = this.config.get('dwolla.key');
@@ -26,7 +27,10 @@ export class Client {
     }
 
     public async authorize(): Promise<any> {
-        this.client = await this._client.auth.client();
+        if (!this.authorized) {
+            this.client = await this._client.auth.client();
+            this.authorized = true;
+        }
     }
 
     public async getRoot(): Promise<any> {
@@ -77,13 +81,13 @@ export class Client {
         return funding.factory(response.body).setLocalization(localization);
     }
 
-    public async createTransaction(trans: transaction.ITransaction): Promise<string> {
+    public async createTransfer(trans: transaction.ITransfer): Promise<string> {
         const response = await this.client.post('transfers', trans);
 
         return response.headers.get('location');
     }
 
-    public async getTransaction(localization: string): Promise<transaction.ITransaction> {
+    public async getTransfer(localization: string): Promise<transaction.ITransfer> {
         const response = await this.client.get(localization);
         return transaction.factory(response.body).setLocalization(localization);
     }

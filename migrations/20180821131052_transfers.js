@@ -1,14 +1,14 @@
-const tableName = 'transactions';
+const tableName = 'transfers';
 exports.up = (knex) => {
     return knex.schema
         .createTable(tableName, (table) => {
             table.uuid('id').primary();
-            table.uuid('userId').index().references('id').inTable('users');
-            table.uuid('tenantId').index().references('id').inTable('tenants');
             table.uuid('adminId').index().references('id').inTable('users');
-            table.uuid('jobId').index().references('id').inTable('jobs');
-            table.uuid('transferId').index().references('id').inTable('transfers');
-            table.integer('quantity');
+            table.string('externalId');
+            table.string('sourceUri');
+            table.string('destinationUri');
+            table.string('meta');
+            table.decimal('value', 14, 2);
             table.string('status');
             table.datetime('createdAt');
             table.datetime('updatedAt');
