@@ -10,6 +10,7 @@ import {ProfileController} from './profile/controller';
 import express = require('express');
 import {TransactionController} from './transaction/controller';
 import {JobController} from './job/controller';
+import {RankController} from './rank/controller';
 
 const knex = require('knex');
 const morgan = require('morgan');
@@ -138,7 +139,8 @@ export class ApiServer {
             TenantController,
             ProfileController,
             JobController,
-            TransactionController
+            TransactionController,
+            RankController,
         );
     }
 
