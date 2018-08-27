@@ -8,7 +8,6 @@ import * as dwolla from '../dwolla';
 import {TenantService} from '../tenant/service';
 import {UserService} from '../user/service';
 import {transaction} from 'objection';
-import {InvalidTransferData} from "./models";
 
 @AutoWired
 export class TransactionService extends db.ModelService<models.Transaction> {
@@ -18,7 +17,11 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     protected tenantService: TenantService;
     protected userService: UserService;
 
-    constructor(@Inject transferService: TransferService, @Inject tenantService: TenantService, @Inject userService: UserService) {
+    constructor(
+        @Inject transferService: TransferService,
+        @Inject tenantService: TenantService,
+        @Inject userService: UserService
+    ) {
         super();
         this.transferService = transferService;
         this.userService = userService;
@@ -28,25 +31,35 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     async tenantContext(query) {
         return await query.where('tenantId', this.getTenantId());
     }
-
     getOptions(query) {
-        query.eager(`${models.Relations.job}(tenant)`, {
-            tenant: (builder) => {
-                builder.where('tenantId', this.getTenantId());
+        query.eager(
+            {
+                [models.Relations.job]: {$modify: ['tenant']},
+                [models.Relations.user]: {
+                    $modify: ['user'],
+                    [user.Relations.profile]: {
+                        $modify: ['profile'],
+                    },
+                },
+            },
+            {
+                tenant: builder => {
+                    builder.where('tenantId', this.getTenantId());
+                },
+                profile: builder => {
+                    builder.where('tenantId', this.getTenantId()).select(['firstName', 'lastName']);
+                },
+                user: builder => {
+                    builder.select('');
+                },
             }
-        });
+        );
 
         return query;
     }
 
     getListOptions(query) {
-        query.eager(`${models.Relations.job}(tenant)`, {
-            tenant: (builder) => {
-                builder.where('tenantId', this.getTenantId());
-            }
-        });
-
-        return query;
+        return this.getOptions(query);
     }
 
     async createTransaction(transaction: models.Transaction): Promise<models.Transaction> {

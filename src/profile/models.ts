@@ -124,7 +124,7 @@ export class ProfileRequest extends ProfileBaseInfo {
     ssn: string = mapper.FIELD_STR;
 }
 
-export interface PaginatedProfileReponse extends PaginatedResponse {
+export interface PaginatedProfileResponse extends PaginatedResponse {
     items: Array<ProfileResponse>;
 }
 

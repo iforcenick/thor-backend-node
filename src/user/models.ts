@@ -6,10 +6,12 @@ import * as profile from '../profile/models';
 import * as role from './role';
 import Joi = require('joi');
 import _ from 'lodash';
+import {Transaction, TransactionResponse} from '../transaction/models';
 
 export const enum Relations {
     roles = 'roles',
     profile = 'profiles',
+    transactions = 'transactions',
 }
 
 export class User extends db.Model {
@@ -23,10 +25,19 @@ export class User extends db.Model {
                 to: `${db.Tables.profiles}.userId`,
             },
         },
+        [Relations.transactions]: {
+            relation: db.Model.HasManyRelation,
+            modelClass: Transaction,
+            join: {
+                from: `${db.Tables.users}.id`,
+                to: `${db.Tables.transactions}.userId`,
+            },
+        },
     };
     password?: string;
     deletedAt?: Date;
     profiles?: Array<profile.Profile>;
+    transactions?: Array<Transaction>;
 
     get profile(): profile.Profile {
         for (const profile of this.profiles) {
@@ -79,17 +90,19 @@ export class UserResponse extends UserBaseInfo {
     updatedAt: Date = mapper.FIELD_DATE;
     profile: profile.ProfileResponse = new profile.ProfileResponse();
     tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
+    transactions: Array<TransactionResponse> = mapper.FIELD_ARR;
 }
 
 mapper.registerRelation(UserResponse, 'profile', new mapper.Relation(profile.ProfileResponse));
 mapper.registerRelation(UserResponse, 'tenantProfile', new mapper.Relation(profile.ProfileResponse));
+mapper.registerRelation(UserResponse, Relations.transactions, new mapper.ArrayRelation(TransactionResponse));
 
 export class UserRequest extends UserBaseInfo {
     password: string = mapper.FIELD_STR;
     profile: profile.ProfileRequest = new profile.ProfileRequest();
 }
 
-export interface PaginatedUserReponse extends PaginatedResponse {
+export interface PaginatedUserResponse extends PaginatedResponse {
     items: Array<UserResponse>;
 }
 

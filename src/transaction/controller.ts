@@ -1,6 +1,13 @@
 import {
-    ContextRequest, Errors, GET, Param, Path, PathParam, POST, Preprocessor, QueryParam,
-    ServiceContext
+    ContextRequest,
+    Errors,
+    GET,
+    Path,
+    PathParam,
+    POST,
+    Preprocessor,
+    QueryParam,
+    ServiceContext,
 } from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
@@ -11,6 +18,8 @@ import {TransactionService} from './service';
 import {UserService} from '../user/service';
 import {JobService} from '../job/service';
 import {Security, Tags} from 'typescript-rest-swagger';
+
+const validate = require('uuid-validate');
 
 @Security('api_key')
 @Path('/transactions')
@@ -34,7 +43,7 @@ export class TransactionController extends BaseController {
     async getTransaction(@PathParam('id') id: string): Promise<models.TransactionResponse> {
         const transaction = await this.service.get(id);
         if (!transaction) {
-            throw new Errors.NotFoundError;
+            throw new Errors.NotFoundError();
         }
 
         return this.map(models.TransactionResponse, transaction);
@@ -46,33 +55,55 @@ export class TransactionController extends BaseController {
      * @param limit transactions per page
      * @param dateFrom starting Date() of transactions e.g. 2018-08-22T14:44:27.727Z
      * @param dateTill end Date() of transactions, e.g. 2018-08-22T14:44:27.727Z
+     * @param userId user id as uuidv4 string
+     * @param status transaction status
      */
     @GET
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('transactions')
-    async getTransactions(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number,
-                          @QueryParam('dateFrom') dateFrom?: Date, @QueryParam('dateTill') dateTill?: Date): Promise<models.PaginatedTransactionReponse> {
-        let filter;
-
-        if (dateFrom && dateTill) {
-            filter = (builder) => {
-                builder.whereBetween('createdAt', [dateFrom, dateTill]);
-            };
+    async getTransactions(
+        @QueryParam('page') page?: number,
+        @QueryParam('limit') limit?: number,
+        @QueryParam('dateFrom') dateFrom?: Date,
+        @QueryParam('dateTill') dateTill?: Date,
+        @QueryParam('userId') userId?: string,
+        @QueryParam('status') status?: string,
+    ): Promise<models.PaginatedTransactionResponse> {
+        if (userId && !validate(userId)) {
+            throw new Errors.BadRequestError('userId must be uuid');
         }
+        const filter = builder => {
+            if (dateFrom && dateTill) {
+                builder.whereBetween('createdAt', [dateFrom, dateTill]);
+            }
+            if (userId) {
+                builder.where({userId});
+            }
+            if (status) {
+                builder.where({status});
+            }
+            return builder;
+        };
 
         const transactions = await this.service.list(page, limit, filter);
 
-        return this.paginate(transactions.pagination, transactions.rows.map((transaction) => {
-            return this.map(models.TransactionResponse, transaction);
-        }));
+        return this.paginate(
+            transactions.pagination,
+            transactions.rows.map(transaction => {
+                return this.map(models.TransactionResponse, transaction);
+            }),
+        );
     }
 
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('transactions')
-    async createTransaction(data: models.TransactionRequest, @ContextRequest context: ServiceContext): Promise<models.TransactionResponse> {
+    async createTransaction(
+        data: models.TransactionRequest,
+        @ContextRequest context: ServiceContext,
+    ): Promise<models.TransactionResponse> {
         const parsedData = await this.validate(data, models.transactionRequestSchema);
         let transaction = models.Transaction.fromJson(parsedData);
         const user = await this.userService.get(transaction.userId);
@@ -103,10 +134,13 @@ export class TransactionController extends BaseController {
     @Path(':id/transfer')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('transactions')
-    async createTransactionTransfer(@PathParam('id') id: string, @ContextRequest context: ServiceContext): Promise<models.TransactionResponse> {
+    async createTransactionTransfer(
+        @PathParam('id') id: string,
+        @ContextRequest context: ServiceContext,
+    ): Promise<models.TransactionResponse> {
         const transaction = await this.service.get(id);
         if (!transaction) {
-            throw new Errors.NotFoundError;
+            throw new Errors.NotFoundError();
         }
 
         try {
@@ -122,7 +156,6 @@ export class TransactionController extends BaseController {
 
                     throw e;
                 }
-
             } else {
                 transaction.transfer = await this.service.transferService.get(transaction.transferId);
             }

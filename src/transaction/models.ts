@@ -45,40 +45,40 @@ export class Transaction extends db.Model {
                 modelClass: user.User,
                 join: {
                     from: `${db.Tables.transactions}.userId`,
-                    to: `${db.Tables.users}.id`
-                }
+                    to: `${db.Tables.users}.id`,
+                },
             },
             [Relations.tenant]: {
                 relation: db.Model.BelongsToOneRelation,
                 modelClass: tenant.Tenant,
                 join: {
                     from: `${db.Tables.transactions}.tenantId`,
-                    to: `${db.Tables.tenants}.id`
-                }
+                    to: `${db.Tables.tenants}.id`,
+                },
             },
             [Relations.admin]: {
                 relation: db.Model.BelongsToOneRelation,
                 modelClass: user.User,
                 join: {
                     from: `${db.Tables.transactions}.adminId`,
-                    to: `${db.Tables.users}.id`
-                }
+                    to: `${db.Tables.users}.id`,
+                },
             },
             [Relations.job]: {
                 relation: db.Model.BelongsToOneRelation,
                 modelClass: job.Job,
                 join: {
                     from: `${db.Tables.transactions}.jobId`,
-                    to: `${db.Tables.jobs}.id`
-                }
+                    to: `${db.Tables.jobs}.id`,
+                },
             },
             [Relations.transfer]: {
                 relation: db.Model.BelongsToOneRelation,
                 modelClass: transfer.Transfer,
                 join: {
                     from: `${db.Tables.transactions}.transferId`,
-                    to: `${db.Tables.transfers}.id`
-                }
+                    to: `${db.Tables.transfers}.id`,
+                },
             },
         };
     }
@@ -96,7 +96,8 @@ export class TransactionResponse extends TransactionBaseInfo {
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
     job: job.JobResponse = new job.JobResponse();
-    value: number = mapper.FIELD_NUM;
+    user: user.UserResponse = new user.UserResponse();
+    value: string = mapper.FIELD_STR;
 }
 
 mapper.registerRelation(TransactionResponse, Relations.job, new mapper.Relation(job.JobResponse));
@@ -104,7 +105,7 @@ mapper.registerRelation(TransactionResponse, Relations.job, new mapper.Relation(
 export class TransactionRequest extends TransactionBaseInfo {
 }
 
-export interface PaginatedTransactionReponse extends PaginatedResponse {
+export interface PaginatedTransactionResponse extends PaginatedResponse {
     items: Array<TransactionResponse>;
 }
 

@@ -42,7 +42,7 @@ export class TenantResponse extends TenantBaseInfo {
 export class TenantRequest extends TenantBaseInfo {
 }
 
-export interface PaginatedTenantReponse extends PaginatedResponse {
+export interface PaginatedTenantResponse extends PaginatedResponse {
     items: Array<TenantResponse>;
 }
 

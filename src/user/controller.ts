@@ -62,7 +62,7 @@ export class UserController extends BaseController {
     async getUserList(
         @QueryParam('page') page?: number,
         @QueryParam('limit') limit?: number
-    ): Promise<models.PaginatedUserReponse> {
+    ): Promise<models.PaginatedUserResponse> {
         const users = await this.service.list(page, limit);
 
         return this.paginate(
