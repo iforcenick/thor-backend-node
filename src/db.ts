@@ -153,7 +153,11 @@ export class ModelService<T> {
     }
 
     async update(entity: OModel, trx?: transaction<any>): Promise<any> {
-        return await entity.$query(this.transaction(trx)).patch(entity.toJSON());
+        return await entity
+            .$query(this.transaction(trx))
+            .patch(entity.toJSON())
+            .returning('*')
+            .first();
     }
 
     getTenantId(): string {

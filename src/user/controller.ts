@@ -17,7 +17,7 @@ import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import {UserService} from './service';
 import * as models from './models';
-import {Profile} from '../profile/models';
+import {Profile, ProfileResponse} from '../profile/models';
 import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
 import {Security, Tags} from 'typescript-rest-swagger';
@@ -61,7 +61,7 @@ export class UserController extends BaseController {
     @Tags('users')
     async getUserList(
         @QueryParam('page') page?: number,
-        @QueryParam('limit') limit?: number
+        @QueryParam('limit') limit?: number,
     ): Promise<models.PaginatedUserResponse> {
         const users = await this.service.list(page, limit);
 
@@ -69,7 +69,7 @@ export class UserController extends BaseController {
             users.pagination,
             users.rows.map(user => {
                 return this.map(models.UserResponse, user);
-            })
+            }),
         );
     }
 
@@ -130,7 +130,7 @@ export class UserController extends BaseController {
                 parsedData['routingNumber'],
                 parsedData['accountNumber'],
                 'checking',
-                'default'
+                'default',
             );
 
             profile.dwollaRouting = parsedData['routingNumber'];
@@ -155,7 +155,8 @@ export class UserController extends BaseController {
             }
             const profile = user.tenantProfile;
             profile.$set(parsedData['profile']);
-            await this.service.profileService.update(profile);
+            const updatedProfile = await this.service.profileService.update(profile);
+            return this.map(ProfileResponse, updatedProfile);
         } catch (e) {
             this.logger.error(e);
             if (e instanceof HttpError) {
@@ -186,7 +187,8 @@ export class UserController extends BaseController {
             const user = await this.service.get(context['user'].id);
             const profile = user.tenantProfile;
             profile.$set(parsedData['profile']);
-            await this.service.profileService.update(profile);
+            const updatedProfile = await this.service.profileService.update(profile);
+            return this.map(ProfileResponse, updatedProfile);
         } catch (e) {
             this.logger.error(e);
             throw new Errors.InternalServerError(e);
