@@ -23,7 +23,6 @@ export class Relation {
 }
 
 export class ArrayRelation extends Relation {
-
 }
 
 export class Mapper {
@@ -70,8 +69,11 @@ export class Mapper {
             if (this.checkRelation(key, data)) {
                 continue;
             }
-
-            this[key] = data[key] !== undefined ? data[key] : null;
+            if (data[key] !== undefined) {
+                this[key] = data[key];
+            } else {
+                delete this[key];
+            }
         }
 
         return this;

@@ -55,6 +55,9 @@ export class UserController extends BaseController {
     /**
      * @param page page to be queried, starting from 0
      * @param limit transactions per page
+     * @param embed embed
+     * @param startDate startDate
+     * @param endDate endDate
      */
     @GET
     @Path('')
@@ -62,9 +65,11 @@ export class UserController extends BaseController {
     async getUserList(
         @QueryParam('page') page?: number,
         @QueryParam('limit') limit?: number,
-    ): Promise<models.PaginatedUserResponse> {
-        const users = await this.service.list(page, limit);
-
+        @QueryParam('embed') embed?: string,
+        @QueryParam('startDate') startDate?: string,
+        @QueryParam('endDate') endDate?: string,
+    ) {
+        const users = await this.service.getAll(page, limit, embed, startDate, endDate);
         return this.paginate(
             users.pagination,
             users.rows.map(user => {

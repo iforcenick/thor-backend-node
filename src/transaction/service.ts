@@ -9,6 +9,8 @@ import {TenantService} from '../tenant/service';
 import {UserService} from '../user/service';
 import {transaction} from 'objection';
 
+const knex = require('knex');
+
 @AutoWired
 export class TransactionService extends db.ModelService<models.Transaction> {
     @Inject private dwollaClient: dwolla.Client;
@@ -20,7 +22,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     constructor(
         @Inject transferService: TransferService,
         @Inject tenantService: TenantService,
-        @Inject userService: UserService
+        @Inject userService: UserService,
     ) {
         super();
         this.transferService = transferService;
@@ -29,7 +31,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     }
 
     async tenantContext(query) {
-        return await query.where('tenantId', this.getTenantId());
+        return await query.where('transactions.tenantId', this.getTenantId());
     }
     getOptions(query) {
         query.eager(
@@ -52,7 +54,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
                 user: builder => {
                     builder.select('');
                 },
-            }
+            },
         );
 
         return query;
@@ -62,6 +64,15 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         return this.getOptions(query);
     }
 
+    async getRanks() {
+        return await this.tenantContext(
+            this.modelType
+                .query()
+                .join('jobs', 'transactions.jobId', 'jobs.id')
+                .select(['userId', knex.raw('sum(transactions.quantity * jobs.value) as rank')])
+                .groupBy('userId'),
+        );
+    }
     async createTransaction(transaction: models.Transaction): Promise<models.Transaction> {
         transaction.tenantId = this.getTenantId();
         transaction.status = models.Statuses.new;
@@ -81,7 +92,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         _transfer.status = transfer.Statuses.new;
         _transfer.destinationUri = user.tenantProfile.dwollaSourceUri;
         _transfer.sourceUri = tenant.dwollaUri;
-        _transfer.value = _transaction.value;
+        _transfer.value = Number(_transaction.value);
         _transaction.status = models.Statuses.processing;
 
         await transaction(this.transaction(), async trx => {

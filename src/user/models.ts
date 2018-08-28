@@ -88,6 +88,8 @@ export class UserResponse extends UserBaseInfo {
     id: number = mapper.FIELD_NUM;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
+    lastTransaction: Date = mapper.FIELD_DATE;
+    rank: string = mapper.FIELD_STR;
     profile: profile.ProfileResponse = new profile.ProfileResponse();
     tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
     transactions: Array<TransactionResponse> = mapper.FIELD_ARR;

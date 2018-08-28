@@ -79,6 +79,10 @@ export class ModelService<T> {
         return query;
     }
 
+    embed(query, embed) {
+        return query;
+    }
+
     paginationLimit(limit?: number) {
         if (!limit) {
             return this.config.get('pagination.limit');
@@ -107,7 +111,7 @@ export class ModelService<T> {
         return await this.getOptions(query);
     }
 
-    async list(page?: number, limit?: number, filter?: any): Promise<Paginated<T>> {
+    async list(page?: number, limit?: number, filter?: any, embed?: string): Promise<Paginated<T>> {
         if (!page) {
             page = 0;
         }
@@ -118,7 +122,7 @@ export class ModelService<T> {
         if (filter) {
             query.where(filter);
         }
-
+        this.embed(query, embed);
         this.getListOptions(query);
         query.page(page, limit);
 

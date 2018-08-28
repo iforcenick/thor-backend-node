@@ -9,6 +9,7 @@ import * as _ from 'lodash';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const knex = require('knex');
 
 @AutoWired
 export class UserService extends db.ModelService<models.User> {
@@ -23,24 +24,89 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     getOptions(query) {
-        query.whereNull('deletedAt').eager(`${models.Relations.profile}(tenant).[${profile.Relations.roles}]`, {
-            tenant: builder => {
-                const tenantId = this.getTenantId();
-                builder.orWhere(function () {
-                    this.where('tenantId', tenantId).orWhere('tenantId', null);
-                });
-            },
-        });
+        query.whereNull('deletedAt');
 
         return query;
     }
 
     getListOptions(query) {
-        return this.getOptions(query);
+        return this.getOptions(query)
+            .select(['users.id', knex.raw('sum(transactions.quantity * jobs.value) as rank')])
+            .join('transactions', 'users.id', 'transactions.userId')
+            .join('jobs', 'transactions.jobId', 'jobs.id')
+            .groupBy('users.id')
+            .orderBy('rank', 'desc')
+            .max('transactions.createdAt as lastTransaction');
     }
 
-    async getAll() {
-        return await this.tenantContext(this.getOptions(this.modelType.query()));
+    async getAll(
+        page?: number,
+        limit?: number,
+        embed?: string,
+        startDate?: string,
+        endDate?: string,
+    ): Promise<db.Paginated<models.User>> {
+        if (!page) {
+            page = 0;
+        }
+
+        limit = this.paginationLimit(limit);
+        const query = this.modelType.query();
+
+        const eagerObject = {
+            profiles: {
+                roles: {
+                    $modify: ['roles'],
+                },
+                $modify: ['profiles'],
+            },
+        };
+        if (embed && embed.includes('transactions') && startDate && endDate) {
+            query.whereBetween('transactions.createdAt', [startDate, endDate]);
+            eagerObject['transactions'] = {$modify: ['transactions'], job: {$modify: ['job']}};
+        }
+        if (embed) {
+            const relations = embed.split(',');
+            if (relations.includes('transactions')) {
+                eagerObject['transactions'] = {$modify: ['transactions'], job: {$modify: ['job']}};
+            }
+        }
+        query.eager(eagerObject, {
+            profiles: builder => {
+                const tenantId = this.getTenantId();
+                builder
+                    .orWhere(function () {
+                        this.where('tenantId', tenantId).orWhere('tenantId', null);
+                    })
+                    .select(['firstName', 'lastName']);
+            },
+            transactions: builder => {
+                builder
+                    .select([
+                        'status',
+                        'quantity',
+                        'transactions.createdAt',
+                        knex.raw('transactions.quantity * jobs.value as value'),
+                    ])
+                    .join('jobs', 'transactions.jobId', 'jobs.id')
+                    .whereBetween('transactions.createdAt', [startDate, endDate]);
+            },
+            job: builder => {
+                builder.select(['id', 'value', 'name', 'description']);
+            },
+            roles: builder => {
+                builder.select(['name']);
+            },
+        });
+
+        this.getListOptions(query);
+        query.page(page, limit);
+
+        const result = await this.tenantContext(query);
+        return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
+    }
+
+    embed(query, embed) {
     }
 
     async createWithProfile(user: models.User, profile: profile.Profile): Promise<models.User> {
