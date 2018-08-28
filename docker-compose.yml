@@ -23,8 +23,7 @@ services:
       - 8081:8081
     command: npm start
     volumes:
-      - ./config:/usr/src/app/config
-      - ./dist:/usr/src/app/dist
+      - ./:/usr/src/app
     depends_on:
       - db
     links:

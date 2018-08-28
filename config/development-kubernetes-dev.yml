@@ -1,0 +1,6 @@
+---
+db:
+  client: postgresql
+  connection:
+    host: thor-api-postgresql.thor-api
+    database: development
