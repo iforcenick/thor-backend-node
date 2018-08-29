@@ -98,8 +98,10 @@ export class UserService extends db.ModelService<models.User> {
                         'transactions.createdAt',
                         knex.raw('transactions.quantity * jobs.value as value'),
                     ])
-                    .join('jobs', 'transactions.jobId', 'jobs.id')
-                    .whereBetween('transactions.createdAt', [startDate, endDate]);
+                    .join('jobs', 'transactions.jobId', 'jobs.id');
+                if (startDate && endDate) {
+                    builder.whereBetween('transactions.createdAt', [startDate, endDate]);
+                }
                 if (status) {
                     builder.where('transactions.status', status);
                 }
@@ -112,7 +114,13 @@ export class UserService extends db.ModelService<models.User> {
             },
         });
 
-        this.getListOptions(query);
+        query
+            .select(['users.id', knex.raw('sum(transactions.quantity * jobs.value) as rank')])
+            .join('transactions', 'users.id', 'transactions.userId')
+            .join('jobs', 'transactions.jobId', 'jobs.id')
+            .groupBy('users.id')
+            .orderBy('rank', 'desc')
+            .max('transactions.createdAt as lastTransaction');
         query.page(page, limit);
 
         const result = await this.tenantContext(query);
