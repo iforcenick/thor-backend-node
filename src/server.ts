@@ -10,6 +10,8 @@ import {ProfileController} from './profile/controller';
 import express = require('express');
 import {TransactionController} from './transaction/controller';
 import {JobController} from './job/controller';
+import * as dwolla from './dwolla';
+import {DwollaController} from './dwolla/controller';
 
 const knex = require('knex');
 const morgan = require('morgan');
@@ -23,6 +25,7 @@ const createNamespace = require('continuation-local-storage').createNamespace;
 export class ApiServer {
     @Inject private config: Config;
     @Inject private logger: Logger;
+    @Inject private dwollaClient: dwolla.Client;
     private app: express.Application;
     private server: any = null;
     private port: number;
@@ -85,12 +88,36 @@ export class ApiServer {
      */
     public start(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            this.server = this.app.listen(this.port, (err: any) => {
+            this.server = this.app.listen(this.port, async (err: any) => {
                 if (err) {
                     return reject(err);
                 }
 
                 this.logger.info(`Listening to http://${this.server.address().address}:${this.server.address().port}`);
+                await this.dwollaClient.authorize();
+                const res = await this.dwollaClient.listWebhookEndpoints();
+                const unsubscribe = [];
+                const endpointUrl = 'http://35.230.69.244/dwolla';
+                const subscriptions = res.body._embedded['webhook-subscriptions'];
+                console.log('subscriptions count:', subscriptions.length);
+                let hasSubscription = false;
+                subscriptions.forEach(s => {
+                    if (s.url !== endpointUrl) {
+                        unsubscribe.push(this.dwollaClient.deleteWebhookEndpoint(s['_links'].self.href));
+                    } else {
+                        hasSubscription = true;
+                    }
+                });
+                if (unsubscribe.length > 0) {
+                    console.log('unsubscribe call with num: ', unsubscribe.length);
+                    const resp = await Promise.all(unsubscribe);
+                    console.log('unsub resp', resp);
+                }
+                if (!hasSubscription) {
+                    console.log('register new sub');
+                    const registerRes = await this.dwollaClient.registerWebhookEndpoint(endpointUrl);
+                    console.log('registerRes', registerRes);
+                }
                 return resolve();
             });
         });
@@ -102,6 +129,7 @@ export class ApiServer {
      */
     public stop(): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
+            console.log('closing server  ');
             if (this.server) {
                 this.server.close(() => {
                     return resolve(true);
@@ -139,6 +167,7 @@ export class ApiServer {
             ProfileController,
             JobController,
             TransactionController,
+            DwollaController,
         );
     }
 

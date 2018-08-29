@@ -103,4 +103,13 @@ export class Client {
         });
         return response.headers.get('location');
     }
+
+    public async deleteWebhookEndpoint(webhookUrl: string): Promise<string> {
+        const response = await this.client.delete(webhookUrl);
+        return response;
+    }
+
+    public async listWebhookEndpoints() {
+        return await this.client.get('webhook-subscriptions');
+    }
 }

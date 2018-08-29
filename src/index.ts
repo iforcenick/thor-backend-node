@@ -17,6 +17,7 @@ export const start = (): Promise<void> => {
         // Stop graceful
         process.on('SIGTERM', graceful);
         process.on('SIGINT', graceful);
+        process.on('SIGUSR2', graceful);
     });
 };
 
