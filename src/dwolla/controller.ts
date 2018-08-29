@@ -1,12 +1,10 @@
-import {
-    Path,
-    POST,
-} from 'typescript-rest';
+import {Path, POST} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import * as dwolla from '../dwolla';
 import {event} from './index';
+import {IEvent} from './event';
 
 @Path('/dwolla')
 export class DwollaController extends BaseController {
@@ -15,7 +13,7 @@ export class DwollaController extends BaseController {
 
     @POST
     @Path('')
-    async createUser(data) {
+    async createUser(data: IEvent) {
         console.log(JSON.stringify(data, null, 2));
         const eventO = event.factory(data);
         console.log(eventO);
