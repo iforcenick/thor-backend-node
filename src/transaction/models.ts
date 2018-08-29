@@ -84,7 +84,6 @@ export class Transaction extends db.Model {
 export class TransactionBaseInfo extends Mapper {
     quantity: number = mapper.FIELD_NUM;
     userId: string = mapper.FIELD_STR;
-    jobId: string = mapper.FIELD_STR;
 }
 
 export class TransactionResponse extends TransactionBaseInfo {
@@ -100,6 +99,7 @@ export class TransactionResponse extends TransactionBaseInfo {
 mapper.registerRelation(TransactionResponse, Relations.job, new mapper.Relation(job.JobResponse));
 
 export class TransactionRequest extends TransactionBaseInfo {
+    job: job.JobRequest = new job.JobRequest();
 }
 
 export interface PaginatedTransactionResponse extends PaginatedResponse {
@@ -107,8 +107,10 @@ export interface PaginatedTransactionResponse extends PaginatedResponse {
 }
 
 export const transactionRequestSchema = Joi.object().keys({
-    userId: Joi.string().required(),
-    jobId: Joi.string().required(),
+    userId: Joi.string()
+        .required()
+        .guid(),
+    job: job.jobRequestSchema.required(),
     quantity: Joi.number().required(),
 });
 

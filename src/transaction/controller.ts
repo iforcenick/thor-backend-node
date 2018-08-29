@@ -18,6 +18,7 @@ import {TransactionService} from './service';
 import {UserService} from '../user/service';
 import {JobService} from '../job/service';
 import {Security, Tags} from 'typescript-rest-swagger';
+import {Job} from '../job/models';
 
 const validate = require('uuid-validate');
 
@@ -105,18 +106,25 @@ export class TransactionController extends BaseController {
         @ContextRequest context: ServiceContext,
     ): Promise<models.TransactionResponse> {
         const parsedData = await this.validate(data, models.transactionRequestSchema);
-        let transaction = models.Transaction.fromJson(parsedData);
-        const user = await this.userService.get(transaction.userId);
-        if (!user) {
-            throw new Errors.NotFoundError('User not found');
+        let job = parsedData['job'];
+        if (!job['id']) {
+            delete job['id'];
+            const jobEntity = Job.fromJson(job);
+            job = await this.jobService.createJob(jobEntity);
         }
-
-        const job = await this.jobService.get(transaction.jobId);
+        job = await this.jobService.get(job.id);
         if (!job) {
             throw new Errors.NotFoundError('Job not found');
         }
+        const user = await this.userService.get(parsedData['userId']);
+        if (!user) {
+            throw new Errors.NotFoundError('User not found');
+        }
+        delete parsedData['job'];
+        let transaction = models.Transaction.fromJson(parsedData);
 
         try {
+            transaction.jobId = job.id;
             transaction.adminId = context['user'].id;
             transaction = await this.service.createTransaction(transaction);
             transaction = await this.service.get(transaction.id);
@@ -124,8 +132,6 @@ export class TransactionController extends BaseController {
             this.logger.error(err);
             throw new Errors.InternalServerError(err.message);
         }
-
-        transaction.job = job;
 
         return this.map(models.TransactionResponse, transaction);
     }
