@@ -10,4 +10,11 @@ export class TransferService extends db.ModelService<models.Transfer> {
     async createTransfer(transfer: models.Transfer, trx?: transaction<any>): Promise<models.Transfer> {
         return await this.insert(transfer, trx);
     }
+
+    async updateStatus(externalId, status) {
+        return await this.modelType
+            .query()
+            .where('externalId', externalId)
+            .update({status});
+    }
 }

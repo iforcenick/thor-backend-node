@@ -34,28 +34,31 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         return await query.where('transactions.tenantId', this.getTenantId());
     }
     getOptions(query) {
-        query.eager(
-            {
-                [models.Relations.job]: {$modify: ['tenant']},
-                [models.Relations.user]: {
-                    $modify: ['user'],
-                    [user.Relations.profile]: {
-                        $modify: ['profile'],
+        query
+            .eager(
+                {
+                    [models.Relations.job]: {$modify: ['tenant']},
+                    [models.Relations.user]: {
+                        $modify: ['user'],
+                        [user.Relations.profile]: {
+                            $modify: ['profile'],
+                        },
                     },
                 },
-            },
-            {
-                tenant: builder => {
-                    builder.where('tenantId', this.getTenantId());
+                {
+                    tenant: builder => {
+                        builder.where('tenantId', this.getTenantId());
+                    },
+                    profile: builder => {
+                        builder.where('tenantId', this.getTenantId()).select(['firstName', 'lastName']);
+                    },
+                    user: builder => {
+                        builder.select('');
+                    },
                 },
-                profile: builder => {
-                    builder.where('tenantId', this.getTenantId()).select(['firstName', 'lastName']);
-                },
-                user: builder => {
-                    builder.select('');
-                },
-            },
-        );
+            )
+            .join('jobs', 'transactions.jobId', 'jobs.id')
+            .select(['transactions.*'], knex.raw('transactions.quantity * jobs.value as value'));
 
         return query;
     }
@@ -86,7 +89,6 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         if (!user.tenantProfile.dwollaSourceUri) {
             throw new models.InvalidTransferData('Bank account not configured for recipient');
         }
-
         let _transfer = new transfer.Transfer();
         _transfer.adminId = admin.id;
         _transfer.status = transfer.Statuses.new;
@@ -94,7 +96,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         _transfer.sourceUri = tenant.dwollaUri;
         _transfer.value = Number(_transaction.value);
         _transaction.status = models.Statuses.processing;
-
+        delete _transaction.value;
         await transaction(this.transaction(), async trx => {
             _transfer = await this.transferService.createTransfer(_transfer, trx);
             await _transfer.$relatedQuery(transfer.Relations.transaction, trx).relate(_transaction.id);
