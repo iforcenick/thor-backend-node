@@ -58,6 +58,7 @@ export class UserController extends BaseController {
      * @param embed embed
      * @param startDate startDate
      * @param endDate endDate
+     * @param status status
      */
     @GET
     @Path('')
@@ -68,8 +69,9 @@ export class UserController extends BaseController {
         @QueryParam('embed') embed?: string,
         @QueryParam('startDate') startDate?: string,
         @QueryParam('endDate') endDate?: string,
+        @QueryParam('status') status?: string,
     ) {
-        const users = await this.service.getAll(page, limit, embed, startDate, endDate);
+        const users = await this.service.getAll(page, limit, embed, startDate, endDate, status);
         return this.paginate(
             users.pagination,
             users.rows.map(user => {

@@ -129,7 +129,6 @@ export class ApiServer {
      */
     public stop(): Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
-            console.log('closing server  ');
             if (this.server) {
                 this.server.close(() => {
                     return resolve(true);

@@ -45,6 +45,7 @@ export class UserService extends db.ModelService<models.User> {
         embed?: string,
         startDate?: string,
         endDate?: string,
+        status?: string,
     ): Promise<db.Paginated<models.User>> {
         if (!page) {
             page = 0;
@@ -63,6 +64,9 @@ export class UserService extends db.ModelService<models.User> {
         };
         if (embed && embed.includes('transactions') && startDate && endDate) {
             query.whereBetween('transactions.createdAt', [startDate, endDate]);
+            if (status) {
+                query.where('transactions.status', status);
+            }
             eagerObject['transactions'] = {$modify: ['transactions'], job: {$modify: ['job']}};
         }
         if (embed) {
@@ -90,6 +94,9 @@ export class UserService extends db.ModelService<models.User> {
                     ])
                     .join('jobs', 'transactions.jobId', 'jobs.id')
                     .whereBetween('transactions.createdAt', [startDate, endDate]);
+                if (status) {
+                    builder.where('transactions.status', status);
+                }
             },
             job: builder => {
                 builder.select(['id', 'value', 'name', 'description']);
