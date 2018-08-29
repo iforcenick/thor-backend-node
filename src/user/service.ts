@@ -24,8 +24,14 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     getOptions(query) {
-        query.whereNull('deletedAt');
-
+        query.whereNull('deletedAt').eager(`${models.Relations.profile}(tenant).[${profile.Relations.roles}]`, {
+            tenant: builder => {
+                const tenantId = this.getTenantId();
+                builder.orWhere(function () {
+                    this.where('tenantId', tenantId).orWhere('tenantId', null);
+                });
+            },
+        });
         return query;
     }
 
