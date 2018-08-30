@@ -68,19 +68,16 @@ export class UserService extends db.ModelService<models.User> {
                 $modify: ['profiles'],
             },
         };
-        if (embed && embed.includes('transactions') && startDate && endDate) {
-            query.whereBetween('transactions.createdAt', [startDate, endDate]);
+        if (embed && embed.includes('transactions')) {
             if (status) {
                 query.where('transactions.status', status);
             }
+            if (startDate && endDate) {
+                query.whereBetween('transactions.createdAt', [startDate, endDate]);
+            }
             eagerObject['transactions'] = {$modify: ['transactions'], job: {$modify: ['job']}};
         }
-        if (embed) {
-            const relations = embed.split(',');
-            if (relations.includes('transactions')) {
-                eagerObject['transactions'] = {$modify: ['transactions'], job: {$modify: ['job']}};
-            }
-        }
+
         query.eager(eagerObject, {
             profiles: builder => {
                 const tenantId = this.getTenantId();

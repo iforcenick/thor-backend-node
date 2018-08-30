@@ -75,7 +75,6 @@ export class Mapper {
                 delete this[key];
             }
         }
-
-        return this;
+        return _.cloneDeep(this);
     }
 }
