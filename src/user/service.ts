@@ -93,6 +93,7 @@ export class UserService extends db.ModelService<models.User> {
             transactions: builder => {
                 builder
                     .select([
+                        'id',
                         'status',
                         'quantity',
                         'transactions.createdAt',
