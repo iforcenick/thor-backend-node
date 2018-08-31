@@ -169,6 +169,15 @@ export class UserService extends db.ModelService<models.User> {
             .eager('profiles.roles');
     }
 
+    async findByEmailAndTenant(email: string, tenantId: string): Promise<models.User> {
+        return await this.modelType
+            .query()
+            .join('profiles', 'users.id', 'profiles.userId')
+            .where({'profiles.email': email, 'profiles.tenantId': tenantId})
+            .first()
+            .eager('profiles.roles');
+    }
+
     async getRole(role: role.models.Types): Promise<role.models.Role> {
         return await this.tenantContext(this.rolesService.find(role));
     }
@@ -193,8 +202,7 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async authenticate(login: string, password: string, tenant: string) {
-        this.tenant = tenant;
-        const user = await this.findByEmail(login);
+        const user = await this.findByEmailAndTenant(login, tenant);
         if (!user) {
             return null;
         }
