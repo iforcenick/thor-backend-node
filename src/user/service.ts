@@ -24,28 +24,25 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     getOptions(query) {
-        query.whereNull('deletedAt').eager(`${models.Relations.profile}(tenant).[${profile.Relations.roles}]`, {
-            tenant: builder => {
-                const tenantId = this.getTenantId();
-                builder.orWhere(function () {
-                    this.where('tenantId', tenantId).orWhere('tenantId', null);
-                });
-            },
-        });
+        query
+            .whereNull('users.deletedAt')
+            .eager(`${models.Relations.profile}(profiles).[${profile.Relations.roles}]`, {
+                profiles: builder => {
+                    const tenantId = this.getTenantId();
+                    builder.orWhere(function () {
+                        this.where('tenantId', tenantId).orWhere('tenantId', null);
+                    });
+                },
+            })
+            .join('profiles', 'users.id', 'profiles.userId');
         return query;
     }
 
     getListOptions(query) {
-        return this.getOptions(query)
-            .select(['users.id', knex.raw('sum(transactions.quantity * jobs.value) as rank')])
-            .join('transactions', 'users.id', 'transactions.userId')
-            .join('jobs', 'transactions.jobId', 'jobs.id')
-            .groupBy('users.id')
-            .orderBy('rank', 'desc')
-            .max('transactions.createdAt as lastTransaction');
+        return this.getOptions(query);
     }
 
-    async getAll(
+    async getWithTransactions(
         page?: number,
         limit?: number,
         embed?: string,
@@ -56,7 +53,6 @@ export class UserService extends db.ModelService<models.User> {
         if (!page) {
             page = 0;
         }
-
         limit = this.paginationLimit(limit);
         const query = this.modelType.query();
 
@@ -68,37 +64,28 @@ export class UserService extends db.ModelService<models.User> {
                 $modify: ['profiles'],
             },
         };
-        if (embed && embed.includes('transactions')) {
-            if (status) {
-                query.where('transactions.status', status);
-            }
-            if (startDate && endDate) {
-                query.whereBetween('transactions.createdAt', [startDate, endDate]);
-            }
+        if (embed.includes('transactions')) {
             eagerObject['transactions'] = {$modify: ['transactions'], job: {$modify: ['job']}};
         }
-
-        query.eager(eagerObject, {
+        const eagerFilters = {
             profiles: builder => {
                 const tenantId = this.getTenantId();
-                builder
-                    .orWhere(function () {
-                        this.where('tenantId', tenantId).orWhere('tenantId', null);
-                    })
-                    .select(['firstName', 'lastName']);
+                builder.orWhere(function () {
+                    this.where('tenantId', tenantId).orWhere('tenantId', null);
+                });
             },
             transactions: builder => {
                 builder
                     .select([
-                        'transactions.id',
-                        'status',
-                        'quantity',
-                        'transactions.createdAt',
+                        '*',
                         knex.raw('transactions.quantity * jobs.value as value'),
                     ])
                     .join('jobs', 'transactions.jobId', 'jobs.id');
                 if (startDate && endDate) {
-                    builder.whereBetween('transactions.createdAt', [startDate, endDate]);
+                    builder.whereRaw(
+                        '"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')',
+                        [startDate, endDate],
+                    );
                 }
                 if (status) {
                     builder.where('transactions.status', status);
@@ -110,15 +97,33 @@ export class UserService extends db.ModelService<models.User> {
             roles: builder => {
                 builder.select(['name']);
             },
-        });
+        };
+        query.eager(eagerObject, eagerFilters);
 
         query
-            .select(['users.id', knex.raw('sum(transactions.quantity * jobs.value) as rank')])
-            .join('transactions', 'users.id', 'transactions.userId')
-            .join('jobs', 'transactions.jobId', 'jobs.id')
+            .select(['users.id', knex.raw('COALESCE( sum( transactions.quantity * jobs.value ), 0 ) as rank')])
+            .leftOuterJoin('transactions', function () {
+                this.on('users.id', 'transactions.userId');
+                if (embed.includes('transactions')) {
+                    if (status) {
+                        this.andOn('transactions.status', knex.raw('?', [status]));
+                    }
+                    if (startDate && endDate) {
+                        this.andOn(
+                            knex.raw(
+                                '"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')',
+                                [startDate, endDate],
+                            ),
+                        );
+                    }
+                    eagerObject['transactions'] = {$modify: ['transactions'], job: {$modify: ['job']}};
+                }
+            })
+            .leftOuterJoin('jobs', 'transactions.jobId', 'jobs.id')
             .groupBy('users.id')
-            .orderBy('rank', 'desc')
-            .max('transactions.createdAt as lastTransaction');
+            .orderByRaw('rank desc')
+            .max('transactions.createdAt as lastTransaction')
+            .join('profiles', 'users.id', 'profiles.userId');
         query.page(page, limit);
 
         const result = await this.tenantContext(query);
@@ -156,6 +161,7 @@ export class UserService extends db.ModelService<models.User> {
             await this.update(user, trx);
         });
     }
+
     async findByPhone(phone: string): Promise<models.User> {
         return await this.tenantContext(this.getOptions(this.modelType.query().findOne({phone: phone})));
     }

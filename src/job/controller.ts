@@ -1,4 +1,4 @@
-import {Errors, GET, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
+import {Errors, GET, HttpError, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
@@ -23,7 +23,6 @@ export class JobController extends BaseController {
     @Tags('jobs')
     async create(data: models.JobRequest) {
         const parsedData = await this.validate(data, models.jobRequestSchema);
-
         const jobModel = models.Job.fromJson(parsedData);
         try {
             const jobFromDB = await this.service.createJob(jobModel);
@@ -42,12 +41,17 @@ export class JobController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('jobs')
-    async getJobs(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<models.PaginatedJobResponse> {
+    async getJobs(
+        @QueryParam('page') page?: number,
+        @QueryParam('limit') limit?: number,
+    ): Promise<models.PaginatedJobResponse> {
         const jobs = await this.service.list(page, limit);
 
-
-        return this.paginate(jobs.pagination, jobs.rows.map(job => {
+        return this.paginate(
+            jobs.pagination,
+            jobs.rows.map(job => {
                 return this.map(models.JobResponse, job);
-        }));
+            }),
+        );
     }
 }

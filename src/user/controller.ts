@@ -71,7 +71,12 @@ export class UserController extends BaseController {
         @QueryParam('endDate') endDate?: string,
         @QueryParam('status') status?: string,
     ) {
-        const users = await this.service.getAll(page, limit, embed, startDate, endDate, status);
+        let users;
+        if (embed) {
+            users = await this.service.getWithTransactions(page, limit, embed, startDate, endDate, status);
+        } else {
+            users = await this.service.list(page, limit);
+        }
         return this.paginate(
             users.pagination,
             users.rows.map(user => {
@@ -185,20 +190,20 @@ export class UserController extends BaseController {
         }
     }
 
-    @PATCH
-    @Path('profile')
-    @Tags('users')
-    async patchUser(@ContextRequest context: ServiceContext, data: models.UserRequest) {
-        const parsedData = await this.validate(data, models.userPatchSchema);
-        try {
-            const user = await this.service.get(context['user'].id);
-            const profile = user.tenantProfile;
-            profile.$set(parsedData['profile']);
-            const updatedProfile = await this.service.profileService.update(profile);
-            return this.map(ProfileResponse, updatedProfile);
-        } catch (e) {
-            this.logger.error(e);
-            throw new Errors.InternalServerError(e);
-        }
-    }
+    // @PATCH
+    // @Path('profile')
+    // @Tags('users')
+    // async patchUser(@ContextRequest context: ServiceContext, data: models.UserRequest) {
+    //     const parsedData = await this.validate(data, models.userPatchSchema);
+    //     try {
+    //         const user = await this.service.get(context['user'].id);
+    //         const profile = user.tenantProfile;
+    //         profile.$set(parsedData['profile']);
+    //         const updatedProfile = await this.service.profileService.update(profile);
+    //         return this.map(ProfileResponse, updatedProfile);
+    //     } catch (e) {
+    //         this.logger.error(e);
+    //         throw new Errors.InternalServerError(e);
+    //     }
+    // }
 }

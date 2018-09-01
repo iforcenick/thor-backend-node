@@ -43,17 +43,21 @@ export class JobResponse extends JobBaseInfo {
     updatedAt: Date = mapper.FIELD_DATE;
 }
 
-export class JobRequest extends JobBaseInfo {}
+export class JobRequest extends JobBaseInfo {
+}
 
 export interface PaginatedJobResponse extends PaginatedResponse {
     items: Array<JobResponse>;
 }
 
 export const jobRequestSchema = Joi.object().keys({
-    id: Joi.string().guid().allow(null),
+    id: Joi.string()
+        .guid()
+        .allow(null),
     value: Joi.number()
         .greater(0)
         .precision(2)
+        .strict()
         .required(),
     name: Joi.string().required(),
     description: Joi.string().required(),
