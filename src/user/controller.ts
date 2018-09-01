@@ -23,6 +23,8 @@ import {transaction} from 'objection';
 import {Security, Tags} from 'typescript-rest-swagger';
 import * as dwolla from '../dwolla';
 import {ValidationError} from '../errors';
+import {TransactionResponse} from '../transaction/models';
+import {TransactionService} from '../transaction/service';
 
 @Security('api_key')
 @Path('/users')
@@ -31,11 +33,17 @@ export class UserController extends BaseController {
     @Inject private dwollaClient: dwolla.Client;
     private service: UserService;
     private profileService: ProfileService;
+    private transactionService: TransactionService;
 
-    constructor(@Inject service: UserService, @Inject profileService: ProfileService) {
+    constructor(
+        @Inject service: UserService,
+        @Inject profileService: ProfileService,
+        @Inject transactionService: TransactionService,
+    ) {
         super();
         this.service = service;
         this.profileService = profileService;
+        this.transactionService = transactionService;
     }
 
     @GET
@@ -190,6 +198,29 @@ export class UserController extends BaseController {
         }
     }
 
+    @GET
+    @Path(':id/transactions')
+    @Tags('users', 'transactions')
+    async getUserTransactions(
+        @PathParam('id') userId: string,
+        @QueryParam('page') page?: number,
+        @QueryParam('limit') limit?: number,
+        @QueryParam('startDate') startDate?: string,
+        @QueryParam('endDate') endDate?: string,
+        @QueryParam('status') status?: string,
+    ) {
+        const transactions = await this.transactionService.getForUser(
+            {page, limit},
+            {userId, startDate, endDate, status},
+        );
+
+        return this.paginate(
+            transactions.pagination,
+            transactions.rows.map(transaction => {
+                return this.map(TransactionResponse, transaction);
+            }),
+        );
+    }
     // @PATCH
     // @Path('profile')
     // @Tags('users')

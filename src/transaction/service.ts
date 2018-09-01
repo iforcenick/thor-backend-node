@@ -63,19 +63,39 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         return query;
     }
 
+    async getForUser(
+        {page = 0, limit}: { page?: number; limit?: number },
+        {userId, startDate, endDate, status}: { userId: string; startDate?: string; endDate?: string; status?: string },
+    ) {
+        limit = this.paginationLimit(limit);
+        const query = this.modelType.query();
+        query.where({userId});
+        query.page(page, limit);
+        const eagerObject = {
+            job: {$modify: ['job']},
+        };
+        const eagerFilters = {
+            job: builder => {
+                builder.select(['id', 'value', 'name', 'description']);
+            },
+        };
+        if (startDate && endDate) {
+            query.whereRaw('"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')', [
+                startDate,
+                endDate,
+            ]);
+        }
+        if (status) {
+            query.where('transactions.status', status);
+        }
+        query.eager(eagerObject, eagerFilters);
+        const result = await this.tenantContext(query);
+        return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
+    }
     getListOptions(query) {
         return this.getOptions(query);
     }
 
-    async getRanks() {
-        return await this.tenantContext(
-            this.modelType
-                .query()
-                .join('jobs', 'transactions.jobId', 'jobs.id')
-                .select(['userId', knex.raw('sum(transactions.quantity * jobs.value) as rank')])
-                .groupBy('userId'),
-        );
-    }
     async createTransaction(transaction: models.Transaction): Promise<models.Transaction> {
         transaction.tenantId = this.getTenantId();
         transaction.status = models.Statuses.new;
