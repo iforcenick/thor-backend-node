@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: {{ .Chart.Name }}
-          image: us.gcr.io/odin-214321/thor-api:THOR-69-add-jenkinsfile-4f0803bd05
+          image: "{{ .Values.env.DOCKER_REPOSITORY }}:{{ .Values.env.TAG }}"
           command: ["npm"]
           args: ["start"]
           env:
