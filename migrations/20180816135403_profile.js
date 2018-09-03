@@ -2,8 +2,8 @@ const tableName = 'profiles';
 exports.up = knex => {
     return knex.schema.createTable(tableName, table => {
         table.uuid('id').primary();
-        table.uuid('userId');
-        table.uuid('tenantId');
+        table.uuid('userId').index().references('users.id').notNullable();
+        table.uuid('tenantId').references('tenants.id');
         table.string('firstName');
         table.string('lastName');
         table.string('email');
@@ -24,8 +24,8 @@ exports.up = knex => {
         table.datetime('updatedAt');
         table.datetime('deletedAt');
 
-        table.foreign('userId').references('users.id');
-        table.foreign('tenantId').references('tenants.id');
+        table.unique(['userId', 'tenantId'])
+
     });
 };
 exports.down = knex => {

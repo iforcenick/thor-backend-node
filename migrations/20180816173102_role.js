@@ -2,15 +2,16 @@ exports.up = knex => {
     return knex.schema
         .createTable('roles', table => {
             table.uuid('id').primary();
-            table.string('name');
+            table.string('name').notNullable();
             table.datetime('createdAt');
             table.datetime('updatedAt');
+            table.unique('name')
         })
         .createTable('profilesRoles', table => {
-            table.uuid('profileId');
-            table.uuid('roleId');
-            table.foreign('profileId').references('profiles.id');
-            table.foreign('roleId').references('roles.id');
+            table.uuid('profileId').index().references('profiles.id').notNullable();
+            table.uuid('roleId').index().references('roles.id').notNullable();
+            table.unique(['profileId', 'roleId'])
+
         });
 };
 

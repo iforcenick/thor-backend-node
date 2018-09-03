@@ -33,6 +33,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     async tenantContext(query) {
         return await query.where('transactions.tenantId', this.getTenantId());
     }
+
     getOptions(query) {
         query
             .eager(
@@ -88,10 +89,14 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         if (status) {
             query.where('transactions.status', status);
         }
+        query
+            .join('jobs', 'transactions.jobId', 'jobs.id')
+            .select(['*', knex.raw('transactions.quantity * jobs.value as value')]);
         query.eager(eagerObject, eagerFilters);
         const result = await this.tenantContext(query);
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
     }
+
     getListOptions(query) {
         return this.getOptions(query);
     }
