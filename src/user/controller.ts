@@ -221,6 +221,30 @@ export class UserController extends BaseController {
             }),
         );
     }
+
+    @GET
+    @Path(':id/statistics')
+    @Preprocessor(BaseController.requireAdmin)
+    @Tags('statistics', 'users')
+    async getJobs(
+        @PathParam('id') userId: string,
+        @QueryParam('currentStartDate') currentStartDate?: string,
+        @QueryParam('currentEndDate') currentEndDate?: string,
+        @QueryParam('previousStartDate') previousStartDate?: string,
+        @QueryParam('previousEndDate') previousEndDate?: string,
+    ) {
+        // const stats = await this.userService.activity();
+        const stats = await this.service.statsForUser({
+            userId,
+            currentStartDate,
+            currentEndDate,
+            previousStartDate,
+            previousEndDate,
+        });
+        // console.log(stats);
+        return stats;
+    }
+
     // @PATCH
     // @Path('profile')
     // @Tags('users')

@@ -139,7 +139,8 @@ export class ModelService<T> {
     }
 
     tenantContext(query) {
-        return query.where('profiles.tenantId', this.getTenantId());
+        // return query.where('profiles.tenantId', this.getTenantId());
+        return query;
     }
 
     async insert(entity: OModel, trx?: transaction<any>): Promise<T> {

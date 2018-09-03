@@ -124,7 +124,8 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         delete _transaction.value;
         await transaction(this.transaction(), async trx => {
             _transfer = await this.transferService.createTransfer(_transfer, trx);
-            await _transfer.$relatedQuery(transfer.Relations.transaction, trx).relate(_transaction.id);
+            // await _transfer.$relatedQuery(transfer.Relations.transaction, trx).relate(_transaction.id);
+            _transaction.transferId = _transfer.id;
             await this.update(_transaction, trx);
         });
         _transaction.transfer = _transfer;

@@ -6,6 +6,10 @@ import * as profile from '../profile/models';
 import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
 import * as _ from 'lodash';
+import {ApiServer} from '../server';
+import {Paginated} from '../db';
+import {User} from './models';
+import {Pagination} from '../db';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -76,10 +80,7 @@ export class UserService extends db.ModelService<models.User> {
             },
             transactions: builder => {
                 builder
-                    .select([
-                        '*',
-                        knex.raw('transactions.quantity * jobs.value as value'),
-                    ])
+                    .select(['*', knex.raw('transactions.quantity * jobs.value as value')])
                     .join('jobs', 'transactions.jobId', 'jobs.id');
                 if (startDate && endDate) {
                     builder.whereRaw(
@@ -133,6 +134,22 @@ export class UserService extends db.ModelService<models.User> {
     embed(query, embed) {
     }
 
+    async activity() {
+        const query = this.modelType.query();
+        const tenantId = this.getTenantId();
+        query
+            .join('profiles', function () {
+                this.on('users.id', 'profiles.userId').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
+            })
+            .join('transactions', 'users.id', 'transactions.userId')
+            .join('jobs', 'transactions.jobId', 'jobs.id')
+            // .select(['*', knex.raw('transactions.quantity * jobs.value as value')])
+            .groupBy('transactions.status')
+            .select(['transactions.status'])
+            .debug();
+        return await query;
+    }
+
     async createWithProfile(user: models.User, profile: profile.Profile): Promise<models.User> {
         const customerRole = await this.getRole(role.models.Types.customer);
         await transaction(this.transaction(), async trx => {
@@ -141,11 +158,13 @@ export class UserService extends db.ModelService<models.User> {
             baseProfile.dwollaUri = undefined;
             baseProfile.dwollaStatus = undefined;
             baseProfile.dwollaSourceUri = undefined;
+            profile.userId = user.id;
+            baseProfile.userId = user.id;
             const profileEntity = await this.profileService.createProfile(profile, [customerRole], trx);
             const baseProfileEntity = await this.profileService.createProfile(baseProfile, [customerRole], trx, true);
 
-            await user.$relatedQuery(models.Relations.profile, trx).relate(profileEntity.id);
-            await user.$relatedQuery(models.Relations.profile, trx).relate(baseProfileEntity.id);
+            // await user.$relatedQuery(models.Relations.profile, trx).relate(profileEntity.id);
+            // await user.$relatedQuery(models.Relations.profile, trx).relate(baseProfileEntity.id);
         });
 
         return user;
@@ -164,6 +183,21 @@ export class UserService extends db.ModelService<models.User> {
 
     async findByPhone(phone: string): Promise<models.User> {
         return await this.tenantContext(this.getOptions(this.modelType.query().findOne({phone: phone})));
+    }
+
+    async list(page?: number, limit?: number): Promise<Paginated<User>> {
+        if (!page) {
+            page = 0;
+        }
+
+        limit = this.paginationLimit(limit);
+        const query = this.modelType.query();
+
+        this.getListOptions(query);
+        query.page(page, limit);
+        query.where('profiles.tenantId', this.getTenantId());
+        const result = await this.tenantContext(query);
+        return new Paginated(new Pagination(page, limit, result.total), result.results);
     }
 
     async findByEmail(email: string): Promise<models.User> {
@@ -229,5 +263,65 @@ export class UserService extends db.ModelService<models.User> {
 
     async hashPassword(password) {
         return await bcrypt.hash(password, 10);
+    }
+
+    async statsForUser({
+                           userId,
+                           currentStartDate,
+                           currentEndDate,
+                           previousStartDate,
+                           previousEndDate,
+                       }: {
+        userId: string;
+        currentStartDate: string;
+        currentEndDate: string;
+        previousStartDate: string;
+        previousEndDate: string;
+    }) {
+        const query = this.modelType.query();
+        const tenantId = this.getTenantId();
+        const rank = await ApiServer.db.raw(
+            `select  ranking.rank
+from (select *, row_number() OVER (ORDER BY t.total desc) AS rank
+      from (select "profiles"."userId" as userId, COALESCE(sum(transactions.quantity * jobs.value), 0) as total
+            from "profiles"
+                   left join "transactions" on "profiles"."userId" = "transactions"."userId" and
+                                               "transactions"."createdAt" between ? and (? :: timestamptz + INTERVAL '1 day ')
+                   left join "jobs" on "transactions"."jobId" = "jobs"."id"
+            where "profiles"."tenantId" = ?
+            group by "profiles"."userId") as t)as ranking
+where ranking.userId = ?
+`,
+            [currentStartDate, currentEndDate, tenantId, userId],
+        );
+        const {count: nJobs, current} = await ApiServer.db
+            .from('transactions')
+            .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
+            .leftJoin('jobs', 'transactions.jobId', 'jobs.id')
+            .debug()
+            .whereRaw('"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')', [
+                currentStartDate,
+                currentEndDate,
+            ])
+            .count()
+            .select([knex.raw('sum(transactions.quantity * jobs.value) as current')])
+            .groupBy('transactions.userId')
+            .first();
+
+        const {ytd} = await ApiServer.db
+            .from('transactions')
+            .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
+            .join('transfers', 'transactions.transferId', 'transfers.id')
+            .groupBy('transactions.userId')
+            .sum('transfers.value as ytd')
+            .first();
+        const {prev} = await ApiServer.db
+            .from('transactions')
+            .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
+            .join('transfers', 'transactions.transferId', 'transfers.id')
+            .orderBy('transfers.createdAt', 'desc')
+            .select(['value as prev'])
+            .first();
+        return {rank: rank.rows[0].rank, nJobs: nJobs, prev, current, ytd};
     }
 }

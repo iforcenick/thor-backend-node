@@ -12,6 +12,7 @@ import {TransactionController} from './transaction/controller';
 import {JobController} from './job/controller';
 import * as dwolla from './dwolla';
 import {DwollaController} from './dwolla/controller';
+import {StatisticsController} from './statistics/controller';
 
 const knex = require('knex');
 const morgan = require('morgan');
@@ -30,7 +31,7 @@ export class ApiServer {
     private server: any = null;
     private port: number;
     private knex: any;
-
+    static db: any;
     constructor() {
         this.port = this.config.get('express.port');
         this.app = express();
@@ -147,6 +148,7 @@ export class ApiServer {
     private setupDB() {
         this.knex = knex(this.config.get('db'));
         this.knex.migrate.latest();
+        ApiServer.db = this.knex;
         Model.knex(this.knex);
     }
 
