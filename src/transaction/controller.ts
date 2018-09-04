@@ -38,6 +38,15 @@ export class TransactionController extends BaseController {
     }
 
     @GET
+    @Path('statistics')
+    @Preprocessor(BaseController.requireAdmin)
+    @Tags('transactions')
+    async getStatistics(@QueryParam('startDate') startDate?: string, @QueryParam('endDate') endDate?: string) {
+        const stats = await this.service.getStatistics({startDate, endDate});
+        return stats;
+    }
+
+    @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('transactions')

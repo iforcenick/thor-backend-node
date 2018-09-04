@@ -8,6 +8,7 @@ import * as dwolla from '../dwolla';
 import {TenantService} from '../tenant/service';
 import {UserService} from '../user/service';
 import {transaction} from 'objection';
+import {ApiServer} from '../server';
 
 const knex = require('knex');
 
@@ -147,5 +148,19 @@ export class TransactionService extends db.ModelService<models.Transaction> {
             _transaction.transfer.status = transfer.Statuses.externalProcessing;
             await this.transferService.update(_transaction.transfer, trx);
         });
+    }
+
+    async getStatistics({startDate, endDate}: { startDate: string; endDate: string }) {
+        const base = ApiServer.db
+            .from('transactions')
+            .where({'transactions.tenantId': this.getTenantId()})
+            .whereRaw('"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')', [
+                startDate,
+                endDate,
+            ]);
+        const totalQuery = base.count('* as total').first();
+        const a = await Promise.all([totalQuery]);
+        const [{total}] = a;
+        return {approved: '0', postponed: '0', total};
     }
 }

@@ -99,7 +99,6 @@ export class ApiServer {
                 const unsubscribe = [];
                 const endpointUrl = 'http://35.230.69.244/dwolla';
                 const subscriptions = res.body._embedded['webhook-subscriptions'];
-                console.log('subscriptions count:', subscriptions.length);
                 let hasSubscription = false;
                 subscriptions.forEach(s => {
                     if (s.url !== endpointUrl) {
