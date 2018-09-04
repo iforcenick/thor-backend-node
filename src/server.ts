@@ -12,7 +12,6 @@ import {TransactionController} from './transaction/controller';
 import {JobController} from './job/controller';
 import * as dwolla from './dwolla';
 import {DwollaController} from './dwolla/controller';
-import {StatisticsController} from './statistics/controller';
 
 const knex = require('knex');
 const morgan = require('morgan');
