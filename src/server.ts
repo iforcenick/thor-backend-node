@@ -155,6 +155,7 @@ export class ApiServer {
         this.app.use('/users', passport.authenticate('jwt', {session: false}));
         this.app.use('/jobs', passport.authenticate('jwt', {session: false}));
         this.app.use('/transactions', passport.authenticate('jwt', {session: false}));
+        this.app.use('/tenants', passport.authenticate('jwt', {session: false}));
         this.app.use('/auth/password', passport.authenticate('jwt', {session: false}));
     }
 

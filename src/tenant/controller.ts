@@ -19,12 +19,20 @@ export class TenantController extends BaseController {
     }
 
     @GET
+    @Path('statistics')
+    @Tags('tenants', 'statistics')
+    async getTenantStats() {
+        const stats = await this.service.getStatistics();
+        return stats;
+    }
+
+    @GET
     @Path(':id')
     @Tags('tenants')
     async getTenant(@PathParam('id') id: string): Promise<models.TenantResponse> {
         const tenant = await this.service.get(id);
         if (!tenant) {
-            throw new Errors.NotFoundError;
+            throw new Errors.NotFoundError();
         }
 
         return this.map(models.TenantResponse, tenant);
@@ -37,7 +45,7 @@ export class TenantController extends BaseController {
         const parsedData = await this.validate(data, models.tenantRequestSchema);
         let tenant = models.Tenant.fromJson(parsedData);
         try {
-            await transaction(models.Tenant.knex(), async (trx) => {
+            await transaction(models.Tenant.knex(), async trx => {
                 tenant = await this.service.insert(tenant, trx);
             });
             tenant = await this.service.get(tenant.id);
