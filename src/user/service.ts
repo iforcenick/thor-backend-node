@@ -280,7 +280,8 @@ export class UserService extends db.ModelService<models.User> {
     }) {
         const tenantId = this.getTenantId();
         const rankQuery = ApiServer.db.raw(
-            `select  ranking.rank
+            `
+            select  ranking.rank
 from (select *, row_number() OVER (ORDER BY t.total desc) AS rank
       from (select "profiles"."userId" as userId, COALESCE(sum(transactions.quantity * jobs.value), 0) as total
             from "profiles"
@@ -292,7 +293,7 @@ from (select *, row_number() OVER (ORDER BY t.total desc) AS rank
 where ranking.userId = ?
 `,
             [currentStartDate, currentEndDate, tenantId, userId],
-        );
+        ).debug();
         const query = ApiServer.db
             .from('transactions')
             .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
@@ -324,14 +325,17 @@ where ranking.userId = ?
             .orderBy('transfers.createdAt', 'desc')
             .select(['value as prev'])
             .first();
-        const [{count: nJobs, current}, rank, ytdResult, prevResult] = await Promise.all([
+        const [queryResult, rankResult, ytdResult, prevResult] = await Promise.all([
             query,
             rankQuery,
             ytdQuery,
             prevQuery,
         ]);
-        const prev = prevResult ? prevResult.prev : '0';
-        const ytd = ytdResult ? ytdResult.ytd : '0';
-        return {rank: rank.rows[0].rank, nJobs: nJobs, prev, current, ytd};
+        const prev = prevResult ? prevResult.prev : 0;
+        const ytd = ytdResult ? ytdResult.ytd : 0;
+        const nJobs = queryResult ? queryResult.count : 0;
+        const current = queryResult ? queryResult.current : 0;
+        const rank = rankResult.rows[0] ? rankResult.rows[0].rank : null;
+        return {rank, nJobs, prev, current, ytd};
     }
 }
