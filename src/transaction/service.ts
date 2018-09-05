@@ -92,7 +92,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         }
         query
             .join('jobs', 'transactions.jobId', 'jobs.id')
-            .select(['*', knex.raw('transactions.quantity * jobs.value as value')]);
+            .select(['transactions.*', knex.raw('transactions.quantity * jobs.value as value')]);
         query.eager(eagerObject, eagerFilters);
         const result = await this.tenantContext(query);
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);

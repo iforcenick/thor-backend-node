@@ -278,9 +278,8 @@ export class UserService extends db.ModelService<models.User> {
         previousStartDate: string;
         previousEndDate: string;
     }) {
-        const query = this.modelType.query();
         const tenantId = this.getTenantId();
-        const rank = await ApiServer.db.raw(
+        const rankQuery = ApiServer.db.raw(
             `select  ranking.rank
 from (select *, row_number() OVER (ORDER BY t.total desc) AS rank
       from (select "profiles"."userId" as userId, COALESCE(sum(transactions.quantity * jobs.value), 0) as total
@@ -294,11 +293,10 @@ where ranking.userId = ?
 `,
             [currentStartDate, currentEndDate, tenantId, userId],
         );
-        const {count: nJobs, current} = await ApiServer.db
+        const query = ApiServer.db
             .from('transactions')
             .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
             .leftJoin('jobs', 'transactions.jobId', 'jobs.id')
-            .debug()
             .whereRaw('"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')', [
                 currentStartDate,
                 currentEndDate,
@@ -308,20 +306,32 @@ where ranking.userId = ?
             .groupBy('transactions.userId')
             .first();
 
-        const {ytd} = await ApiServer.db
+        const ytdQuery = ApiServer.db
             .from('transactions')
             .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
             .join('transfers', 'transactions.transferId', 'transfers.id')
             .groupBy('transactions.userId')
             .sum('transfers.value as ytd')
             .first();
-        const {prev} = await ApiServer.db
+        const prevQuery = ApiServer.db
             .from('transactions')
             .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
+            .whereRaw('"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')', [
+                previousStartDate,
+                previousEndDate,
+            ])
             .join('transfers', 'transactions.transferId', 'transfers.id')
             .orderBy('transfers.createdAt', 'desc')
             .select(['value as prev'])
             .first();
+        const [{count: nJobs, current}, rank, ytdResult, prevResult] = await Promise.all([
+            query,
+            rankQuery,
+            ytdQuery,
+            prevQuery,
+        ]);
+        const prev = prevResult ? prevResult.prev : '0';
+        const ytd = ytdResult ? ytdResult.ytd : '0';
         return {rank: rank.rows[0].rank, nJobs: nJobs, prev, current, ytd};
     }
 }
