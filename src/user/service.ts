@@ -7,9 +7,6 @@ import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
 import * as _ from 'lodash';
 import {ApiServer} from '../server';
-import {Paginated} from '../db';
-import {User} from './models';
-import {Pagination} from '../db';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -44,6 +41,10 @@ export class UserService extends db.ModelService<models.User> {
 
     getListOptions(query) {
         return this.getOptions(query);
+    }
+
+    tenantContext(query) {
+        return query.where('profiles.tenantId', this.getTenantId());
     }
 
     async getWithTransactions(
@@ -183,21 +184,6 @@ export class UserService extends db.ModelService<models.User> {
 
     async findByPhone(phone: string): Promise<models.User> {
         return await this.tenantContext(this.getOptions(this.modelType.query().findOne({phone: phone})));
-    }
-
-    async list(page?: number, limit?: number): Promise<Paginated<User>> {
-        if (!page) {
-            page = 0;
-        }
-
-        limit = this.paginationLimit(limit);
-        const query = this.modelType.query();
-
-        this.getListOptions(query);
-        query.page(page, limit);
-        query.where('profiles.tenantId', this.getTenantId());
-        const result = await this.tenantContext(query);
-        return new Paginated(new Pagination(page, limit, result.total), result.results);
     }
 
     async findByEmail(email: string): Promise<models.User> {
