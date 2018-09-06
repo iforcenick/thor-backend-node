@@ -19,6 +19,7 @@ import {UserService} from '../user/service';
 import {JobService} from '../job/service';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {Job} from '../job/models';
+import * as role from '../user/role';
 
 const validate = require('uuid-validate');
 
@@ -128,6 +129,9 @@ export class TransactionController extends BaseController {
         const user = await this.userService.get(parsedData['userId']);
         if (!user) {
             throw new Errors.NotFoundError('User not found');
+        }
+        if (!user.hasRole(role.models.Types.customer)) {
+            throw new Errors.BadRequestError('user is not customer');
         }
         delete parsedData['job'];
         let transaction = models.Transaction.fromJson(parsedData);
