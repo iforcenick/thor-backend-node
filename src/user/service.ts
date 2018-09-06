@@ -80,7 +80,7 @@ export class UserService extends db.ModelService<models.User> {
             },
             transactions: builder => {
                 builder
-                    .select(['*', knex.raw('transactions.quantity * jobs.value as value')])
+                    .select(['transactions.*', knex.raw('transactions.quantity * jobs.value as value')])
                     .join('jobs', 'transactions.jobId', 'jobs.id');
                 if (startDate && endDate) {
                     builder.whereRaw(

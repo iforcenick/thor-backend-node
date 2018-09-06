@@ -85,11 +85,11 @@ export class UserBaseInfo extends Mapper {
 }
 
 export class UserResponse extends UserBaseInfo {
-    id: number = mapper.FIELD_NUM;
+    id: string = mapper.FIELD_STR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
     lastTransaction: Date = mapper.FIELD_DATE;
-    rank: string = mapper.FIELD_STR;
+    rank: number = mapper.FIELD_NUM;
     profile: profile.ProfileResponse = new profile.ProfileResponse();
     tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
     transactions: Array<TransactionResponse> = mapper.FIELD_ARR;
