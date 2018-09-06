@@ -162,7 +162,7 @@ export class UserService extends db.ModelService<models.User> {
             profile.userId = user.id;
             baseProfile.userId = user.id;
             const profileEntity = await this.profileService.createProfile(profile, [customerRole], trx);
-            const baseProfileEntity = await this.profileService.createProfile(baseProfile, [customerRole], trx, true);
+            const baseProfileEntity = await this.profileService.createProfile(baseProfile, [], trx, true);
 
             // await user.$relatedQuery(models.Relations.profile, trx).relate(profileEntity.id);
             // await user.$relatedQuery(models.Relations.profile, trx).relate(baseProfileEntity.id);
@@ -205,7 +205,7 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async getRole(role: role.models.Types): Promise<role.models.Role> {
-        return await this.tenantContext(this.rolesService.find(role));
+        return await this.rolesService.find(role);
     }
 
     async checkPassword(password: string, userPassword: string) {

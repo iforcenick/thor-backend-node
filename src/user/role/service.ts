@@ -12,6 +12,6 @@ export class RoleService extends db.ModelService<models.Role> {
     }
 
     async find(role: models.Types) {
-        return this.tenantContext(this.modelType.query().findOne({name: role}));
+        return this.modelType.query().findOne({name: role});
     }
 }

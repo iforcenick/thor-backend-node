@@ -41,9 +41,10 @@ export class ProfileService extends db.ModelService<models.Profile> {
         }
 
         profile = await this.insert(profile, trx);
-
-        for (const role of roles) {
-            await profile.$relatedQuery(models.Relations.roles, trx).relate(role.id);
+        if (!baseProfile) {
+            for (const role of roles) {
+                await profile.$relatedQuery(models.Relations.roles, trx).relate(role.id);
+            }
         }
 
         return profile;
