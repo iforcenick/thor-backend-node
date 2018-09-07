@@ -83,7 +83,7 @@ export class UserController extends BaseController {
         if (embed) {
             users = await this.service.getWithTransactions(page, limit, embed, startDate, endDate, status);
         } else {
-            users = await this.service.list(page, limit);
+            users = await this.service.list(page, limit, startDate, endDate);
         }
         return this.paginate(
             users.pagination,

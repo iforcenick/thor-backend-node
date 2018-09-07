@@ -89,7 +89,9 @@ export class UserResponse extends UserBaseInfo {
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
     lastTransaction: Date = mapper.FIELD_DATE;
+    lastActivity: Date = mapper.FIELD_DATE;
     rank: number = mapper.FIELD_NUM;
+    prev: number = mapper.FIELD_NUM;
     profile: profile.ProfileResponse = new profile.ProfileResponse();
     tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
     transactions: Array<TransactionResponse> = mapper.FIELD_ARR;

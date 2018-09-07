@@ -146,8 +146,7 @@ export class UserService extends db.ModelService<models.User> {
             .join('jobs', 'transactions.jobId', 'jobs.id')
             // .select(['*', knex.raw('transactions.quantity * jobs.value as value')])
             .groupBy('transactions.status')
-            .select(['transactions.status'])
-            .debug();
+            .select(['transactions.status']);
         return await query;
     }
 
@@ -241,6 +240,117 @@ export class UserService extends db.ModelService<models.User> {
         return user;
     }
 
+    async list(
+        page?: number,
+        limit?: number,
+        startDate?: string,
+        endDate?: string,
+    ): Promise<db.Paginated<models.User>> {
+        if (!page) {
+            page = 0;
+        }
+        const tenantId = this.getTenantId();
+        const knex = ApiServer.db;
+        limit = this.paginationLimit(limit);
+        const query = this.modelType.query();
+        const eagerObject = {
+            [models.Relations.profile]: {
+                roles: true,
+                $modify: ['profiles'],
+            },
+        };
+        const eagerFilters = {
+            profiles: builder => {
+                const tenantId = this.getTenantId();
+                builder.orWhere(function () {
+                    this.where('tenantId', tenantId).orWhere('tenantId', null);
+                });
+            },
+        };
+        query.join('profiles', function () {
+            this.on('users.id', 'profiles.userId').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
+        });
+        // rank
+        query.join(
+            knex
+                .from('users')
+                .join('profiles', function () {
+                    this.on('profiles.userId', 'users.id').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
+                })
+                .leftJoin('transactions', function () {
+                    this.on('transactions.userId', 'users.id').andOn(
+                        knex.raw(`"transactions"."createdAt" between ? and ? :: timestamptz + interval '1 day' `, [
+                            startDate,
+                            endDate,
+                        ]),
+                    );
+                })
+                .leftJoin('jobs', function () {
+                    this.on('jobs.id', 'transactions.jobId');
+                })
+                .groupBy('users.id')
+                .select([
+                    'users.id',
+                    knex.raw(
+                        'row_number() OVER (ORDER BY coalesce(sum(transactions.quantity * jobs.value), 0) desc) AS rank',
+                    ),
+                ])
+                .as('r'),
+            'r.id',
+            'users.id',
+        );
+        // lastActivity
+        query.join(
+            knex
+                .from('users')
+                .select(['users.id'])
+                .max('transactions.createdAt as lastActivity')
+                .join('profiles', function () {
+                    this.on('profiles.userId', 'users.id').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
+                })
+                .leftJoin('transactions', function () {
+                    this.on('transactions.userId', 'users.id').andOn(
+                        knex.raw(`"transactions"."createdAt" between ? and ? :: timestamptz + interval '1 day' `, [
+                            startDate,
+                            endDate,
+                        ]),
+                    );
+                })
+                .groupBy('users.id')
+                .as('a'),
+            'a.id',
+            'users.id',
+        );
+        // prev
+        query.join(
+            knex
+                .distinct(knex.raw(' on (users.id) users.id')).select(['transfers.value'])
+                .from('users')
+                .join('profiles', function () {
+                    this.on('profiles.userId', 'users.id').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
+                })
+                .leftJoin('transactions', function () {
+                    this.on('users.id', 'transactions.userId')
+                        .andOn('transactions.tenantId', knex.raw('?', [tenantId]))
+                        .andOn(knex.raw('"transactions"."transferId" is not null'));
+                })
+                .leftJoin('transfers', 'transfers.id', 'transactions.transferId')
+                .orderBy('users.id')
+                .orderBy('transactions.createdAt', 'desc')
+                .as('prev'),
+            'prev.id',
+            'users.id',
+        );
+        query.orderBy('r.rank');
+        query.select(['users.id', 'r.rank', 'a.lastActivity', 'prev.value as prev']);
+        query.eager(eagerObject, eagerFilters);
+
+        query.page(page, limit);
+
+        const result = await this.tenantContext(query);
+        return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
+    }
+
     async generateJwt(user: models.User) {
         return jwt.sign(user.toJSON(), this.config.get('authorization.jwtSecret'), {
             expiresIn: this.config.get('authorization.tokenExpirationTime'),
@@ -279,7 +389,7 @@ from (select *, row_number() OVER (ORDER BY t.total desc) AS rank
 where ranking.userId = ?
 `,
             [currentStartDate, currentEndDate, tenantId, userId],
-        ).debug();
+        );
         const query = ApiServer.db
             .from('transactions')
             .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
