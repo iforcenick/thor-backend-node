@@ -26,3 +26,6 @@ dwolla:
     secret: xBikRTlJID8latnauamPr0oW9IlU6jeqOFBSZB5DoI6RUjEtQa
     environment: sandbox
     webhookSecret: someSecretSecret
+swagger:
+  host: thor-api.acaisoft.io
+  schema: https

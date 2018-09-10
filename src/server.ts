@@ -54,7 +54,7 @@ export class ApiServer {
         this.app.use(this.logger.expressWinston);
 
         this.addControllers();
-        Server.swagger(this.app, './dist/swagger.json', '/api-docs', 'localhost:' + this.port, ['http']);
+        Server.swagger(this.app, './dist/swagger.json', '/api-docs', this.config.get('swagger.host'), [this.config.get('swagger.schema')]);
 
         this.app.use(this.errorHandler.bind(this));
     }
@@ -94,6 +94,8 @@ export class ApiServer {
                 }
 
                 this.logger.info(`Listening to http://${this.server.address().address}:${this.server.address().port}`);
+
+                // TODO: please move this to dwolla module (perhaps client?) and pass parameters through config
                 await this.dwollaClient.authorize();
                 const res = await this.dwollaClient.listWebhookEndpoints();
                 const unsubscribe = [];

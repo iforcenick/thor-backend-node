@@ -1,3 +1,6 @@
 db:
   connection:
     database: development
+swagger:
+  host: localhost:8081
+  schema: http
