@@ -309,12 +309,7 @@ export class UserService extends db.ModelService<models.User> {
                     this.on('profiles.userId', 'users.id').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
                 })
                 .leftJoin('transactions', function () {
-                    this.on('transactions.userId', 'users.id').andOn(
-                        knex.raw(`"transactions"."createdAt" between ? and ? :: timestamptz + interval '1 day' `, [
-                            startDate,
-                            endDate,
-                        ]),
-                    );
+                    this.on('transactions.userId', 'users.id');
                 })
                 .groupBy('users.id')
                 .as('a'),
