@@ -11,10 +11,7 @@ export class TransferService extends db.ModelService<models.Transfer> {
         return await this.insert(transfer, trx);
     }
 
-    async updateStatus(externalId, status) {
-        return await this.modelType
-            .query()
-            .where('externalId', externalId)
-            .update({status});
+    async getByExternalId(id: string) {
+        return await this.getOneBy('externalId', id);
     }
 }

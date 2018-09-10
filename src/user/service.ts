@@ -170,6 +170,7 @@ export class UserService extends db.ModelService<models.User> {
         return user;
     }
 
+    // TODO: it will anonymize profiles for other tenants too, that's a bug
     async delete(id: string) {
         const user = await this.getForAllTenants(id);
         user.deletedAt = new Date();
@@ -182,7 +183,7 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async findByPhone(phone: string): Promise<models.User> {
-        return await this.tenantContext(this.getOptions(this.modelType.query().findOne({phone: phone})));
+        return await this.getOneBy('phone', phone);
     }
 
     async findByEmail(email: string): Promise<models.User> {

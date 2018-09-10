@@ -1,4 +1,4 @@
-import {Path, POST} from 'typescript-rest';
+import {Errors, Path, POST} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
@@ -6,21 +6,35 @@ import * as dwolla from '../dwolla';
 import {event} from './index';
 import {IEvent} from './event';
 import {TransferService} from '../transaction/transfer/service';
+import {Tags} from 'typescript-rest-swagger';
 
-@Path('/dwolla')
+@Tags('dwolla')
+@Path('/dwolla/events')
 export class DwollaController extends BaseController {
     @Inject private logger: Logger;
     @Inject private dwollaClient: dwolla.Client;
     @Inject private transferService: TransferService;
 
+    constructor(@Inject transferService: TransferService) {
+        super();
+        this.transferService = transferService;
+    }
+
     @POST
     @Path('')
-    async createUser(data: IEvent) {
-        const eventO = event.factory(data);
-        console.log(eventO);
-        switch (eventO.topic) {
+    async events(data: IEvent) {
+        const _event = event.factory(data);
+        this.logger.info(_event);
+
+        switch (_event.topic) {
             case event.TYPE.transferCompleted: {
-                await this.transferService.updateStatus(eventO._links['resource']['href'], eventO.topic);
+                const transfer = await this.transferService.getByExternalId(_event._links['resource']['href']);
+                if (!transfer) {
+                    throw new Errors.NotFoundError('Transfer not found');
+                }
+
+                transfer.status = _event.topic;
+                await this.transferService.update(transfer);
             }
         }
         return;

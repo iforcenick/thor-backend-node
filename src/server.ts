@@ -95,30 +95,8 @@ export class ApiServer {
 
                 this.logger.info(`Listening to http://${this.server.address().address}:${this.server.address().port}`);
 
-                // TODO: please move this to dwolla module (perhaps client?) and pass parameters through config
                 await this.dwollaClient.authorize();
-                const res = await this.dwollaClient.listWebhookEndpoints();
-                const unsubscribe = [];
-                const endpointUrl = 'http://35.230.69.244/dwolla';
-                const subscriptions = res.body._embedded['webhook-subscriptions'];
-                let hasSubscription = false;
-                subscriptions.forEach(s => {
-                    if (s.url !== endpointUrl) {
-                        unsubscribe.push(this.dwollaClient.deleteWebhookEndpoint(s['_links'].self.href));
-                    } else {
-                        hasSubscription = true;
-                    }
-                });
-                if (unsubscribe.length > 0) {
-                    console.log('unsubscribe call with num: ', unsubscribe.length);
-                    const resp = await Promise.all(unsubscribe);
-                    console.log('unsub resp', resp);
-                }
-                if (!hasSubscription) {
-                    console.log('register new sub');
-                    const registerRes = await this.dwollaClient.registerWebhookEndpoint(endpointUrl);
-                    console.log('registerRes', registerRes);
-                }
+                await this.dwollaClient.webhooksCleanup();
                 return resolve();
             });
         });

@@ -2,12 +2,14 @@ import * as dwolla from 'dwolla-v2';
 import * as customer from './customer';
 import * as funding from './funding';
 import * as transaction from './transfer';
+import {Logger} from '../logger';
 import {Config} from '../config';
 import {AutoWired, Inject} from 'typescript-ioc';
 
 @AutoWired
 export class Client {
     @Inject private config: Config;
+    @Inject private logger: Logger;
     private key: string;
     private secret: string;
     private environment: string;
@@ -105,11 +107,38 @@ export class Client {
     }
 
     public async deleteWebhookEndpoint(webhookUrl: string): Promise<string> {
-        const response = await this.client.delete(webhookUrl);
-        return response;
+        return await this.client.delete(webhookUrl);
     }
 
     public async listWebhookEndpoints() {
         return await this.client.get('webhook-subscriptions');
+    }
+
+    public async webhooksCleanup() {
+        const res = await this.listWebhookEndpoints();
+        const unsubscribe = [];
+        const endpointUrl = this.config.get('dwolla.webhookUri');
+        const subscriptions = res.body._embedded['webhook-subscriptions'];
+        let hasSubscription = false;
+
+        subscriptions.forEach(s => {
+            if (s.url !== endpointUrl) {
+                unsubscribe.push(this.deleteWebhookEndpoint(s['_links'].self.href));
+            } else {
+                hasSubscription = true;
+            }
+        });
+
+        if (unsubscribe.length > 0) {
+            this.logger.info('[dwolla] Unsubscribe endpoints count: ', unsubscribe.length);
+            const resp = await Promise.all(unsubscribe);
+            this.logger.info('[dwolla] Unsubscribe endpoints count response: ', resp);
+        }
+
+        if (!hasSubscription) {
+            this.logger.info('[dwolla] Register new webhook endpoint');
+            const registerRes = await this.registerWebhookEndpoint(endpointUrl);
+            this.logger.info('[dwolla] Register new webhook endpoint response: ', registerRes);
+        }
     }
 }
