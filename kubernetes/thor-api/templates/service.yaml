@@ -11,9 +11,9 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.image.containerPort }}
+      targetPort: https
       protocol: TCP
-      name: http
+      name: https
   selector:
     app: {{ template "thor-api.name" . }}
     release: {{ .Release.Name }}

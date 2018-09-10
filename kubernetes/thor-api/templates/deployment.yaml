@@ -20,23 +20,40 @@ spec:
         release: {{ .Release.Name }}
     spec:
       containers:
-        - name: {{ .Chart.Name }}
-          image: "{{ .Values.env.DOCKER_REPOSITORY }}:{{ .Values.env.TAG }}"
+        - name: "{{ .Chart.Name }}-nginx"
+          image: nginx:stable
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: https
+              containerPort: 443
+              protocol: TCP
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+            - name: nginx-secrets
+              mountPath: /etc/nginx/ssl
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+        - name: "{{ .Chart.Name }}-app"
+          image: us.gcr.io/odin-214321/thor-api:master-0.0.2-35-gfa6887e2ef
           command: ["npm"]
           args: ["start"]
           env:
             - name: NODE_ENV
               value: {{ .Values.app.nodeEnv }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: {{ .Values.image.containerPort }}
-              protocol: TCP
           resources:
 {{ toYaml .Values.resources | indent 12 }}
-    {{- with .Values.nodeSelector }}
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+        - name: nginx-secrets
+          secret:
+            secretName: nginx-secrets
       imagePullSecrets:
         - name: {{ .Values.image.imagePullSecrets }}
+    {{- with .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
     {{- end }}

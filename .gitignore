@@ -2,3 +2,4 @@ node_modules
 .idea
 dist
 data/logs.log
+*-secrets.yaml
