@@ -23,7 +23,7 @@ export class TenantService extends db.ModelService<models.Tenant> {
             .where({'profiles.tenantId': tenantId})
             .count('id as total')
             .first();
-        const [{total: totalRes}, activeRes, inactive] = await Promise.all([
+        const [{total: totalRes}, activeRes, resting] = await Promise.all([
             totalQuery,
             getQueryForDays(7),
             getQueryForDays(30),
@@ -31,10 +31,10 @@ export class TenantService extends db.ModelService<models.Tenant> {
         const total = parseInt(totalRes);
         const active = {count: parseInt(activeRes.count)};
         active['percent'] = active.count / total * 100;
-        inactive.count = parseInt(inactive.count) - active.count;
-        inactive.percent = inactive.count / total * 100;
-        const resting = {count: total - (active.count + inactive.count), percent: 0};
-        resting['percent'] = resting.count / total * 100;
+        resting.count = parseInt(resting.count) - active.count;
+        resting.percent = resting.count / total * 100;
+        const inactive = {count: total - (active.count + resting.count), percent: 0};
+        inactive['percent'] = inactive.count / total * 100;
         return {
             total: total.toFixed(),
             active: {
