@@ -41,13 +41,13 @@ export class TenantService extends db.ModelService<models.Tenant> {
                 count: active.count.toFixed(),
                 percent: active['percent'].toFixed(),
             },
-            inactive: {
-                count: inactive.count.toFixed(),
-                percent: inactive['percent'].toFixed(),
-            },
             resting: {
                 count: resting.count.toFixed(),
                 percent: resting['percent'].toFixed(),
+            },
+            inactive: {
+                count: inactive.count.toFixed(),
+                percent: inactive['percent'].toFixed(),
             },
         };
     }
