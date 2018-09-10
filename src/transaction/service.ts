@@ -66,13 +66,13 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     }
 
     async getForUser(
-        {page = 0, limit}: { page?: number; limit?: number },
+        {page = 1, limit}: { page?: number; limit?: number },
         {userId, startDate, endDate, status}: { userId: string; startDate?: string; endDate?: string; status?: string },
     ) {
         limit = this.paginationLimit(limit);
         const query = this.modelType.query();
         query.where({userId});
-        query.page(page, limit);
+        query.page(page - 1, limit);
         const eagerObject = {
             job: {$modify: ['job']},
         };

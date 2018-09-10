@@ -56,7 +56,7 @@ export class UserService extends db.ModelService<models.User> {
         status?: string,
     ): Promise<db.Paginated<models.User>> {
         if (!page) {
-            page = 0;
+            page = 1;
         }
         limit = this.paginationLimit(limit);
         const query = this.modelType.query();
@@ -126,7 +126,7 @@ export class UserService extends db.ModelService<models.User> {
             .orderByRaw('rank desc')
             .max('transactions.createdAt as lastTransaction')
             .join('profiles', 'users.id', 'profiles.userId');
-        query.page(page, limit);
+        query.page(page - 1, limit);
 
         const result = await this.tenantContext(query);
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
@@ -247,7 +247,7 @@ export class UserService extends db.ModelService<models.User> {
         endDate?: string,
     ): Promise<db.Paginated<models.User>> {
         if (!page) {
-            page = 0;
+            page = 1;
         }
         const tenantId = this.getTenantId();
         const knex = ApiServer.db;
@@ -340,7 +340,7 @@ export class UserService extends db.ModelService<models.User> {
         query.select(['users.id', 'r.rank', 'a.lastActivity', 'prev.value as prev']);
         query.eager(eagerObject, eagerFilters);
 
-        query.page(page, limit);
+        query.page(page - 1, limit);
 
         const result = await this.tenantContext(query);
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
