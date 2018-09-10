@@ -44,6 +44,7 @@ export class TransactionController extends BaseController {
     @Tags('transactions')
     async getStatistics(@QueryParam('startDate') startDate?: string, @QueryParam('endDate') endDate?: string) {
         const stats = await this.service.getStatistics({startDate, endDate});
+        // TODO: missing stats response definition
         return stats;
     }
 
@@ -116,10 +117,12 @@ export class TransactionController extends BaseController {
         @ContextRequest context: ServiceContext,
     ): Promise<models.TransactionResponse> {
         const parsedData = await this.validate(data, models.transactionRequestSchema);
+        // TODO: block below should be in try/catch
         let job = parsedData['job'];
         if (!job['id']) {
             delete job['id'];
             const jobEntity = Job.fromJson(job);
+            // TODO: this should be run in the same transaction as createTransaction
             job = await this.jobService.createJob(jobEntity);
         }
         job = await this.jobService.get(job.id);

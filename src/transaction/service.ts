@@ -125,6 +125,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         delete _transaction.value;
         await transaction(this.transaction(), async trx => {
             _transfer = await this.transferService.createTransfer(_transfer, trx);
+            // TODO: why was it changed to update rather then relate?
             // await _transfer.$relatedQuery(transfer.Relations.transaction, trx).relate(_transaction.id);
             _transaction.transferId = _transfer.id;
             await this.update(_transaction, trx);
@@ -151,6 +152,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     }
 
     async getStatistics({startDate, endDate}: { startDate: string; endDate: string }) {
+        // TODO: I think it should be moved to stats service, also is it injection safe?
         const base = ApiServer.db
             .from('transactions')
             .where({'transactions.tenantId': this.getTenantId()})
@@ -161,6 +163,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         const totalQuery = base.count('* as total').first();
         const a = await Promise.all([totalQuery]);
         const [{total}] = a;
+        // TODO: missing stats response definition
         return {approved: '0', postponed: '0', total};
     }
 }

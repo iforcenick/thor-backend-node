@@ -23,6 +23,7 @@ export class TenantController extends BaseController {
     @Tags('tenants', 'statistics')
     async getTenantStats() {
         const stats = await this.service.getStatistics();
+        // TODO: missing stats response definition
         return stats;
     }
 

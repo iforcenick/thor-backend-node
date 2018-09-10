@@ -21,7 +21,7 @@ export class JobController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('jobs')
-    async create(data: models.JobRequest) {
+    async create(data: models.JobRequest): Promise<models.JobResponse> {
         const parsedData = await this.validate(data, models.jobRequestSchema);
         const jobModel = models.Job.fromJson(parsedData);
         try {

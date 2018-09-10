@@ -23,7 +23,7 @@ import {transaction} from 'objection';
 import {Security, Tags} from 'typescript-rest-swagger';
 import * as dwolla from '../dwolla';
 import {ValidationError} from '../errors';
-import {TransactionResponse} from '../transaction/models';
+import {TransactionResponse, PaginatedTransactionResponse} from '../transaction/models';
 import {TransactionService} from '../transaction/service';
 
 @Security('api_key')
@@ -78,7 +78,7 @@ export class UserController extends BaseController {
         @QueryParam('startDate') startDate?: string,
         @QueryParam('endDate') endDate?: string,
         @QueryParam('status') status?: string,
-    ) {
+    ): Promise<models.PaginatedUserResponse> {
         let users;
         if (embed) {
             users = await this.service.getWithTransactions(page, limit, embed, startDate, endDate, status);
@@ -166,7 +166,7 @@ export class UserController extends BaseController {
     @Path(':id/profile')
     @Tags('users')
     @Preprocessor(BaseController.requireAdmin)
-    async patchAnyUser(@PathParam('id') id: string, data: models.UserRequest) {
+    async patchAnyUser(@PathParam('id') id: string, data: models.UserRequest): Promise<models.UserResponse> {
         const parsedData = await this.validate(data, models.userPatchSchema);
         try {
             const user = await this.service.get(id);
@@ -208,7 +208,7 @@ export class UserController extends BaseController {
         @QueryParam('startDate') startDate?: string,
         @QueryParam('endDate') endDate?: string,
         @QueryParam('status') status?: string,
-    ) {
+    ): Promise<PaginatedTransactionResponse> {
         const transactions = await this.transactionService.getForUser(
             {page, limit},
             {userId, startDate, endDate, status},
@@ -242,6 +242,7 @@ export class UserController extends BaseController {
             previousEndDate,
         });
         // console.log(stats);
+        // TODO: missing stats response definition
         return stats;
     }
 
