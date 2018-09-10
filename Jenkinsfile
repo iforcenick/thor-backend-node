@@ -5,6 +5,7 @@ properties(
           strategy: [$class: 'LogRotator', artifactDaysToKeepStr: '15', artifactNumToKeepStr: '15', daysToKeepStr: '15', numToKeepStr: '15']]])
 
 def SERVICE_NAME = "thor-api"
+def APP_CONTAINER_NAME = "thor-api-app"
 def NAMESPACE = "thor-api"
 def DOCKER_REPOSITORY = "us.gcr.io/odin-214321/thor-api"
 def GCR_CREDENTIALS = "odin-214321"
@@ -94,7 +95,7 @@ node('docker') {
                     docker.image('google/cloud-sdk').inside("-v ${WORKSPACE}/gcloud:/.config/gcloud -v ${WORKSPACE}/kube:/.kube") {
                         sh "gcloud auth activate-service-account ${DEV_SERVICE_ACCOUNT} --key-file=${KEY_FILE}"
                         sh "gcloud container clusters get-credentials ${DEV_CLUSTER_NAME} --zone ${DEV_ZONE} --project ${DEV_GCP_PROJECT}"
-                        sh "kubectl --namespace=${NAMESPACE} set image deployment/${SERVICE_NAME} ${SERVICE_NAME}=${DOCKER_REPOSITORY}:${version} --record"
+                        sh "kubectl --namespace=${NAMESPACE} set image deployment/${SERVICE_NAME} ${APP_CONTAINER_NAME}=${DOCKER_REPOSITORY}:${version} --record"
                         try {
                             timeout(time: 300, unit: 'SECONDS') {
                                 sh "kubectl --namespace=${NAMESPACE} rollout status deployment/${SERVICE_NAME}"
@@ -117,7 +118,7 @@ node('docker') {
                     docker.image('google/cloud-sdk').inside("-v ${WORKSPACE}/gcloud:/.config/gcloud -v ${WORKSPACE}/kube:/.kube") {
                         sh "gcloud auth activate-service-account ${PROD_SERVICE_ACCOUNT} --key-file=${KEY_FILE}"
                         sh "gcloud container clusters get-credentials ${PROD_CLUSTER_NAME} --zone ${PROD_ZONE} --project ${PROD_GCP_PROJECT}"
-                        sh "kubectl --namespace=${NAMESPACE} set image deployment/${SERVICE_NAME} ${SERVICE_NAME}=${DOCKER_REPOSITORY}:${version} --record"
+                        sh "kubectl --namespace=${NAMESPACE} set image deployment/${SERVICE_NAME} ${APP_CONTAINER_NAME}=${DOCKER_REPOSITORY}:${version} --record"
                         try {
                             timeout(time: 300, unit: 'SECONDS') {
                                 sh "kubectl --namespace=${NAMESPACE} rollout status deployment/${SERVICE_NAME}"
