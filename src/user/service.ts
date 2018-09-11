@@ -7,8 +7,6 @@ import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
 import * as _ from 'lodash';
 import {ApiServer} from '../server';
-import {Pagination} from "../db";
-import {Paginated} from "../db";
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -49,8 +47,11 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     tenantContext(query) {
-        return query.joinRelation(models.Relations.profile)
-            .where(`${models.Relations.profile}.tenantId`, this.getTenantId());
+        return query.joinRelation(`${models.Relations.profile}.${profile.Relations.roles}`)
+            .where({
+                [`${models.Relations.profile}.tenantId`]: this.getTenantId(),
+                'profiles:roles.name': role.models.Types.customer
+            });
     }
 
     async getWithTransactions(page?: number,
