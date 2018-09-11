@@ -7,6 +7,8 @@ import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
 import * as _ from 'lodash';
 import {ApiServer} from '../server';
+import {Pagination} from "../db";
+import {Paginated} from "../db";
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -40,7 +42,38 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     getListOptions(query) {
-        return this.getOptions(query);
+        query.eager(`[${models.Relations.profile}(tenant).[${profile.Relations.roles}],${models.Relations.transactions}(transactions)]`, {
+            tenant: builder => {
+                const tenantId = this.getTenantId();
+                builder.orWhere(function () {
+                    this.where('tenantId', tenantId).orWhere('tenantId', null);
+                });
+            },
+            transactions: builder => {
+                builder.orderBy('createdAt', 'desc').limit(1);
+            },
+        });
+        return query;
+    }
+
+    async list(page?: number, limit?: number, filter?: any, embed?: string): Promise<Paginated<models.User>> {
+        if (!page) {
+            page = 1;
+        }
+
+        limit = this.paginationLimit(limit);
+        const query = models.User.query();
+
+        if (filter) {
+            query.where(filter);
+        }
+
+        this.getListOptions(query);
+        query.page(page - 1, limit);
+
+        const result = await this.embed(query, null);
+
+        return new Paginated(new Pagination(page, limit, result.total), result.results);
     }
 
     tenantContext(query) {
@@ -131,6 +164,7 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     embed(query, embed) {
+        return query;
     }
 
     async activity() {
@@ -250,10 +284,10 @@ export class UserService extends db.ModelService<models.User> {
         return user;
     }
 
-    async list(page?: number,
-               limit?: number,
-               startDate?: string,
-               endDate?: string,): Promise<db.Paginated<models.User>> {
+    async listWithPayments(page?: number,
+                           limit?: number,
+                           startDate?: string,
+                           endDate?: string): Promise<db.Paginated<models.User>> {
         if (!page) {
             page = 1;
         }

@@ -66,6 +66,16 @@ export class User extends db.Model {
     hasRole(role: role.models.Types) {
         return this.tenantProfile.hasRole(role);
     }
+
+    get lastActivity() {
+        const transaction = this.transactions[this.transactions.length - 1];
+
+        if (!transaction) {
+            return null;
+        }
+
+        return transaction.createdAt;
+    }
 }
 
 export class FundingSourceBaseInfo extends Mapper {
@@ -79,7 +89,8 @@ export class FundingSourceResponse extends FundingSourceBaseInfo {
     updatedAt: Date = mapper.FIELD_DATE;
 }
 
-export class FundingSourceRequest extends FundingSourceBaseInfo {}
+export class FundingSourceRequest extends FundingSourceBaseInfo {
+}
 
 export class UserBaseInfo extends Mapper {
 }

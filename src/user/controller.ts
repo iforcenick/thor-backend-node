@@ -70,18 +70,38 @@ export class UserController extends BaseController {
     @Path('/payments/list')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('users')
-    async getUserList(@QueryParam('page') page?: number,
-                      @QueryParam('limit') limit?: number,
-                      @QueryParam('embed') embed?: string,
-                      @QueryParam('startDate') startDate?: string,
-                      @QueryParam('endDate') endDate?: string,
-                      @QueryParam('status') status?: string): Promise<models.PaginatedUserResponse> {
+    async getUsersPaymentsList(@QueryParam('page') page?: number,
+                               @QueryParam('limit') limit?: number,
+                               @QueryParam('embed') embed?: string,
+                               @QueryParam('startDate') startDate?: string,
+                               @QueryParam('endDate') endDate?: string,
+                               @QueryParam('status') status?: string): Promise<models.PaginatedUserResponse> {
         let users;
         if (embed) {
             users = await this.service.getWithTransactions(page, limit, embed, startDate, endDate, status);
         } else {
-            users = await this.service.list(page, limit, startDate, endDate);
+            users = await this.service.listWithPayments(page, limit, startDate, endDate);
         }
+        return this.paginate(
+            users.pagination,
+            users.rows.map(user => {
+                return this.map(models.UserResponse, user);
+            }),
+        );
+    }
+
+    /**
+     * @param page page to be queried, starting from 0
+     * @param limit transactions per page
+     */
+    @GET
+    @Path('')
+    @Preprocessor(BaseController.requireAdmin)
+    @Tags('users')
+    async getUsersList(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<models.PaginatedUserResponse> {
+        const users = await this.service.list(page, limit);
+        console.log(users.rows[0].transactions);
+
         return this.paginate(
             users.pagination,
             users.rows.map(user => {
