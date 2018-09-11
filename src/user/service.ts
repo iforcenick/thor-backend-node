@@ -37,20 +37,20 @@ export class UserService extends db.ModelService<models.User> {
                 transactions: builder => {
                     builder.orderBy('createdAt', 'desc').limit(1);
                 },
-            });
+            })
+            .joinRelation(`${models.Relations.profile}.${profile.Relations.roles}`);
 
         return query;
     }
 
     getListOptions(query) {
-        return this.getOptions(query);
+        return this.getOptions(query).where(`${models.Relations.profile}:roles.name`, role.models.Types.customer);
     }
 
     tenantContext(query) {
-        return query.joinRelation(`${models.Relations.profile}.${profile.Relations.roles}`)
+        return query
             .where({
-                [`${models.Relations.profile}.tenantId`]: this.getTenantId(),
-                'profiles:roles.name': role.models.Types.customer
+                [`${models.Relations.profile}.tenantId`]: this.getTenantId()
             });
     }
 
