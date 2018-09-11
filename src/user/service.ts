@@ -77,6 +77,8 @@ export class UserService extends db.ModelService<models.User> {
         if (embed.includes('transactions')) {
             eagerObject['transactions'] = {$modify: ['transactions'], job: {$modify: ['job']}};
         }
+        const tenantId = this.getTenantId();
+        const knex = ApiServer.db;
         const eagerFilters = {
             profiles: builder => {
                 const tenantId = this.getTenantId();
@@ -108,32 +110,38 @@ export class UserService extends db.ModelService<models.User> {
         query.eager(eagerObject, eagerFilters);
 
         query
-            .select(['users.id', knex.raw('COALESCE( sum( transactions.quantity * jobs.value ), 0 ) as rank')])
-            .leftOuterJoin('transactions', function () {
-                this.on('users.id', 'transactions.userId');
-                if (embed.includes('transactions')) {
-                    if (status) {
-                        this.andOn('transactions.status', knex.raw('?', [status]));
-                    }
-                    if (startDate && endDate) {
-                        this.andOn(
-                            knex.raw(
-                                '"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')',
-                                [startDate, endDate],
-                            ),
-                        );
-                    }
-                    eagerObject['transactions'] = {$modify: ['transactions'], job: {$modify: ['job']}};
-                }
-            })
-            .leftOuterJoin('jobs', 'transactions.jobId', 'jobs.id')
-            .groupBy('users.id')
-            .orderByRaw('rank desc')
-            .max('transactions.createdAt as lastTransaction')
-            .join('profiles', 'users.id', 'profiles.userId');
+            .select(['users.id', 'r.rank']).whereNull('users.deletedAt').orderBy('r.rank');
+        query.join(
+            knex
+                .from('users')
+                .join('profiles', function () {
+                    this.on('profiles.userId', 'users.id').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
+                })
+                .leftJoin('transactions', function () {
+                    this.on('transactions.userId', 'users.id').andOn(
+                        knex.raw(`"transactions"."createdAt" between ? and ? :: timestamptz + interval '1 day' `, [
+                            startDate,
+                            endDate,
+                        ]),
+                    );
+                })
+                .leftJoin('jobs', function () {
+                    this.on('jobs.id', 'transactions.jobId');
+                })
+                .groupBy('users.id')
+                .select([
+                    'users.id',
+                    knex.raw(
+                        'row_number() OVER (ORDER BY coalesce(sum(transactions.quantity * jobs.value), 0) desc) AS rank',
+                    ),
+                ])
+                .as('r'),
+            'r.id',
+            'users.id',
+        );
         query.page(page - 1, limit);
 
-        const result: any = await query;
+        const result: any = await this.tenantContext(query);
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
     }
 
