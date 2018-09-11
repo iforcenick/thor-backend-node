@@ -100,7 +100,6 @@ export class UserController extends BaseController {
     @Tags('users')
     async getUsersList(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<models.PaginatedUserResponse> {
         const users = await this.service.list(page, limit);
-        console.log(users.rows[0].transactions);
 
         return this.paginate(
             users.pagination,

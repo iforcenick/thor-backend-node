@@ -132,7 +132,7 @@ export class UserService extends db.ModelService<models.User> {
             .join('profiles', 'users.id', 'profiles.userId');
         query.page(page - 1, limit);
 
-        const result = await this.tenantContext(query);
+        const result: any = await query;
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
     }
 
@@ -264,6 +264,7 @@ export class UserService extends db.ModelService<models.User> {
         if (!page) {
             page = 1;
         }
+
         const tenantId = this.getTenantId();
         const knex = ApiServer.db;
         limit = this.paginationLimit(limit);
@@ -357,7 +358,8 @@ export class UserService extends db.ModelService<models.User> {
 
         query.page(page - 1, limit);
 
-        const result = await this.tenantContext(query);
+        // const result = await this.tenantContext(query);
+        const result: any = await query;
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
     }
 
