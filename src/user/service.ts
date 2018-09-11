@@ -27,57 +27,30 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     getOptions(query) {
+        const tenantId = this.getTenantId();
         query
             .whereNull('users.deletedAt')
-            .eager(`${models.Relations.profile}(profiles).[${profile.Relations.roles}]`, {
-                profiles: builder => {
-                    const tenantId = this.getTenantId();
+            .eager(`[${models.Relations.profile}(profile).[${profile.Relations.roles}],${models.Relations.transactions}(transactions)]`, {
+                profile: builder => {
                     builder.orWhere(function () {
                         this.where('tenantId', tenantId).orWhere('tenantId', null);
                     });
                 },
-            })
-            .join('profiles', 'users.id', 'profiles.userId');
+                transactions: builder => {
+                    builder.orderBy('createdAt', 'desc').limit(1);
+                },
+            });
+
         return query;
     }
 
     getListOptions(query) {
-        query.eager(`[${models.Relations.profile}(tenant).[${profile.Relations.roles}],${models.Relations.transactions}(transactions)]`, {
-            tenant: builder => {
-                const tenantId = this.getTenantId();
-                builder.orWhere(function () {
-                    this.where('tenantId', tenantId).orWhere('tenantId', null);
-                });
-            },
-            transactions: builder => {
-                builder.orderBy('createdAt', 'desc').limit(1);
-            },
-        });
-        return query;
-    }
-
-    async list(page?: number, limit?: number, filter?: any, embed?: string): Promise<Paginated<models.User>> {
-        if (!page) {
-            page = 1;
-        }
-
-        limit = this.paginationLimit(limit);
-        const query = models.User.query();
-
-        if (filter) {
-            query.where(filter);
-        }
-
-        this.getListOptions(query);
-        query.page(page - 1, limit);
-
-        const result = await this.embed(query, null);
-
-        return new Paginated(new Pagination(page, limit, result.total), result.results);
+        return this.getOptions(query);
     }
 
     tenantContext(query) {
-        return query.where('profiles.tenantId', this.getTenantId());
+        return query.joinRelation(models.Relations.profile)
+            .where(`${models.Relations.profile}.tenantId`, this.getTenantId());
     }
 
     async getWithTransactions(page?: number,

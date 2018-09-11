@@ -68,7 +68,11 @@ export class User extends db.Model {
     }
 
     get lastActivity() {
-        const transaction = this.transactions[this.transactions.length - 1];
+        if (!Array.isArray(this.transactions)) {
+            return null;
+        }
+
+        const transaction = this.transactions.slice(-1)[0];
 
         if (!transaction) {
             return null;
