@@ -67,7 +67,7 @@ export class UserController extends BaseController {
      * @param status status
      */
     @GET
-    @Path('/payments')
+    @Path('/payments/list')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('users')
     async getUserList(@QueryParam('page') page?: number,
