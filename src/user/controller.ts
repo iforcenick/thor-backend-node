@@ -37,7 +37,7 @@ export class UserController extends BaseController {
 
     constructor(@Inject service: UserService,
                 @Inject profileService: ProfileService,
-                @Inject transactionService: TransactionService,) {
+                @Inject transactionService: TransactionService) {
         super();
         this.service = service;
         this.profileService = profileService;
@@ -67,7 +67,7 @@ export class UserController extends BaseController {
      * @param status status
      */
     @GET
-    @Path('')
+    @Path('/payments')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('users')
     async getUserList(@QueryParam('page') page?: number,
@@ -75,7 +75,7 @@ export class UserController extends BaseController {
                       @QueryParam('embed') embed?: string,
                       @QueryParam('startDate') startDate?: string,
                       @QueryParam('endDate') endDate?: string,
-                      @QueryParam('status') status?: string,): Promise<models.PaginatedUserResponse> {
+                      @QueryParam('status') status?: string): Promise<models.PaginatedUserResponse> {
         let users;
         if (embed) {
             users = await this.service.getWithTransactions(page, limit, embed, startDate, endDate, status);
