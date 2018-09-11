@@ -182,7 +182,7 @@ export class UserController extends BaseController {
     @Path(':id/profile')
     @Tags('users')
     @Preprocessor(BaseController.requireAdmin)
-    async patchAnyUser(@PathParam('id') id: string, data: models.UserRequest): Promise<models.UserResponse> {
+    async patchAnyUser(@PathParam('id') id: string, data: models.UserRequest): Promise<ProfileResponse> {
         const parsedData = await this.validate(data, models.userPatchSchema);
         try {
             const user = await this.service.get(id);
