@@ -122,6 +122,7 @@ export class Client {
         let hasSubscription = false;
 
         subscriptions.forEach(s => {
+            this.logger.info('[dwolla] Enpoint: ', s.url);
             if (s.url !== endpointUrl) {
                 unsubscribe.push(this.deleteWebhookEndpoint(s['_links'].self.href));
             } else {

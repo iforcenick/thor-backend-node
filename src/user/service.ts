@@ -108,6 +108,7 @@ export class UserService extends db.ModelService<models.User> {
             },
         };
         query.eager(eagerObject, eagerFilters);
+        query.joinRelation(`${models.Relations.profile}.${profile.Relations.roles}`).where(`${models.Relations.profile}:roles.name`, role.models.Types.customer);
 
         query
             .select(['users.id', 'r.rank']).whereNull('users.deletedAt').orderBy('r.rank');
@@ -292,6 +293,8 @@ export class UserService extends db.ModelService<models.User> {
                 });
             },
         };
+        query.joinRelation(`${models.Relations.profile}.${profile.Relations.roles}`).where(`${models.Relations.profile}:roles.name`, role.models.Types.customer);
+
         query.join('profiles', function () {
             this.on('users.id', 'profiles.userId').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
         });
