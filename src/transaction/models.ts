@@ -112,7 +112,7 @@ export const transactionRequestSchema = Joi.object().keys({
         .required()
         .guid(),
     job: job.jobRequestSchema.required(),
-    quantity: Joi.number().required().greater(0),
+    quantity: Joi.number().required().greater(0).integer(),
     location: Joi.string(),
 });
 
