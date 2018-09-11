@@ -47,14 +47,12 @@ export class UserService extends db.ModelService<models.User> {
         return query.where('profiles.tenantId', this.getTenantId());
     }
 
-    async getWithTransactions(
-        page?: number,
-        limit?: number,
-        embed?: string,
-        startDate?: string,
-        endDate?: string,
-        status?: string,
-    ): Promise<db.Paginated<models.User>> {
+    async getWithTransactions(page?: number,
+                              limit?: number,
+                              embed?: string,
+                              startDate?: string,
+                              endDate?: string,
+                              status?: string,): Promise<db.Paginated<models.User>> {
         if (!page) {
             page = 1;
         }
@@ -170,15 +168,26 @@ export class UserService extends db.ModelService<models.User> {
         return user;
     }
 
-    // TODO: it will anonymize profiles for other tenants too, that's a bug
-    async delete(id: string) {
+    async deleteFull(id: string) {
         const user = await this.getForAllTenants(id);
         user.deletedAt = new Date();
         await transaction(this.transaction(), async trx => {
             user.profiles.forEach(async p => {
-                await this.profileService.anonymize(p, trx);
+                p.anonymise();
+                await this.profileService.update(p, trx);
             });
+
             await this.update(user, trx);
+        });
+    }
+
+    async delete(user: models.User) {
+        user.deletedAt = new Date();
+        user.tenantProfile.anonymise();
+
+        await transaction(this.transaction(), async trx => {
+            await this.update(user);
+            await this.profileService.update(user.tenantProfile);
         });
     }
 
@@ -241,12 +250,10 @@ export class UserService extends db.ModelService<models.User> {
         return user;
     }
 
-    async list(
-        page?: number,
-        limit?: number,
-        startDate?: string,
-        endDate?: string,
-    ): Promise<db.Paginated<models.User>> {
+    async list(page?: number,
+               limit?: number,
+               startDate?: string,
+               endDate?: string,): Promise<db.Paginated<models.User>> {
         if (!page) {
             page = 1;
         }

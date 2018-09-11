@@ -1,4 +1,4 @@
-import {Errors, GET, Path, PathParam, POST} from 'typescript-rest';
+import {Errors, GET, Path, PathParam, POST, Preprocessor} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
@@ -20,6 +20,7 @@ export class ProfileController extends BaseController {
 
     @GET
     @Path(':id')
+    @Preprocessor(BaseController.requireAdmin)
     @Tags('profiles')
     async getProfile(@PathParam('id') id: string): Promise<models.ProfileResponse> {
         const profile = await this.service.get(id);
@@ -32,6 +33,7 @@ export class ProfileController extends BaseController {
 
     @POST
     @Path('')
+    @Preprocessor(BaseController.requireAdmin)
     @Tags('profiles')
     async createProfile(data: models.ProfileRequest): Promise<models.ProfileResponse> {
         const parsedData = await this.validate(data, models.profileRequestSchema);

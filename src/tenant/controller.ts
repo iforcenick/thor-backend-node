@@ -1,4 +1,4 @@
-import {Errors, GET, Path, PathParam, POST} from 'typescript-rest';
+import {Errors, GET, Path, PathParam, POST, Preprocessor} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
@@ -21,6 +21,7 @@ export class TenantController extends BaseController {
     @GET
     @Path('statistics')
     @Tags('tenants', 'statistics')
+    @Preprocessor(BaseController.requireAdmin)
     async getTenantStats() {
         const stats = await this.service.getStatistics();
         // TODO: missing stats response definition
@@ -30,6 +31,7 @@ export class TenantController extends BaseController {
     @GET
     @Path(':id')
     @Tags('tenants')
+    @Preprocessor(BaseController.requireAdmin)
     async getTenant(@PathParam('id') id: string): Promise<models.TenantResponse> {
         const tenant = await this.service.get(id);
         if (!tenant) {
@@ -42,6 +44,7 @@ export class TenantController extends BaseController {
     @POST
     @Path('')
     @Tags('tenants')
+    @Preprocessor(BaseController.requireAdmin)
     async createTenant(data: models.TenantRequest): Promise<models.TenantResponse> {
         const parsedData = await this.validate(data, models.tenantRequestSchema);
         let tenant = models.Tenant.fromJson(parsedData);

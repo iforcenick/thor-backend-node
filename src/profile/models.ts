@@ -90,6 +90,24 @@ export class Profile extends db.Model {
 
         return false;
     }
+
+    anonymise() {
+        this.firstName = null;
+        this.lastName = null;
+        this.email = null;
+        this.phone = null;
+        this.country = null;
+        this.state = null;
+        this.city = null;
+        this.postalCode = null;
+        this.address1 = null;
+        this.address2 = null;
+        this.dateOfBirth = null;
+        this.dwollaUri = null;
+        this.dwollaSourceUri = null;
+        this.dwollaStatus = null;
+        this.deletedAt = new Date();
+    }
 }
 
 export class ProfileBaseInfo extends Mapper {

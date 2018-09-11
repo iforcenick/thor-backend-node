@@ -35,11 +35,9 @@ export class UserController extends BaseController {
     private profileService: ProfileService;
     private transactionService: TransactionService;
 
-    constructor(
-        @Inject service: UserService,
-        @Inject profileService: ProfileService,
-        @Inject transactionService: TransactionService,
-    ) {
+    constructor(@Inject service: UserService,
+                @Inject profileService: ProfileService,
+                @Inject transactionService: TransactionService,) {
         super();
         this.service = service;
         this.profileService = profileService;
@@ -70,15 +68,14 @@ export class UserController extends BaseController {
      */
     @GET
     @Path('')
+    @Preprocessor(BaseController.requireAdmin)
     @Tags('users')
-    async getUserList(
-        @QueryParam('page') page?: number,
-        @QueryParam('limit') limit?: number,
-        @QueryParam('embed') embed?: string,
-        @QueryParam('startDate') startDate?: string,
-        @QueryParam('endDate') endDate?: string,
-        @QueryParam('status') status?: string,
-    ): Promise<models.PaginatedUserResponse> {
+    async getUserList(@QueryParam('page') page?: number,
+                      @QueryParam('limit') limit?: number,
+                      @QueryParam('embed') embed?: string,
+                      @QueryParam('startDate') startDate?: string,
+                      @QueryParam('endDate') endDate?: string,
+                      @QueryParam('status') status?: string,): Promise<models.PaginatedUserResponse> {
         let users;
         if (embed) {
             users = await this.service.getWithTransactions(page, limit, embed, startDate, endDate, status);
@@ -189,9 +186,26 @@ export class UserController extends BaseController {
     @DELETE
     @Path('')
     @Tags('users')
-    async delete(@ContextRequest context: ServiceContext) {
+    async deleteSelf(@ContextRequest context: ServiceContext) {
         try {
-            await this.service.delete(context['user'].id);
+            await this.service.deleteFull(context['user'].id);
+        } catch (e) {
+            this.logger.error(e);
+            throw new Errors.InternalServerError(e);
+        }
+    }
+
+    @DELETE
+    @Path(':id')
+    @Tags('users')
+    async delete(@PathParam('id') id: string, @ContextRequest context: ServiceContext) {
+        const user = await this.service.get(id);
+        if (!user) {
+            throw new Errors.NotFoundError('User not found');
+        }
+
+        try {
+            await this.service.delete(user);
         } catch (e) {
             this.logger.error(e);
             throw new Errors.InternalServerError(e);
@@ -200,15 +214,14 @@ export class UserController extends BaseController {
 
     @GET
     @Path(':id/transactions')
+    @Preprocessor(BaseController.requireAdmin)
     @Tags('users', 'transactions')
-    async getUserTransactions(
-        @PathParam('id') userId: string,
-        @QueryParam('page') page?: number,
-        @QueryParam('limit') limit?: number,
-        @QueryParam('startDate') startDate?: string,
-        @QueryParam('endDate') endDate?: string,
-        @QueryParam('status') status?: string,
-    ): Promise<PaginatedTransactionResponse> {
+    async getUserTransactions(@PathParam('id') userId: string,
+                              @QueryParam('page') page?: number,
+                              @QueryParam('limit') limit?: number,
+                              @QueryParam('startDate') startDate?: string,
+                              @QueryParam('endDate') endDate?: string,
+                              @QueryParam('status') status?: string,): Promise<PaginatedTransactionResponse> {
         const transactions = await this.transactionService.getForUser(
             {page, limit},
             {userId, startDate, endDate, status},
@@ -226,13 +239,11 @@ export class UserController extends BaseController {
     @Path(':id/statistics')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('statistics', 'users')
-    async getJobs(
-        @PathParam('id') userId: string,
-        @QueryParam('currentStartDate') currentStartDate?: string,
-        @QueryParam('currentEndDate') currentEndDate?: string,
-        @QueryParam('previousStartDate') previousStartDate?: string,
-        @QueryParam('previousEndDate') previousEndDate?: string,
-    ) {
+    async getJobs(@PathParam('id') userId: string,
+                  @QueryParam('currentStartDate') currentStartDate?: string,
+                  @QueryParam('currentEndDate') currentEndDate?: string,
+                  @QueryParam('previousStartDate') previousStartDate?: string,
+                  @QueryParam('previousEndDate') previousEndDate?: string,) {
         // const stats = await this.userService.activity();
         const stats = await this.service.statsForUser({
             userId,
