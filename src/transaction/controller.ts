@@ -74,14 +74,12 @@ export class TransactionController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('transactions')
-    async getTransactions(
-        @QueryParam('page') page?: number,
-        @QueryParam('limit') limit?: number,
-        @QueryParam('dateFrom') dateFrom?: Date,
-        @QueryParam('dateTill') dateTill?: Date,
-        @QueryParam('userId') userId?: string,
-        @QueryParam('status') status?: string,
-    ): Promise<models.PaginatedTransactionResponse> {
+    async getTransactions(@QueryParam('page') page?: number,
+                          @QueryParam('limit') limit?: number,
+                          @QueryParam('dateFrom') dateFrom?: Date,
+                          @QueryParam('dateTill') dateTill?: Date,
+                          @QueryParam('userId') userId?: string,
+                          @QueryParam('status') status?: string,): Promise<models.PaginatedTransactionResponse> {
         if (userId && !validate(userId)) {
             throw new Errors.BadRequestError('userId must be uuid');
         }
@@ -112,10 +110,8 @@ export class TransactionController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('transactions')
-    async createTransaction(
-        data: models.TransactionRequest,
-        @ContextRequest context: ServiceContext,
-    ): Promise<models.TransactionResponse> {
+    async createTransaction(data: models.TransactionRequest,
+                            @ContextRequest context: ServiceContext,): Promise<models.TransactionResponse> {
         const parsedData = await this.validate(data, models.transactionRequestSchema);
         // TODO: block below should be in try/catch
         let job = parsedData['job'];
@@ -156,10 +152,8 @@ export class TransactionController extends BaseController {
     @Path(':id/transfer')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('transactions')
-    async createTransactionTransfer(
-        @PathParam('id') id: string,
-        @ContextRequest context: ServiceContext,
-    ): Promise<models.TransactionResponse> {
+    async createTransactionTransfer(@PathParam('id') id: string,
+                                    @ContextRequest context: ServiceContext,): Promise<models.TransactionResponse> {
         const transaction = await this.service.get(id);
         if (!transaction) {
             throw new Errors.NotFoundError();
@@ -169,15 +163,7 @@ export class TransactionController extends BaseController {
             const user = await this.userService.get(context['user'].id);
 
             if (!transaction.transferId) {
-                try {
-                    await this.service.prepareTransfer(transaction, user);
-                } catch (e) {
-                    if (e instanceof models.InvalidTransferData) {
-                        throw new Errors.NotAcceptableError(e.message);
-                    }
-
-                    throw e;
-                }
+                await this.service.prepareTransfer(transaction, user);
             } else {
                 transaction.transfer = await this.service.transferService.get(transaction.transferId);
             }
@@ -188,6 +174,10 @@ export class TransactionController extends BaseController {
 
             await this.service.createExternalTransfer(transaction);
         } catch (e) {
+            if (e instanceof models.InvalidTransferData || e instanceof Errors.NotAcceptableError) {
+                throw new Errors.NotAcceptableError(e.message);
+            }
+
             this.logger.error(e);
             throw new Errors.InternalServerError(e.message);
         }
