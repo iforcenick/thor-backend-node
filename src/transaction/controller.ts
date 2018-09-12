@@ -20,11 +20,13 @@ import {JobService} from '../job/service';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {Job} from '../job/models';
 import * as role from '../user/role';
+import {PeriodsStatsResponse} from "./models";
 
 const validate = require('uuid-validate');
 
 @Security('api_key')
 @Path('/transactions')
+@Tags('transactions')
 export class TransactionController extends BaseController {
     @Inject private logger: Logger;
     private service: TransactionService;
@@ -46,7 +48,6 @@ export class TransactionController extends BaseController {
     @GET
     @Path('statistics')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('transactions')
     async getStatistics(@QueryParam('startDate') startDate?: string, @QueryParam('endDate') endDate?: string): Promise<models.TransactionsStatisticsResponse> {
         const stats = await this.service.getStatistics({startDate, endDate});
         return this.map(models.TransactionsStatisticsResponse, stats);
@@ -55,7 +56,6 @@ export class TransactionController extends BaseController {
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('transactions')
     async getTransaction(@PathParam('id') id: string): Promise<models.TransactionResponse> {
         const transaction = await this.service.get(id);
         if (!transaction) {
@@ -77,13 +77,12 @@ export class TransactionController extends BaseController {
     @GET
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('transactions')
     async getTransactions(@QueryParam('page') page?: number,
                           @QueryParam('limit') limit?: number,
                           @QueryParam('dateFrom') dateFrom?: Date,
                           @QueryParam('dateTill') dateTill?: Date,
                           @QueryParam('userId') userId?: string,
-                          @QueryParam('status') status?: string,): Promise<models.PaginatedTransactionResponse> {
+                          @QueryParam('status') status?: string): Promise<models.PaginatedTransactionResponse> {
         if (userId && !validate(userId)) {
             throw new Errors.BadRequestError('userId must be uuid');
         }
@@ -113,9 +112,7 @@ export class TransactionController extends BaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('transactions')
-    async createTransaction(data: models.TransactionRequest,
-                            @ContextRequest context: ServiceContext,): Promise<models.TransactionResponse> {
+    async createTransaction(data: models.TransactionRequest, @ContextRequest context: ServiceContext): Promise<models.TransactionResponse> {
         const parsedData = await this.validate(data, models.transactionRequestSchema);
         // TODO: block below should be in try/catch
         let job = parsedData['job'];
@@ -155,9 +152,7 @@ export class TransactionController extends BaseController {
     @POST
     @Path(':id/transfer')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('transactions')
-    async createTransactionTransfer(@PathParam('id') id: string,
-                                    @ContextRequest context: ServiceContext,): Promise<models.TransactionResponse> {
+    async createTransactionTransfer(@PathParam('id') id: string, @ContextRequest context: ServiceContext): Promise<models.TransactionResponse> {
         const transaction = await this.service.get(id);
         if (!transaction) {
             throw new Errors.NotFoundError();
@@ -187,5 +182,38 @@ export class TransactionController extends BaseController {
         }
 
         return this.map(models.TransactionResponse, transaction);
+    }
+
+    /**
+     * @param page page to be queried, starting from 0
+     * @param limit transactions per page
+     * @param startDate startDate
+     * @param endDate endDate
+     * @param status status
+     */
+    @GET
+    @Path('/rating/period')
+    @Preprocessor(BaseController.requireAdmin)
+    async getPeriodStats(@QueryParam('startDate') startDate?: string,
+                         @QueryParam('endDate') endDate?: string,
+                         @QueryParam('limit') limit?: number,
+                         @QueryParam('page') page?: number,
+                         @QueryParam('status') status?: string): Promise<PeriodsStatsResponse> {
+        const _startDate = new Date(startDate);
+        const _endDate = new Date(endDate);
+        const _prevStartDate = new Date();
+        const _prevEndDate = new Date();
+        _prevStartDate.setDate(_startDate.getDate() - 7);
+        _prevEndDate.setDate(_endDate.getDate() - 7);
+
+        const current: any = await this.service.getPeriodStats(_startDate, _endDate, page, limit, status);
+        current.startDate = _startDate;
+        current.endDate = _endDate;
+
+        const previous: any = await this.service.getPeriodStats(_prevStartDate, _prevEndDate, page, limit, status);
+        previous.startDate = _prevStartDate;
+        previous.endDate = _prevEndDate;
+
+        return this.map(models.PeriodsStatsResponse, {current: current, previous: previous});
     }
 }

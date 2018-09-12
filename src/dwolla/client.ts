@@ -124,6 +124,7 @@ export class Client {
         const endpointUrl = this.config.get('dwolla.webhookUri');
         const subscriptions = res.body._embedded['webhook-subscriptions'];
         let hasSubscription = false;
+        // const r = await this.client.get('webhook-subscriptions/babe27ad-5d84-42d3-86b1-a89f51a8ade3/webhooks');
 
         subscriptions.forEach(s => {
             this.logger.info('[dwolla] Enpoint: ', s.url);
@@ -135,7 +136,7 @@ export class Client {
 
                 if (s.paused) {
                     this.logger.info('[dwolla] Unpausing webhook: ', s.url);
-                    this.unpauseWebhookEndpoint(s.id).then();
+                    // this.unpauseWebhookEndpoint(s.id).then();
                 }
             }
         });

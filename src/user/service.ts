@@ -68,19 +68,11 @@ export class UserService extends db.ModelService<models.User> {
             });
     }
 
-    private jobsRankingFilter(query, startDate, endDate, status) {
-        query.whereBetween(`${db.Tables.transactions}.createdAt`, [startDate, endDate]);
-
-        if (status) {
-            query.where(`${db.Tables.transactions}.status`, status);
-        }
-    }
-
-    private rankingQuery(startDate: string, endDate: string, status?: string) {
+    private rankingQuery(startDate: Date, endDate: Date, status?: string) {
         const query = this.tenantContext(this.getMinOptions(this.filterCustomerRole(this.modelType.query())));
         query.joinRelation(models.Relations.transactions);
         query.join(db.Tables.jobs, `${db.Tables.transactions}.jobId`, `${db.Tables.jobs}.id`);
-        this.jobsRankingFilter(query, startDate, endDate, status);
+        transactions.Transaction.periodFilter(query, startDate, endDate, status);
 
         const columns = [
             `${db.Tables.users}.id`,
@@ -88,7 +80,7 @@ export class UserService extends db.ModelService<models.User> {
             `${db.Tables.profiles}.lastName`,
         ];
 
-        const totalValue = 'sum(transactions.quantity * jobs.value)';
+        const totalValue = `sum(${models.Relations.transactions}.quantity * ${db.Tables.jobs}.value)`;
 
         query.select(columns.concat([
             raw(`${totalValue} as total`),
@@ -100,7 +92,7 @@ export class UserService extends db.ModelService<models.User> {
         return query;
     }
 
-    async getJobsRanking(startDate: string, endDate: string, page?: number, limit?: number, status?: string) {
+    async getJobsRanking(startDate: Date, endDate: Date, page?: number, limit?: number, status?: string) {
         const query = this.rankingQuery(startDate, endDate, status);
         const pag = this.addPagination(query, page, limit);
 
@@ -108,7 +100,7 @@ export class UserService extends db.ModelService<models.User> {
             transactions: builder => {
                 builder.select(['jobId', 'name', raw('sum(quantity) * value as total')]);
                 builder.joinRelation(transactions.Relations.job);
-                this.jobsRankingFilter(builder, startDate, endDate, status);
+                transactions.Transaction.periodFilter(builder, startDate, endDate, status);
 
                 builder.groupBy(['userId', 'jobId', 'value', 'name']);
             },
@@ -118,7 +110,7 @@ export class UserService extends db.ModelService<models.User> {
         return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results);
     }
 
-    async getRankings(startDate: string, endDate: string, page?: number, limit?: number, status?: string) {
+    async getRankings(startDate: Date, endDate: Date, page?: number, limit?: number, status?: string) {
         const query = this.rankingQuery(startDate, endDate, status);
         const pag = this.addPagination(query, page, limit);
         const results: any = await query;

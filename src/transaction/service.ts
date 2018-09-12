@@ -7,7 +7,7 @@ import {TransferService} from './transfer/service';
 import * as dwolla from '../dwolla';
 import {TenantService} from '../tenant/service';
 import {UserService} from '../user/service';
-import {transaction} from 'objection';
+import {raw, transaction} from 'objection';
 import {ApiServer} from '../server';
 
 const knex = require('knex');
@@ -29,8 +29,8 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         this.tenantService = tenantService;
     }
 
-    async tenantContext(query) {
-        return await query.where('transactions.tenantId', this.getTenantId());
+    tenantContext(query) {
+        return query.where(`${db.Tables.transactions}.tenantId`, this.getTenantId());
     }
 
     getOptions(query) {
@@ -158,5 +158,17 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         const [{total}] = a;
         // TODO: missing stats response definition
         return {approved: '0', postponed: '0', total};
+    }
+
+    async getPeriodStats(startDate: Date, endDate: Date, page?: number, limit?: number, status?: string) {
+        const query = this.tenantContext(this.modelType.query());
+        query.joinRelation(models.Relations.job);
+        models.Transaction.periodFilter(query, startDate, endDate, status);
+        query.select([
+            raw(`sum(${db.Tables.transactions}.quantity * ${models.Relations.job}.value) as total`),
+            raw(`count("${db.Tables.transactions}"."userId") as users`)
+        ]);
+        query.groupBy([`${db.Tables.transactions}.tenantId`]);
+        return (await query)[0];
     }
 }

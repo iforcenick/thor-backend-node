@@ -86,6 +86,16 @@ export class Transaction extends db.Model {
             },
         };
     }
+
+    static periodFilter(query, startDate?: Date, endDate?: Date, status?: string) {
+        if (startDate && endDate) {
+            query.whereBetween(`${db.Tables.transactions}.createdAt`, [startDate, endDate]);
+        }
+
+        if (status) {
+            query.where(`${db.Tables.transactions}.status`, status);
+        }
+    }
 }
 
 export class TransactionBaseInfo extends Mapper {
@@ -104,7 +114,27 @@ export class TransactionResponse extends TransactionBaseInfo {
     value: string = mapper.FIELD_STR;
 }
 
+export class TransactionsStatisticsResponse extends Mapper {
+    approved: string = mapper.FIELD_STR;
+    postponed: string = mapper.FIELD_STR;
+    total: string = mapper.FIELD_STR;
+}
+
+export class PeriodStatsResponse extends Mapper {
+    users: number = mapper.FIELD_NUM;
+    total: number = mapper.FIELD_NUM;
+    startDate: Date = mapper.FIELD_DATE;
+    endDate: Date = mapper.FIELD_DATE;
+}
+
+export class PeriodsStatsResponse extends Mapper {
+    previous: PeriodStatsResponse = new PeriodStatsResponse();
+    current: PeriodStatsResponse = new PeriodStatsResponse();
+}
+
 mapper.registerRelation(TransactionResponse, Relations.job, new mapper.Relation(job.JobResponse));
+mapper.registerRelation(PeriodsStatsResponse, 'previous', new mapper.Relation(PeriodStatsResponse));
+mapper.registerRelation(PeriodsStatsResponse, 'current', new mapper.Relation(PeriodStatsResponse));
 
 export class TransactionRequest extends TransactionBaseInfo {
     job: job.JobRequest = new job.JobRequest();
@@ -125,10 +155,3 @@ export const transactionRequestSchema = Joi.object().keys({
 
 export class InvalidTransferData extends Error {
 }
-
-export class TransactionsStatisticsResponse extends Mapper {
-    approved: string = mapper.FIELD_STR;
-    postponed: string = mapper.FIELD_STR;
-    total: string = mapper.FIELD_STR;
-}
-

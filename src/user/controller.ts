@@ -69,13 +69,13 @@ export class UserController extends BaseController {
     @GET
     @Path('/rating/jobs')
     @Preprocessor(BaseController.requireAdmin)
-    async getRatingJobsList(@QueryParam('startDate') startDate: string,
-                            @QueryParam('endDate') endDate: string,
+    async getRatingJobsList(@QueryParam('startDate') startDate: Date,
+                            @QueryParam('endDate') endDate: Date,
                             @QueryParam('limit') limit?: number,
                             @QueryParam('page') page?: number,
                             @QueryParam('status') status?: string): Promise<models.PaginatedRankingJobs> {
-        await this.validate({startDate, endDate}, models.rankingRequestSchema);
-        const users: any = await this.service.getJobsRanking(startDate, endDate, page, limit, status);
+        const dates: any = await this.validate({startDate, endDate}, models.rankingRequestSchema);
+        const users: any = await this.service.getJobsRanking(dates.startDate, dates.endDate, page, limit, status);
 
         return this.paginate(
             users.pagination,
@@ -103,8 +103,8 @@ export class UserController extends BaseController {
                               @QueryParam('limit') limit?: number,
                               @QueryParam('page') page?: number,
                               @QueryParam('status') status?: string): Promise<models.PaginatedRanking> {
-        await this.validate({startDate, endDate}, models.rankingRequestSchema);
-        const users: any = await this.service.getRankings(startDate, endDate, page, limit, status);
+        const dates: any = await this.validate({startDate, endDate}, models.rankingRequestSchema);
+        const users: any = await this.service.getRankings(dates.startDate, dates.endDate, page, limit, status);
 
         return this.paginate(
             users.pagination,
