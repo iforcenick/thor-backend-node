@@ -292,18 +292,15 @@ export class UserController extends BaseController {
                   @QueryParam('currentStartDate') currentStartDate?: string,
                   @QueryParam('currentEndDate') currentEndDate?: string,
                   @QueryParam('previousStartDate') previousStartDate?: string,
-                  @QueryParam('previousEndDate') previousEndDate?: string) {
-        // const stats = await this.userService.activity();
-        const stats = await this.service.statsForUser({
+                  @QueryParam('previousEndDate') previousEndDate?: string): Promise<models.UserStatisticsResponse> {
+        const statistics = await this.service.statsForUser({
             userId,
             currentStartDate,
             currentEndDate,
             previousStartDate,
             previousEndDate,
         });
-        // console.log(stats);
-        // TODO: missing stats response definition
-        return stats;
+        return this.map(models.UserStatisticsResponse, statistics);
     }
 
     // @PATCH

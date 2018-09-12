@@ -22,10 +22,9 @@ export class TenantController extends BaseController {
     @Path('statistics')
     @Tags('tenants', 'statistics')
     @Preprocessor(BaseController.requireAdmin)
-    async getTenantStats() {
+    async getTenantStats(): Promise<models.TenantStatsResponse> {
         const stats = await this.service.getStatistics();
-        // TODO: missing stats response definition
-        return stats;
+        return this.map(models.TenantStatsResponse, stats);
     }
 
     @GET

@@ -162,3 +162,11 @@ export const usersJobsRequestSchema = Joi.object().keys({
     startDate: Joi.date().required(),
     endDate: Joi.date().required(),
 });
+
+export class UserStatisticsResponse extends Mapper {
+    rank: string = mapper.FIELD_STR;
+    nJobs: string = mapper.FIELD_STR;
+    prev: string = mapper.FIELD_STR;
+    current: string = mapper.FIELD_STR;
+    ytd: string = mapper.FIELD_STR;
+}

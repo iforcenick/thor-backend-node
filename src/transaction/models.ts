@@ -123,4 +123,12 @@ export const transactionRequestSchema = Joi.object().keys({
     location: Joi.string(),
 });
 
-export class InvalidTransferData extends Error {}
+export class InvalidTransferData extends Error {
+}
+
+export class TransactionsStatisticsResponse extends Mapper {
+    approved: string = mapper.FIELD_STR;
+    postponed: string = mapper.FIELD_STR;
+    total: string = mapper.FIELD_STR;
+}
+

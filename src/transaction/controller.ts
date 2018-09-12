@@ -38,14 +38,18 @@ export class TransactionController extends BaseController {
         this.jobService = jobService;
     }
 
+    /**
+     * Transactions statistics, both startDate and endDate needs to be provided
+     * @param startDate start date of transactions e.g. 2018-08-22
+     * @param endDate end date of transactions, e.g. 2018-08-26
+     */
     @GET
     @Path('statistics')
     @Preprocessor(BaseController.requireAdmin)
     @Tags('transactions')
-    async getStatistics(@QueryParam('startDate') startDate?: string, @QueryParam('endDate') endDate?: string) {
+    async getStatistics(@QueryParam('startDate') startDate?: string, @QueryParam('endDate') endDate?: string): Promise<models.TransactionsStatisticsResponse> {
         const stats = await this.service.getStatistics({startDate, endDate});
-        // TODO: missing stats response definition
-        return stats;
+        return this.map(models.TransactionsStatisticsResponse, stats);
     }
 
     @GET
