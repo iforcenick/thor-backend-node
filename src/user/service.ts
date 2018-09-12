@@ -76,19 +76,8 @@ export class UserService extends db.ModelService<models.User> {
         }
     }
 
-    async getJobsRanking(startDate: string, endDate: string, page?: number, limit?: number, status?: string) {
+    private rankingQuery(startDate: string, endDate: string, status?: string) {
         const query = this.tenantContext(this.getMinOptions(this.filterCustomerRole(this.modelType.query())));
-
-        query.mergeEager(`${models.Relations.transactions}(transactions)`, {
-            transactions: builder => {
-                builder.select(['jobId', 'name', raw('sum(quantity) * value as total')]);
-                builder.joinRelation(transactions.Relations.job);
-                this.jobsRankingFilter(builder, startDate, endDate, status);
-
-                builder.groupBy(['userId', 'jobId', 'value', 'name']);
-            },
-        });
-
         query.joinRelation(models.Relations.transactions);
         query.join(db.Tables.jobs, `${db.Tables.transactions}.jobId`, `${db.Tables.jobs}.id`);
         this.jobsRankingFilter(query, startDate, endDate, status);
@@ -108,8 +97,30 @@ export class UserService extends db.ModelService<models.User> {
         query.groupBy(columns);
         query.orderBy('rank', 'asc');
 
+        return query;
+    }
+
+    async getJobsRanking(startDate: string, endDate: string, page?: number, limit?: number, status?: string) {
+        const query = this.rankingQuery(startDate, endDate, status);
         const pag = this.addPagination(query, page, limit);
 
+        query.mergeEager(`${models.Relations.transactions}(transactions)`, {
+            transactions: builder => {
+                builder.select(['jobId', 'name', raw('sum(quantity) * value as total')]);
+                builder.joinRelation(transactions.Relations.job);
+                this.jobsRankingFilter(builder, startDate, endDate, status);
+
+                builder.groupBy(['userId', 'jobId', 'value', 'name']);
+            },
+        });
+
+        const results: any = await query;
+        return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results);
+    }
+
+    async getRankings(startDate: string, endDate: string, page?: number, limit?: number, status?: string) {
+        const query = this.rankingQuery(startDate, endDate, status);
+        const pag = this.addPagination(query, page, limit);
         const results: any = await query;
         return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results);
     }

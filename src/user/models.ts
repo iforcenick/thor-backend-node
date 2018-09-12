@@ -99,19 +99,27 @@ export class FundingSourceRequest extends FundingSourceBaseInfo {
 export class UserBaseInfo extends Mapper {
 }
 
-export class UsersJobsRankingEntry extends Mapper {
+export class RankingJobsEntry extends Mapper {
     jobId: string = mapper.FIELD_STR;
     name: string = mapper.FIELD_STR;
     total: string = mapper.FIELD_STR;
 }
 
-export class UsersJobsRanking extends Mapper {
+export class RankingJobs extends Mapper {
     id: string = mapper.FIELD_STR;
     rank: number = mapper.FIELD_NUM;
     firstName: string = mapper.FIELD_STR;
     lastName: string = mapper.FIELD_STR;
     total: number = mapper.FIELD_NUM;
-    jobs: Array<UsersJobsRankingEntry> = mapper.FIELD_ARR;
+    jobs: Array<RankingJobsEntry> = mapper.FIELD_ARR;
+}
+
+export class Ranking extends Mapper {
+    id: string = mapper.FIELD_STR;
+    rank: number = mapper.FIELD_NUM;
+    firstName: string = mapper.FIELD_STR;
+    lastName: string = mapper.FIELD_STR;
+    total: number = mapper.FIELD_NUM;
 }
 
 export class UserResponse extends UserBaseInfo {
@@ -130,7 +138,7 @@ export class UserResponse extends UserBaseInfo {
 mapper.registerRelation(UserResponse, 'profile', new mapper.Relation(profile.ProfileResponse));
 mapper.registerRelation(UserResponse, 'tenantProfile', new mapper.Relation(profile.ProfileResponse));
 mapper.registerRelation(UserResponse, Relations.transactions, new mapper.ArrayRelation(TransactionResponse));
-mapper.registerRelation(UsersJobsRanking, 'jobs', new mapper.ArrayRelation(UsersJobsRankingEntry));
+mapper.registerRelation(RankingJobs, 'jobs', new mapper.ArrayRelation(RankingJobsEntry));
 
 export class UserRequest extends UserBaseInfo {
     password: string = mapper.FIELD_STR;
@@ -141,8 +149,12 @@ export interface PaginatedUserResponse extends PaginatedResponse {
     items: Array<UserResponse>;
 }
 
-export interface PaginatedUsersJobs extends PaginatedResponse {
-    items: Array<UsersJobsRanking>;
+export interface PaginatedRankingJobs extends PaginatedResponse {
+    items: Array<RankingJobs>;
+}
+
+export interface PaginatedRanking extends PaginatedResponse {
+    items: Array<Ranking>;
 }
 
 export const userRequestSchema = Joi.object().keys({
@@ -158,7 +170,7 @@ export const fundingSourceRequestSchema = Joi.object().keys({
     accountNumber: Joi.string().required(),
 });
 
-export const usersJobsRequestSchema = Joi.object().keys({
+export const rankingRequestSchema = Joi.object().keys({
     startDate: Joi.date().required(),
     endDate: Joi.date().required(),
 });

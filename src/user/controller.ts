@@ -25,9 +25,11 @@ import * as dwolla from '../dwolla';
 import {ValidationError} from '../errors';
 import {TransactionResponse, PaginatedTransactionResponse} from '../transaction/models';
 import {TransactionService} from '../transaction/service';
+import {PaginatedRanking} from "./models";
 
 @Security('api_key')
 @Path('/users')
+@Tags('users')
 export class UserController extends BaseController {
     @Inject private logger: Logger;
     @Inject private dwollaClient: dwolla.Client;
@@ -47,7 +49,6 @@ export class UserController extends BaseController {
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('users')
     async getUser(@PathParam('id') id: string): Promise<models.UserResponse> {
         const user = await this.service.get(id);
 
@@ -66,15 +67,14 @@ export class UserController extends BaseController {
      * @param status status
      */
     @GET
-    @Path('/jobs/rating')
+    @Path('/rating/jobs')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('users')
-    async getUsersJobsList(@QueryParam('startDate') startDate: string,
-                           @QueryParam('endDate') endDate: string,
-                           @QueryParam('limit') limit?: number,
-                           @QueryParam('page') page?: number,
-                           @QueryParam('status') status?: string): Promise<models.PaginatedUsersJobs> {
-        await this.validate({startDate, endDate}, models.usersJobsRequestSchema);
+    async getRatingJobsList(@QueryParam('startDate') startDate: string,
+                            @QueryParam('endDate') endDate: string,
+                            @QueryParam('limit') limit?: number,
+                            @QueryParam('page') page?: number,
+                            @QueryParam('status') status?: string): Promise<models.PaginatedRankingJobs> {
+        await this.validate({startDate, endDate}, models.rankingRequestSchema);
         const users: any = await this.service.getJobsRanking(startDate, endDate, page, limit, status);
 
         return this.paginate(
@@ -83,7 +83,35 @@ export class UserController extends BaseController {
                 user['rank'] = parseInt(user['rank']);
                 user['total'] = parseFloat(user['total']);
                 user['jobs'] = user['transactions'];
-                return this.map(models.UsersJobsRanking, user);
+                return this.map(models.RankingJobs, user);
+            }),
+        );
+    }
+
+    /**
+     * @param page page to be queried, starting from 0
+     * @param limit transactions per page
+     * @param startDate startDate
+     * @param endDate endDate
+     * @param status status
+     */
+    @GET
+    @Path('/rating/period')
+    @Preprocessor(BaseController.requireAdmin)
+    async getRatingPeriodList(@QueryParam('startDate') startDate: string,
+                              @QueryParam('endDate') endDate: string,
+                              @QueryParam('limit') limit?: number,
+                              @QueryParam('page') page?: number,
+                              @QueryParam('status') status?: string): Promise<models.PaginatedRanking> {
+        await this.validate({startDate, endDate}, models.rankingRequestSchema);
+        const users: any = await this.service.getRankings(startDate, endDate, page, limit, status);
+
+        return this.paginate(
+            users.pagination,
+            users.rows.map(user => {
+                user['rank'] = parseInt(user['rank']);
+                user['total'] = parseFloat(user['total']);
+                return this.map(models.Ranking, user);
             }),
         );
     }
@@ -99,7 +127,6 @@ export class UserController extends BaseController {
     @GET
     @Path('/payments/list')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('users')
     async getUsersPaymentsList(@QueryParam('page') page?: number,
                                @QueryParam('limit') limit?: number,
                                @QueryParam('embed') embed?: string,
@@ -127,7 +154,6 @@ export class UserController extends BaseController {
     @GET
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('users')
     async getUsersList(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<models.PaginatedUserResponse> {
         const users = await this.service.list(page, limit);
 
@@ -142,7 +168,6 @@ export class UserController extends BaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('users')
     async createUser(data: models.UserRequest): Promise<models.UserResponse> {
         const parsedData = await this.validate(data, models.userRequestSchema);
 
@@ -179,7 +204,6 @@ export class UserController extends BaseController {
     @POST
     @Path(':id/fundingSource')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('users')
     async createUserFundingSource(@PathParam('id') id: string, data: models.FundingSourceRequest) {
         const parsedData = await this.validate(data, models.fundingSourceRequestSchema);
         const user = await this.service.get(id);
@@ -210,7 +234,6 @@ export class UserController extends BaseController {
 
     @PATCH
     @Path(':id/profile')
-    @Tags('users')
     @Preprocessor(BaseController.requireAdmin)
     async patchAnyUser(@PathParam('id') id: string, data: models.UserRequest): Promise<ProfileResponse> {
         const parsedData = await this.validate(data, models.userPatchSchema);
@@ -234,7 +257,6 @@ export class UserController extends BaseController {
 
     @DELETE
     @Path('')
-    @Tags('users')
     async deleteSelf(@ContextRequest context: ServiceContext) {
         try {
             await this.service.deleteFull(context['user'].id);
@@ -246,7 +268,6 @@ export class UserController extends BaseController {
 
     @DELETE
     @Path(':id')
-    @Tags('users')
     async delete(@PathParam('id') id: string, @ContextRequest context: ServiceContext) {
         const user = await this.service.get(id);
         if (!user) {
@@ -264,7 +285,7 @@ export class UserController extends BaseController {
     @GET
     @Path(':id/transactions')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('users', 'transactions')
+    @Tags('transactions')
     async getUserTransactions(@PathParam('id') userId: string,
                               @QueryParam('page') page?: number,
                               @QueryParam('limit') limit?: number,
@@ -287,7 +308,7 @@ export class UserController extends BaseController {
     @GET
     @Path(':id/statistics')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('statistics', 'users')
+    @Tags('statistics')
     async getJobs(@PathParam('id') userId: string,
                   @QueryParam('currentStartDate') currentStartDate?: string,
                   @QueryParam('currentEndDate') currentEndDate?: string,
@@ -302,21 +323,4 @@ export class UserController extends BaseController {
         });
         return this.map(models.UserStatisticsResponse, statistics);
     }
-
-    // @PATCH
-    // @Path('profile')
-    // @Tags('users')
-    // async patchUser(@ContextRequest context: ServiceContext, data: models.UserRequest) {
-    //     const parsedData = await this.validate(data, models.userPatchSchema);
-    //     try {
-    //         const user = await this.service.get(context['user'].id);
-    //         const profile = user.tenantProfile;
-    //         profile.$set(parsedData['profile']);
-    //         const updatedProfile = await this.service.profileService.update(profile);
-    //         return this.map(ProfileResponse, updatedProfile);
-    //     } catch (e) {
-    //         this.logger.error(e);
-    //         throw new Errors.InternalServerError(e);
-    //     }
-    // }
 }
