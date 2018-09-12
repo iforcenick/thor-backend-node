@@ -33,7 +33,14 @@ export class Transaction extends db.Model {
     user?: user.User;
     job?: job.Job;
     transfer?: transfer.Transfer;
-    value?: string;
+
+    get value() {
+        if (!this.job) {
+            return null;
+        }
+
+        return this.quantity * this.job.value;
+    }
 
     static get relationMappings() {
         return {

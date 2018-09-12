@@ -3,8 +3,9 @@ import * as models from './models';
 import * as db from '../db';
 import * as role from './role';
 import * as profile from '../profile/models';
+import * as transactions from '../transaction/models';
 import {ProfileService} from '../profile/service';
-import {transaction} from 'objection';
+import {raw, transaction} from 'objection';
 import * as _ from 'lodash';
 import {ApiServer} from '../server';
 
@@ -24,27 +25,40 @@ export class UserService extends db.ModelService<models.User> {
         this.profileService = profileService;
     }
 
-    getOptions(query) {
-        const tenantId = this.getTenantId();
+    getMinOptions(query) {
         query
             .whereNull('users.deletedAt')
-            .eager(`[${models.Relations.profile}(profile).[${profile.Relations.roles}],${models.Relations.transactions}(transactions)]`, {
-                profile: builder => {
-                    builder.orWhere(function () {
-                        this.where('tenantId', tenantId).orWhere('tenantId', null);
-                    });
-                },
-                transactions: builder => {
-                    builder.orderBy('createdAt', 'desc').limit(1);
-                },
-            })
             .joinRelation(`${models.Relations.profile}.${profile.Relations.roles}`);
 
         return query;
     }
 
+    getOptions(query) {
+        const tenantId = this.getTenantId();
+        query = this.getMinOptions(query);
+        query.mergeEager(`${models.Relations.profile}(profile).[${profile.Relations.roles}]`, {
+            profile: builder => {
+                builder.where(function () {
+                    this.where('tenantId', tenantId).orWhere('tenantId', null);
+                });
+            },
+        });
+        query.mergeEager(`${models.Relations.transactions}(transactions)`,
+            {
+                transactions: builder => {
+                    builder.orderBy('createdAt', 'desc').limit(1);
+                }
+            });
+
+        return query;
+    }
+
+    filterCustomerRole(query) {
+        return query.where(`${models.Relations.profile}:roles.name`, role.models.Types.customer);
+    }
+
     getListOptions(query) {
-        return this.getOptions(query).where(`${models.Relations.profile}:roles.name`, role.models.Types.customer);
+        return this.getOptions(this.filterCustomerRole(query));
     }
 
     tenantContext(query) {
@@ -54,12 +68,58 @@ export class UserService extends db.ModelService<models.User> {
             });
     }
 
+    private jobsRankingFilter(query, startDate, endDate, status) {
+        query.whereBetween(`${db.Tables.transactions}.createdAt`, [startDate, endDate]);
+
+        if (status) {
+            query.where(`${db.Tables.transactions}.status`, status);
+        }
+    }
+
+    async getJobsRanking(startDate: string, endDate: string, page?: number, limit?: number, status?: string) {
+        const query = this.tenantContext(this.getMinOptions(this.filterCustomerRole(this.modelType.query())));
+
+        query.mergeEager(`${models.Relations.transactions}(transactions)`, {
+            transactions: builder => {
+                builder.select(['jobId', 'name', raw('sum(quantity) * value as total')]);
+                builder.joinRelation(transactions.Relations.job);
+                this.jobsRankingFilter(builder, startDate, endDate, status);
+
+                builder.groupBy(['userId', 'jobId', 'value', 'name']);
+            },
+        });
+
+        query.joinRelation(models.Relations.transactions);
+        query.join(db.Tables.jobs, `${db.Tables.transactions}.jobId`, `${db.Tables.jobs}.id`);
+        this.jobsRankingFilter(query, startDate, endDate, status);
+
+        const columns = [
+            `${db.Tables.users}.id`,
+            `${db.Tables.profiles}.firstName`,
+            `${db.Tables.profiles}.lastName`,
+        ];
+
+        const totalValue = 'sum(transactions.quantity * jobs.value)';
+
+        query.select(columns.concat([
+            raw(`${totalValue} as total`),
+            raw(`row_number() OVER (ORDER BY coalesce(${totalValue}, 0) desc) AS rank`)
+        ]));
+        query.groupBy(columns);
+        query.orderBy('rank', 'asc');
+
+        const pag = this.addPagination(query, page, limit);
+
+        const results: any = await query;
+        return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results);
+    }
+
     async getWithTransactions(page?: number,
                               limit?: number,
                               embed?: string,
                               startDate?: string,
                               endDate?: string,
-                              status?: string,): Promise<db.Paginated<models.User>> {
+                              status?: string): Promise<db.Paginated<models.User>> {
         if (!page) {
             page = 1;
         }

@@ -61,6 +61,36 @@ export class UserController extends BaseController {
     /**
      * @param page page to be queried, starting from 0
      * @param limit transactions per page
+     * @param startDate startDate
+     * @param endDate endDate
+     * @param status status
+     */
+    @GET
+    @Path('/jobs/rating')
+    @Preprocessor(BaseController.requireAdmin)
+    @Tags('users')
+    async getUsersJobsList(@QueryParam('startDate') startDate: string,
+                           @QueryParam('endDate') endDate: string,
+                           @QueryParam('limit') limit?: number,
+                           @QueryParam('page') page?: number,
+                           @QueryParam('status') status?: string): Promise<models.PaginatedUsersJobs> {
+        await this.validate({startDate, endDate}, models.usersJobsRequestSchema);
+        const users: any = await this.service.getJobsRanking(startDate, endDate, page, limit, status);
+
+        return this.paginate(
+            users.pagination,
+            users.rows.map(user => {
+                user['rank'] = parseInt(user['rank']);
+                user['total'] = parseFloat(user['total']);
+                user['jobs'] = user['transactions'];
+                return this.map(models.UsersJobsRanking, user);
+            }),
+        );
+    }
+
+    /**
+     * @param page page to be queried, starting from 0
+     * @param limit transactions per page
      * @param embed embed
      * @param startDate startDate
      * @param endDate endDate
@@ -240,7 +270,7 @@ export class UserController extends BaseController {
                               @QueryParam('limit') limit?: number,
                               @QueryParam('startDate') startDate?: string,
                               @QueryParam('endDate') endDate?: string,
-                              @QueryParam('status') status?: string,): Promise<PaginatedTransactionResponse> {
+                              @QueryParam('status') status?: string): Promise<PaginatedTransactionResponse> {
         const transactions = await this.transactionService.getForUser(
             {page, limit},
             {userId, startDate, endDate, status},
@@ -262,7 +292,7 @@ export class UserController extends BaseController {
                   @QueryParam('currentStartDate') currentStartDate?: string,
                   @QueryParam('currentEndDate') currentEndDate?: string,
                   @QueryParam('previousStartDate') previousStartDate?: string,
-                  @QueryParam('previousEndDate') previousEndDate?: string,) {
+                  @QueryParam('previousEndDate') previousEndDate?: string) {
         // const stats = await this.userService.activity();
         const stats = await this.service.statsForUser({
             userId,

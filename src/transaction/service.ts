@@ -20,11 +20,9 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     protected tenantService: TenantService;
     protected userService: UserService;
 
-    constructor(
-        @Inject transferService: TransferService,
-        @Inject tenantService: TenantService,
-        @Inject userService: UserService,
-    ) {
+    constructor(@Inject transferService: TransferService,
+                @Inject tenantService: TenantService,
+                @Inject userService: UserService) {
         super();
         this.transferService = transferService;
         this.userService = userService;
@@ -58,17 +56,13 @@ export class TransactionService extends db.ModelService<models.Transaction> {
                         builder.select('');
                     },
                 },
-            )
-            .join('jobs', 'transactions.jobId', 'jobs.id')
-            .select(['transactions.*'], knex.raw('transactions.quantity * jobs.value as value'));
+            );
 
         return query;
     }
 
-    async getForUser(
-        {page = 1, limit}: { page?: number; limit?: number },
-        {userId, startDate, endDate, status}: { userId: string; startDate?: string; endDate?: string; status?: string },
-    ) {
+    async getForUser({page = 1, limit}: { page?: number; limit?: number },
+                     {userId, startDate, endDate, status}: { userId: string; startDate?: string; endDate?: string; status?: string }) {
         limit = this.paginationLimit(limit);
         const query = this.modelType.query();
         query.where({userId});
@@ -122,7 +116,6 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         _transfer.sourceUri = tenant.dwollaUri;
         _transfer.value = Number(_transaction.value);
         _transaction.status = models.Statuses.processing;
-        delete _transaction.value;
         await transaction(this.transaction(), async trx => {
             _transfer = await this.transferService.createTransfer(_transfer, trx);
             // TODO: why was it changed to update rather then relate?

@@ -91,6 +91,16 @@ export class ModelService<T> {
         return limit;
     }
 
+    addPagination(query: any, page, limit: number) {
+        if (!page) {
+            page = 1;
+        }
+
+        limit = this.paginationLimit(limit);
+        query.page(page - 1, limit);
+        return {page, limit};
+    }
+
     async get(id: string): Promise<T> {
         if (!validate(id)) {
             throw new Errors.BadRequestError();
@@ -116,11 +126,6 @@ export class ModelService<T> {
     }
 
     async list(page?: number, limit?: number, filter?: any, embed?: string): Promise<Paginated<T>> {
-        if (!page) {
-            page = 1;
-        }
-
-        limit = this.paginationLimit(limit);
         const query = this.modelType.query();
 
         if (filter) {
@@ -128,10 +133,10 @@ export class ModelService<T> {
         }
         this.embed(query, embed);
         this.getListOptions(query);
-        query.page(page - 1, limit);
+        const pag = this.addPagination(query, page, limit);
 
         const result = await this.tenantContext(query);
-        return new Paginated(new Pagination(page, limit, result.total), result.results);
+        return new Paginated(new Pagination(pag.page, pag.limit, result.total), result.results);
     }
 
     transaction(trx?: transaction<any>) {
@@ -143,7 +148,6 @@ export class ModelService<T> {
     }
 
     tenantContext(query) {
-        // return query.where('profiles.tenantId', this.getTenantId());
         return query;
     }
 

@@ -99,6 +99,21 @@ export class FundingSourceRequest extends FundingSourceBaseInfo {
 export class UserBaseInfo extends Mapper {
 }
 
+export class UsersJobsRankingEntry extends Mapper {
+    jobId: string = mapper.FIELD_STR;
+    name: string = mapper.FIELD_STR;
+    total: string = mapper.FIELD_STR;
+}
+
+export class UsersJobsRanking extends Mapper {
+    id: string = mapper.FIELD_STR;
+    rank: number = mapper.FIELD_NUM;
+    firstName: string = mapper.FIELD_STR;
+    lastName: string = mapper.FIELD_STR;
+    total: number = mapper.FIELD_NUM;
+    jobs: Array<UsersJobsRankingEntry> = mapper.FIELD_ARR;
+}
+
 export class UserResponse extends UserBaseInfo {
     id: string = mapper.FIELD_STR;
     createdAt: Date = mapper.FIELD_DATE;
@@ -115,6 +130,7 @@ export class UserResponse extends UserBaseInfo {
 mapper.registerRelation(UserResponse, 'profile', new mapper.Relation(profile.ProfileResponse));
 mapper.registerRelation(UserResponse, 'tenantProfile', new mapper.Relation(profile.ProfileResponse));
 mapper.registerRelation(UserResponse, Relations.transactions, new mapper.ArrayRelation(TransactionResponse));
+mapper.registerRelation(UsersJobsRanking, 'jobs', new mapper.ArrayRelation(UsersJobsRankingEntry));
 
 export class UserRequest extends UserBaseInfo {
     password: string = mapper.FIELD_STR;
@@ -123,6 +139,10 @@ export class UserRequest extends UserBaseInfo {
 
 export interface PaginatedUserResponse extends PaginatedResponse {
     items: Array<UserResponse>;
+}
+
+export interface PaginatedUsersJobs extends PaginatedResponse {
+    items: Array<UsersJobsRanking>;
 }
 
 export const userRequestSchema = Joi.object().keys({
@@ -136,4 +156,9 @@ export const userPatchSchema = Joi.object().keys({
 export const fundingSourceRequestSchema = Joi.object().keys({
     routingNumber: Joi.string().required(),
     accountNumber: Joi.string().required(),
+});
+
+export const usersJobsRequestSchema = Joi.object().keys({
+    startDate: Joi.date().required(),
+    endDate: Joi.date().required(),
 });
