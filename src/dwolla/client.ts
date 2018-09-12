@@ -94,8 +94,8 @@ export class Client {
         return transaction.factory(response.body).setLocalization(localization);
     }
 
-    public async listEvents(): Promise<any> {
-        return await this.client.get('events');
+    public async listEvents(limit, offset: number): Promise<any> {
+        return await this.client.get(`events?limit=${limit}&offset=${offset}`);
     }
 
     public async registerWebhookEndpoint(endpointUrl: string): Promise<string> {
@@ -114,6 +114,10 @@ export class Client {
         return await this.client.get('webhook-subscriptions');
     }
 
+    public async unpauseWebhookEndpoint(id: string) {
+        return await this.client.post(`webhook-subscriptions/${id}`, {paused: false});
+    }
+
     public async webhooksCleanup() {
         const res = await this.listWebhookEndpoints();
         const unsubscribe = [];
@@ -123,10 +127,16 @@ export class Client {
 
         subscriptions.forEach(s => {
             this.logger.info('[dwolla] Enpoint: ', s.url);
+            console.log(s);
             if (s.url !== endpointUrl) {
                 unsubscribe.push(this.deleteWebhookEndpoint(s['_links'].self.href));
             } else {
                 hasSubscription = true;
+
+                if (s.paused) {
+                    this.logger.info('[dwolla] Unpausing webhook: ', s.url);
+                    this.unpauseWebhookEndpoint(s.id).then();
+                }
             }
         });
 
