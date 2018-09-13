@@ -138,12 +138,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         dwollaTransfer.setCurrency('USD');
         _transaction.transfer.externalId = await this.dwollaClient.createTransfer(dwollaTransfer);
         const _transfer = await this.dwollaClient.getTransfer(_transaction.transfer.externalId);
-
-        await transaction(this.transaction(), async trx => {
-            _transaction.transfer.status = _transfer.status;
-            _transaction.status = _transfer.status;
-            await this.transferService.update(_transaction.transfer, trx);
-        });
+        await this.updateTransactionStatus(_transaction, _transfer.status);
     }
 
     async getStatistics({startDate, endDate}: { startDate: string; endDate: string }) {
