@@ -26,7 +26,7 @@ dwolla:
     secret: xBikRTlJID8latnauamPr0oW9IlU6jeqOFBSZB5DoI6RUjEtQa
     environment: sandbox
     webhookSecret: someSecretSecret
-    webhookUri: https://thor-api.acaisoft.io/dwolla/events
+    webhookUri: https://odin-api.gothor.com/dwolla/events
 swagger:
   host: thor-api.acaisoft.io
   schema: https

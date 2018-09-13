@@ -24,12 +24,7 @@ export class DwollaController extends BaseController {
     @Path('')
     async events(data: IEvent) {
         const _event = event.factory(data);
-        this.logger.info(_event);
         await this.dwollaClient.authorize();
-        const eventsList = (await this.dwollaClient.listEvents(25, 2700)).body._embedded.events;
-        console.log(eventsList.slice(-3)[0]);
-        console.log(eventsList.slice(-2)[0]);
-        console.log(eventsList.slice(-1)[0]);
 
         switch (_event.topic) {
             case event.TYPE.transferCompleted: {

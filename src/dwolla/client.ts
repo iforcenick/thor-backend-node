@@ -136,7 +136,7 @@ export class Client {
 
                 if (s.paused) {
                     this.logger.info('[dwolla] Unpausing webhook: ', s.url);
-                    // this.unpauseWebhookEndpoint(s.id).then();
+                    this.unpauseWebhookEndpoint(s.id).then();
                 }
             }
         });
