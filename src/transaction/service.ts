@@ -137,10 +137,11 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         dwollaTransfer.setAmount(_transaction.transfer.value);
         dwollaTransfer.setCurrency('USD');
         _transaction.transfer.externalId = await this.dwollaClient.createTransfer(dwollaTransfer);
-        // TODO: check if there's an event sent to webhook with transfer status, for verified user it looks like transfer is instantly marked as processed
+        const _transfer = await this.dwollaClient.getTransfer(_transaction.transfer.externalId);
 
         await transaction(this.transaction(), async trx => {
-            _transaction.transfer.status = transfer.Statuses.externalProcessing;
+            _transaction.transfer.status = _transfer.status;
+            _transaction.status = _transfer.status;
             await this.transferService.update(_transaction.transfer, trx);
         });
     }
@@ -171,5 +172,19 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         ]);
         query.groupBy([`${db.Tables.transactions}.tenantId`]);
         return (await query)[0];
+    }
+
+    async getByTransferId(id: string) {
+        return await this.getOneBy('transferId', id);
+    }
+
+    async updateTransactionStatus(_transaction: models.Transaction, status: string) {
+        await transaction(this.transaction(), async trx => {
+            _transaction.status = status;
+            _transaction.transfer.status = status;
+
+            await this.update(_transaction, trx);
+            await this.transferService.update(_transaction.transfer, trx);
+        });
     }
 }

@@ -5,19 +5,19 @@ import {Inject} from 'typescript-ioc';
 import * as dwolla from '../dwolla';
 import {event} from './index';
 import {IEvent} from './event';
-import {TransferService} from '../transaction/transfer/service';
 import {Tags} from 'typescript-rest-swagger';
+import {TransactionService} from '../transaction/service';
 
 @Tags('dwolla')
 @Path('/dwolla/events')
 export class DwollaController extends BaseController {
     @Inject private logger: Logger;
     @Inject private dwollaClient: dwolla.Client;
-    @Inject private transferService: TransferService;
+    private transactionService: TransactionService;
 
-    constructor(@Inject transferService: TransferService) {
+    constructor(@Inject transactionService: TransactionService) {
         super();
-        this.transferService = transferService;
+        this.transactionService = transactionService;
     }
 
     @POST
@@ -27,16 +27,22 @@ export class DwollaController extends BaseController {
         await this.dwollaClient.authorize();
 
         switch (_event.topic) {
+            case event.TYPE.transferCanceled:
+            case event.TYPE.transferCreated:
+            case event.TYPE.transferFailed:
+            case event.TYPE.transferReclaimed:
             case event.TYPE.transferCompleted: {
-                const transfer = await this.transferService.getByExternalId(_event._links['resource']['href']);
+                this.logger.info(_event);
+
+                const transfer = await this.transactionService.transferService.getByExternalId(_event._links['resource']['href']);
                 if (!transfer) {
                     throw new Errors.NotFoundError('Transfer not found');
                 }
 
-                transfer.status = _event.topic;
-                await this.transferService.update(transfer);
+                const transaction = await this.transactionService.getByTransferId(transfer.id);
+                await this.transactionService.updateTransactionStatus(transaction, _event.topic);
+                break;
             }
         }
-        return;
     }
 }

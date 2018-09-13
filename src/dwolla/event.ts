@@ -1,11 +1,13 @@
-import * as crypto from 'crypto';
-
 export const TYPE = {
     customerTransferCompleted: 'customer_transfer_completed',
     customerTransferCancelled: 'customer_transfer_cancelled',
     customerTransferFailed: 'customer_transfer_failed',
-    transferCompleted: 'transfer_completed',
     customerBankTransferCreated: 'customer_bank_transfer_created',
+    transferCompleted: 'transfer_completed',
+    transferCanceled: 'transfer_cancelled',
+    transferFailed: 'transfer_failed',
+    transferReclaimed: 'transfer_reclaimed',
+    transferCreated: 'transfer_created',
 };
 
 export interface IEvent {

@@ -11,6 +11,7 @@ export const enum Relations {
 export const enum Statuses {
     new = 'new',
     externalProcessing = 'externalProcessing',
+    processed = 'processed',
 }
 
 export class Transfer extends db.Model {
