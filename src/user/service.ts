@@ -98,7 +98,11 @@ export class UserService extends db.ModelService<models.User> {
 
         query.mergeEager(`${models.Relations.transactions}(transactions)`, {
             transactions: builder => {
-                builder.select(['jobId', 'name', raw('sum(quantity) * value as total')]);
+                builder.select([
+                    'jobId', 'name',
+                    raw('sum(quantity) * value as total'),
+                    raw(`count("${db.Tables.transactions}"."jobId") as jobs`),
+                ]);
                 builder.joinRelation(transactions.Relations.job);
                 transactions.Transaction.periodFilter(builder, startDate, endDate, status);
 

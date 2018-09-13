@@ -102,6 +102,7 @@ export class UserBaseInfo extends Mapper {
 export class RankingJobsEntry extends Mapper {
     name: string = mapper.FIELD_STR;
     total: string = mapper.FIELD_STR;
+    jobs: number = mapper.FIELD_NUM;
 }
 
 export class RankingJobs extends Mapper {
