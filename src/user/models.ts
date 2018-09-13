@@ -100,7 +100,6 @@ export class UserBaseInfo extends Mapper {
 }
 
 export class RankingJobsEntry extends Mapper {
-    jobId: string = mapper.FIELD_STR;
     name: string = mapper.FIELD_STR;
     total: string = mapper.FIELD_STR;
 }
@@ -111,6 +110,8 @@ export class RankingJobs extends Mapper {
     firstName: string = mapper.FIELD_STR;
     lastName: string = mapper.FIELD_STR;
     total: number = mapper.FIELD_NUM;
+    jobsCount: number = mapper.FIELD_NUM;
+    transactionsIds: Array<string> = mapper.FIELD_ARR;
     jobs: Array<RankingJobsEntry> = mapper.FIELD_ARR;
 }
 

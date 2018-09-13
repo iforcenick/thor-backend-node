@@ -106,6 +106,14 @@ export class UserService extends db.ModelService<models.User> {
             },
         });
 
+        const transactionsQuery = this.modelType.relatedQuery(models.Relations.transactions);
+        transactions.Transaction.periodFilter(transactionsQuery, startDate, endDate, status);
+        transactionsQuery
+            .select(raw('string_agg("transactions"."id"::character varying, \',\')'))
+            .groupBy('userId').as('ids');
+
+        query.select(transactionsQuery);
+
         const results: any = await query;
         return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results);
     }
