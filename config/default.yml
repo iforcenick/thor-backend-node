@@ -28,5 +28,5 @@ dwolla:
     webhookSecret: someSecretSecret
     webhookUri: https://odin-api.gothor.com/dwolla/events
 swagger:
-  host: thor-api.acaisoft.io
+  host: odin-api.gothor.com
   schema: https

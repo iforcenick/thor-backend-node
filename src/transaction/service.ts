@@ -88,6 +88,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
             .join('jobs', 'transactions.jobId', 'jobs.id')
             .select(['transactions.*', knex.raw('transactions.quantity * jobs.value as value')]);
         query.eager(eagerObject, eagerFilters);
+        query.orderBy(`${db.Tables.transactions}.createdAt`, 'desc');
         const result = await this.tenantContext(query);
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
     }
