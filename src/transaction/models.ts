@@ -145,12 +145,13 @@ export interface PaginatedTransactionResponse extends PaginatedResponse {
     items: Array<TransactionResponse>;
 }
 
+export const MAXINT = 2147483647;
 export const transactionRequestSchema = Joi.object().keys({
     userId: Joi.string()
         .required()
         .guid(),
     job: job.jobRequestSchema.required(),
-    quantity: Joi.number().required().greater(0).integer().max(Number.MAX_SAFE_INTEGER),
+    quantity: Joi.number().required().greater(0).integer().max(MAXINT),
     location: Joi.string(),
 });
 
