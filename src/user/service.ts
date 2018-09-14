@@ -273,6 +273,16 @@ export class UserService extends db.ModelService<models.User> {
         });
     }
 
+    async hasUnpaidTransactions(userId: string) {
+        const query = this.modelType.query()
+            .where({[`${db.Tables.users}.id`]: userId})
+            .whereNot({[`${db.Tables.transactions}.status`]: transactions.Statuses.processed})
+            .joinRelation(`${models.Relations.transactions}`)
+            .count().first();
+        const {count} = await this.getMinOptions(this.tenantContext(this.filterCustomerRole(query)));
+        return parseInt(count) > 0;
+    }
+
     async delete(user: models.User) {
         user.deletedAt = new Date();
         user.tenantProfile.anonymise();

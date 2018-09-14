@@ -25,7 +25,6 @@ import * as dwolla from '../dwolla';
 import {ValidationError} from '../errors';
 import {TransactionResponse, PaginatedTransactionResponse} from '../transaction/models';
 import {TransactionService} from '../transaction/service';
-import {PaginatedRanking} from "./models";
 
 @Security('api_key')
 @Path('/users')
@@ -274,6 +273,11 @@ export class UserController extends BaseController {
         const user = await this.service.get(id);
         if (!user) {
             throw new Errors.NotFoundError('User not found');
+        }
+
+        const hasUnpaidTransactions = await this.service.hasUnpaidTransactions(id);
+        if (hasUnpaidTransactions) {
+            throw new Errors.ConflictError('User have unprocessed transactions');
         }
 
         try {
