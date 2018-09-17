@@ -149,8 +149,7 @@ export class ApiServer {
     }
 
     private errorHandler(err, req, res, next): void {
-        console.log('test');
-        this.logger.error(err);
+        this.logger.error(err.message);
 
         if (res.headersSent) {
             // important to allow default error handler to close connection if headers already sent

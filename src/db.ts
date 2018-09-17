@@ -103,7 +103,7 @@ export class ModelService<T> {
 
     async get(id: string): Promise<T> {
         if (!validate(id)) {
-            throw new Errors.BadRequestError();
+            throw new Errors.BadRequestError('Invalid id format');
         }
 
         const query = this.modelType.query().findById(id);

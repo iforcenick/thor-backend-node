@@ -23,28 +23,32 @@ export class DwollaController extends BaseController {
     @POST
     @Path('')
     async events(data: IEvent) {
-        const _event = event.factory(data);
-        await this.dwollaClient.authorize();
+        try {
+            const _event = event.factory(data);
+            await this.dwollaClient.authorize();
 
-        switch (_event.topic) {
-            case event.TYPE.transferCreated:
-                this.logger.info(_event);
-                break;
-            case event.TYPE.transferCanceled:
-            case event.TYPE.transferFailed:
-            case event.TYPE.transferReclaimed:
-            case event.TYPE.transferCompleted: {
-                this.logger.info(_event);
+            switch (_event.topic) {
+                case event.TYPE.transferCreated:
+                    this.logger.info(_event);
+                    break;
+                case event.TYPE.transferCanceled:
+                case event.TYPE.transferFailed:
+                case event.TYPE.transferReclaimed:
+                case event.TYPE.transferCompleted: {
+                    this.logger.info(_event);
 
-                const transfer = await this.transactionService.transferService.getByExternalId(_event._links['resource']['href']);
-                if (!transfer) {
-                    throw new Errors.NotFoundError('Transfer not found');
+                    const transfer = await this.transactionService.transferService.getByExternalId(_event._links['resource']['href']);
+                    if (!transfer) {
+                        throw new Errors.NotFoundError('Transfer not found');
+                    }
+
+                    const transaction = await this.transactionService.getByTransferId(transfer.id);
+                    await this.transactionService.updateTransactionStatus(transaction, _event.topic);
+                    break;
                 }
-
-                const transaction = await this.transactionService.getByTransferId(transfer.id);
-                await this.transactionService.updateTransactionStatus(transaction, _event.topic);
-                break;
             }
+        } catch (e) {
+            this.logger.error(e.message);
         }
     }
 }
