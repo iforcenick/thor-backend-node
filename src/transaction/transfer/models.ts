@@ -1,5 +1,6 @@
 import * as db from '../../db';
 import * as transaction from '../models';
+import {Statuses} from '../models';
 import {Relation} from 'objection'; // for relations compilation
 import * as user from '../../user/models';
 
@@ -8,11 +9,7 @@ export const enum Relations {
     admin = 'admin',
 }
 
-export const enum Statuses {
-    new = 'new',
-    externalProcessing = 'externalProcessing',
-    processed = 'processed',
-}
+export {Statuses};
 
 export class Transfer extends db.Model {
     static tableName = db.Tables.transfers;

@@ -27,8 +27,10 @@ export class DwollaController extends BaseController {
         await this.dwollaClient.authorize();
 
         switch (_event.topic) {
-            case event.TYPE.transferCanceled:
             case event.TYPE.transferCreated:
+                this.logger.info(_event);
+                break;
+            case event.TYPE.transferCanceled:
             case event.TYPE.transferFailed:
             case event.TYPE.transferReclaimed:
             case event.TYPE.transferCompleted: {

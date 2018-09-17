@@ -9,6 +9,7 @@ import {TenantService} from '../tenant/service';
 import {UserService} from '../user/service';
 import {raw, transaction} from 'objection';
 import {ApiServer} from '../server';
+import {event} from "../dwolla";
 
 const knex = require('knex');
 
@@ -173,8 +174,24 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         return await this.getOneBy('transferId', id);
     }
 
+    private mapDwollaStatus(status: string) {
+        switch (status) {
+            case event.TYPE.transferCanceled:
+                return models.Statuses.canceled;
+            case event.TYPE.transferFailed:
+                return models.Statuses.failed;
+            case event.TYPE.transferReclaimed:
+                return models.Statuses.reclaimed;
+            case event.TYPE.transferCompleted:
+                return models.Statuses.processed;
+        }
+
+        return status;
+    }
+
     async updateTransactionStatus(_transaction: models.Transaction, status: string) {
         await transaction(this.transaction(), async trx => {
+            status = this.mapDwollaStatus(status);
             _transaction.status = status;
             _transaction.transfer.status = status;
 
