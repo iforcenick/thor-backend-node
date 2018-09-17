@@ -38,6 +38,7 @@ export class User extends db.Model {
     deletedAt?: Date;
     profiles?: Array<profile.Profile>;
     transactions?: Array<Transaction>;
+    lastActivity?: Date;
 
     get profile(): profile.Profile {
         for (const profile of this.profiles) {
@@ -65,20 +66,6 @@ export class User extends db.Model {
 
     hasRole(role: role.models.Types) {
         return this.tenantProfile.hasRole(role);
-    }
-
-    get lastActivity() {
-        if (!Array.isArray(this.transactions)) {
-            return null;
-        }
-
-        const transaction = this.transactions.slice(-1)[0];
-
-        if (!transaction) {
-            return null;
-        }
-
-        return transaction.createdAt;
     }
 }
 
