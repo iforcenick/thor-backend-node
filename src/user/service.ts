@@ -44,11 +44,11 @@ export class UserService extends db.ModelService<models.User> {
             },
         });
 
-        query.select(
+        query.select([
+            `${db.Tables.users}.*`,
             this.modelType.relatedQuery(models.Relations.transactions)
                 .select('createdAt').orderBy('createdAt', 'desc').limit(1).as('lastActivity')
-        );
-        query.debug();
+        ]);
 
         return query;
     }
