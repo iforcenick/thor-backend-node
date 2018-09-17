@@ -1,6 +1,6 @@
 ---
 db:
-  client: postgresql
   connection:
-    host: thor-api-postgresql.thor-api
+    host: 35.233.154.25
+    password: bzm1tdHrM7C9hNdj
     database: development
