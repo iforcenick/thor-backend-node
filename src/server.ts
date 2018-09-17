@@ -14,7 +14,6 @@ import * as dwolla from './dwolla';
 import {DwollaController} from './dwolla/controller';
 
 const knex = require('knex');
-const morgan = require('morgan');
 const path = require('path');
 const cors = require('cors');
 const methodOverride = require('method-override');
@@ -31,27 +30,25 @@ export class ApiServer {
     private port: number;
     private knex: any;
     static db: any;
+
     constructor() {
         this.port = this.config.get('express.port');
         this.app = express();
         this.setupDB();
 
-        if (Config.isDev()) {
-            this.app.use(morgan('dev'));
-        }
+        this.app.use(methodOverride());
+
+        this.app.use(this.logger.expressWinston);
 
         this.app.use(express.static(path.join(__dirname, 'public'), {maxAge: 31557600000}));
         this.app.use(cors());
         this.app.use(passport.initialize());
         this.app.use(bodyParser.json({limit: '25mb'}));
-        this.app.use(methodOverride());
 
         this.addAuthorization();
 
         this.app.use(ApiServer.tokenExtractor);
         this.app.use(ApiServer.tenantExtractor);
-
-        this.app.use(this.logger.expressWinston);
 
         this.addControllers();
         Server.swagger(this.app, './dist/swagger.json', '/api-docs', this.config.get('swagger.host'), [this.config.get('swagger.schema')]);
@@ -152,6 +149,7 @@ export class ApiServer {
     }
 
     private errorHandler(err, req, res, next): void {
+        console.log('test');
         this.logger.error(err);
 
         if (res.headersSent) {

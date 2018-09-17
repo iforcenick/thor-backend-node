@@ -13,35 +13,37 @@ export enum LogLevel {
 export class Logger {
     @Inject private config: Config;
     level: any;
-    winston: Winston.LoggerInstance;
-    expressWinston: Winston.LoggerInstance;
+    winston: Winston.Logger;
+    expressWinston: any;
 
     constructor() {
         this.winston = this.instantiateLogger();
         this.expressWinston = this.instantiateLoggerMiddleware();
     }
 
-    private instantiateLogger() {
+    private getOptions(): any {
         this.level = LogLevel[this.config.get('logs.level')];
-        const options: Winston.LoggerOptions = {
-            level: LogLevel[this.level],
-            transports: [
-                new Winston.transports.Console({colorize: this.config.get('logs.colorize')}),
-                new Winston.transports.File({filename: this.config.get('logs.filename')}),
-            ]
-        };
 
-        return new Winston.Logger(options);
+        return {
+            exitOnError: false,
+            format: Winston.format.combine(
+                Winston.format.timestamp(),
+                Winston.format.json(),
+            ),
+            transports: [new Winston.transports.Console()]
+        };
+    }
+
+    private instantiateLogger() {
+        const options = this.getOptions();
+        options.level = LogLevel[this.level];
+        return Winston.createLogger(options);
     }
 
     private instantiateLoggerMiddleware() {
-        const options: Winston.LoggerOptions = {
-            transports: [
-                new Winston.transports.File({filename: this.config.get('logs.filename')}),
-            ],
-            meta: false,
-            msg: 'HTTP {{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}'
-        };
+        const options = this.getOptions();
+        options.meta = false;
+        options.msg = 'HTTP {{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}} | {{req.connection.remoteAddress}}';
 
         return expressWinston.logger(options);
     }

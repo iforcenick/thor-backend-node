@@ -2,9 +2,7 @@
 express:
   port: 8081
 logs:
-  level: debug
-  colorize: true
-  filename: data/logs.log
+  level: info
 authorization:
   jwtSecret: jwt
   tokenExpirationTime: 30days

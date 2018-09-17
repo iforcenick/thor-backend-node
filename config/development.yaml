@@ -4,3 +4,5 @@ db:
 swagger:
   host: localhost:8081
   schema: http
+logs:
+  level: debug
