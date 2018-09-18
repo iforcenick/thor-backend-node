@@ -122,7 +122,7 @@ export class ModelService<T> {
     }
 
     async getOneBy(field: string, value: any) {
-        return await this.tenantContext(this.getOptions(this.modelType.query().findOne({field: value})));
+        return await this.tenantContext(this.getOptions(this.modelType.query().findOne({[field]: value})));
     }
 
     async list(page?: number, limit?: number, filter?: any, embed?: string): Promise<Paginated<T>> {

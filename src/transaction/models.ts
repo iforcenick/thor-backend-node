@@ -114,7 +114,6 @@ export class TransactionResponse extends TransactionBaseInfo {
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
     job: job.JobResponse = new job.JobResponse();
-    user: user.UserResponse = new user.UserResponse();
     value: string = mapper.FIELD_STR;
 }
 

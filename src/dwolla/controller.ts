@@ -36,13 +36,18 @@ export class DwollaController extends BaseController {
                 case event.TYPE.transferReclaimed:
                 case event.TYPE.transferCompleted: {
                     this.logger.info(_event);
+                    const id = _event._links['resource']['href'];
 
-                    const transfer = await this.transactionService.transferService.getByExternalId(_event._links['resource']['href']);
-                    if (!transfer) {
-                        throw new Errors.NotFoundError('Transfer not found');
+                    if (!id) {
+                        this.logger.error('Missing resource href link');
+                        return;
                     }
 
-                    const transaction = await this.transactionService.getByTransferId(transfer.id);
+                    const transaction = await this.transactionService.getDwollaByTransferExternalId(id);
+                    if (!transaction) {
+                        throw new Errors.NotFoundError('Transaction not found');
+                    }
+
                     await this.transactionService.updateTransactionStatus(transaction, _event.topic);
                     break;
                 }

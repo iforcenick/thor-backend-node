@@ -35,29 +35,13 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     }
 
     getOptions(query) {
-        query
-            .eager(
-                {
-                    [models.Relations.job]: {$modify: ['tenant']},
-                    [models.Relations.user]: {
-                        $modify: ['user'],
-                        [user.Relations.profile]: {
-                            $modify: ['profile'],
-                        },
-                    },
-                },
-                {
-                    tenant: builder => {
-                        builder.where('tenantId', this.getTenantId());
-                    },
-                    profile: builder => {
-                        builder.where('tenantId', this.getTenantId()).select(['firstName', 'lastName']);
-                    },
-                    user: builder => {
-                        builder.select('');
-                    },
-                },
-            );
+        query.eager({[models.Relations.job]: true, [models.Relations.transfer]: true});
+
+        return query;
+    }
+
+    getListOptions(query) {
+        query.eager({[models.Relations.job]: true});
 
         return query;
     }
@@ -94,9 +78,6 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
     }
 
-    getListOptions(query) {
-        return this.getOptions(query);
-    }
 
     async createTransaction(transaction: models.Transaction): Promise<models.Transaction> {
         transaction.tenantId = this.getTenantId();
@@ -171,8 +152,11 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         return queryResult || {total: '0', users: '0'};
     }
 
-    async getByTransferId(id: string) {
-        return await this.getOneBy('transferId', id);
+    async getDwollaByTransferExternalId(id: string) {
+        // no tenat context for Dwolla
+        const query = this.getOptions(this.modelType.query());
+        query.rightJoinRelation(models.Relations.transfer).where(`${models.Relations.transfer}.externalId`, id);
+        return await query.first();
     }
 
     private mapDwollaStatus(status: string) {
