@@ -117,9 +117,14 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         dwollaTransfer.setDestination(_transaction.transfer.destinationUri);
         dwollaTransfer.setAmount(_transaction.transfer.value);
         dwollaTransfer.setCurrency('USD');
-        _transaction.transfer.externalId = await this.dwollaClient.createTransfer(dwollaTransfer);
-        const _transfer = await this.dwollaClient.getTransfer(_transaction.transfer.externalId);
-        await this.updateTransactionStatus(_transaction, _transfer.status);
+        try {
+            _transaction.transfer.externalId = await this.dwollaClient.createTransfer(dwollaTransfer);
+            const _transfer = await this.dwollaClient.getTransfer(_transaction.transfer.externalId);
+            await this.updateTransactionStatus(_transaction, _transfer.status);
+        } catch (e) {
+            await this.updateTransactionStatus(_transaction, models.Statuses.failed);
+            throw e;
+        }
     }
 
     async getStatistics({startDate, endDate}: { startDate: string; endDate: string }) {
