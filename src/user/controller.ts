@@ -245,7 +245,7 @@ export class UserController extends BaseController {
             }
             const profile = user.tenantProfile;
             profile.$set(parsedData['profile']);
-            const updatedProfile = await this.service.profileService.update(profile);
+            const updatedProfile = await this.service.profileService.updateWithDwolla(profile);
             return this.map(ProfileResponse, updatedProfile);
         } catch (e) {
             this.logger.error(e);

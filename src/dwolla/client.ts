@@ -5,6 +5,9 @@ import * as transaction from './transfer';
 import {Logger} from '../logger';
 import {Config} from '../config';
 import {AutoWired, Inject} from 'typescript-ioc';
+import _ from 'lodash';
+import * as profile from '../profile/models';
+import {CUSTOMER_TYPE} from './customer';
 
 @AutoWired
 export class Client {
@@ -42,6 +45,21 @@ export class Client {
     public async createCustomer(_customer: customer.ICustomer): Promise<string> {
         const response = await this.client.post('customers', _customer);
         return response.headers.get('location');
+    }
+
+    static pickFieldsToUpdate(profile) {
+        switch (profile.dwollaStatus) {
+            case CUSTOMER_TYPE.Verified:
+                return _.pick(profile, ['email', 'address1', 'address2', 'city', 'state', 'postalCode', 'phone']);
+            case CUSTOMER_TYPE.Unverified:
+                return _.pick(profile, ['firstName', 'lastName', 'email', 'businessName']);
+
+        }
+    }
+
+    public async updateCustomer(_customer: profile.Profile) {
+        const payload = Client.pickFieldsToUpdate(_customer);
+        return await this.client.post(_customer.dwollaUri, payload);
     }
 
     public async getCustomer(localization: string): Promise<customer.ICustomer> {

@@ -3,11 +3,15 @@ import * as models from './models';
 import * as db from '../db';
 import {transaction} from 'objection';
 import {RoleService} from '../user/role/service';
+import * as dwolla from '../dwolla';
+import {Logger} from '../logger';
 
 @AutoWired
 export class ProfileService extends db.ModelService<models.Profile> {
     protected modelType = models.Profile;
     protected roleService: RoleService;
+    @Inject private dwollaClient: dwolla.Client;
+    @Inject private logger: Logger;
 
     constructor(@Inject roleService: RoleService) {
         super();
@@ -28,5 +32,15 @@ export class ProfileService extends db.ModelService<models.Profile> {
         }
 
         return profile;
+    }
+
+    async updateWithDwolla(profile: models.Profile, trx?: transaction<any>): Promise<any> {
+        await this.dwollaClient.authorize();
+        try {
+            await this.dwollaClient.updateCustomer(profile);
+            return await this.update(profile, trx);
+        } catch (err) {
+            this.logger.error(err);
+        }
     }
 }

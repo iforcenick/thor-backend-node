@@ -163,6 +163,7 @@ export const profileRequestSchema = Joi.object().keys({
 const poBox = /^ *((#\d+)|((box|bin)[-. \/\\]?\d+)|(.*p[ \.]? ?(o|0)[-. \/\\]? *-?((box|bin)|b|(#|num)?\d+))|(p(ost)? *(o(ff(ice)?)?)? *((box|bin)|b)? *\d+)|(p *-?\/?(o)? *-?box)|post office box|((box|bin)|b) *(number|num|#)? *\d+|(num|number|#) *\d+)/i;
 const stateRegex = /^(?:(A[KLRZ]|C[AOT]|D[CE]|FL|GA|HI|I[ADLN]|K[SY]|LA|M[ADEINOST]|N[CDEHJMVY]|O[HKR]|P[AR]|RI|S[CD]|T[NX]|UT|V[AIT]|W[AIVY]))$/;
 const dateRegex = /^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$/;
+const phoneRegex = /^\d{10}$/;
 const postalCodeRegex = /^[0-9]{5}(?:-[0-9]{4})?$/;
 const now = Date.now();
 const cutoffDate = new Date(now - (1000 * 60 * 60 * 24 * 365 * 18)); // go back by 18 years
@@ -170,7 +171,7 @@ const cutoffDate = new Date(now - (1000 * 60 * 60 * 24 * 365 * 18)); // go back 
 export const profilePatchSchema = Joi.object().keys({
     firstName: Joi.string(),
     lastName: Joi.string(),
-    phone: Joi.string(),
+    phone: Joi.string().regex(phoneRegex),
     email: Joi.string().email(),
     dateOfBirth: Joi.date().max(cutoffDate).raw(),
     ssn: Joi.forbidden(),
