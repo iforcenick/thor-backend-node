@@ -283,13 +283,21 @@ export class UserService extends db.ModelService<models.User> {
         return parseInt(count) > 0;
     }
 
+    async update(entity: models.User, trx?: transaction<any>): Promise<any> {
+        delete entity.lastActivity;
+        return await entity
+            .$query(this.transaction(trx))
+            .patch(entity.toJSON())
+            .returning('*')
+            .first();
+    }
+
     async delete(user: models.User) {
         user.deletedAt = new Date();
         user.tenantProfile.anonymise();
-        delete user.lastActivity;
         await transaction(this.transaction(), async trx => {
-            await this.update(user);
-            await this.profileService.update(user.tenantProfile);
+            await this.update(user, trx);
+            await this.profileService.update(user.tenantProfile, trx);
         });
     }
 
