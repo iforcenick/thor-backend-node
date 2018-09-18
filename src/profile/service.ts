@@ -5,6 +5,8 @@ import {transaction} from 'objection';
 import {RoleService} from '../user/role/service';
 import * as dwolla from '../dwolla';
 import {Logger} from '../logger';
+import moment from 'moment';
+import {ValidationError} from '../errors';
 
 @AutoWired
 export class ProfileService extends db.ModelService<models.Profile> {
@@ -17,6 +19,14 @@ export class ProfileService extends db.ModelService<models.Profile> {
         super();
         // TODO: add model specific profile filter
         this.roleService = roleService;
+    }
+
+    static validateAge(profile) {
+        const dateOfBirth = profile['dateOfBirth'];
+        if (!dateOfBirth) return;
+        const age = moment().diff(dateOfBirth, 'years');
+        if (age >= 18) return;
+        throw new ValidationError('user is too young');
     }
 
     async createProfile(profile: models.Profile, roles: Array<any>, trx?: transaction<any>, baseProfile?: boolean) {

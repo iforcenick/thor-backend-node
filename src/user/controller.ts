@@ -171,6 +171,7 @@ export class UserController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async createUser(data: models.UserRequest): Promise<models.UserResponse> {
         const parsedData = await this.validate(data, models.userRequestSchema);
+        ProfileService.validateAge(parsedData['profile']);
 
         let user = models.User.fromJson({});
         const profile = Profile.fromJson(parsedData['profile']);
@@ -192,7 +193,7 @@ export class UserController extends BaseController {
                 if (body.code) {
                     const {code} = body;
                     if (code === 'ValidationError') {
-                        throw new ValidationError(body._embedded.errors[0].message);
+                        throw new ValidationError(`Invalid value for Fields: profile,${body._embedded.errors[0].path.replace('/', '')}`);
                     }
                 }
             }
@@ -238,6 +239,7 @@ export class UserController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async patchAnyUser(@PathParam('id') id: string, data: models.UserRequest): Promise<ProfileResponse> {
         const parsedData = await this.validate(data, models.userPatchSchema);
+        ProfileService.validateAge(parsedData['profile']);
         try {
             const user = await this.service.get(id);
             if (!user) {

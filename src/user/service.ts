@@ -11,7 +11,6 @@ import {ApiServer} from '../server';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const knex = require('knex');
 
 @AutoWired
 export class UserService extends db.ModelService<models.User> {
@@ -228,6 +227,7 @@ export class UserService extends db.ModelService<models.User> {
     async activity() {
         const query = this.modelType.query();
         const tenantId = this.getTenantId();
+        const knex = ApiServer.db;
         query
             .join('profiles', function () {
                 this.on('users.id', 'profiles.userId').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
@@ -484,7 +484,9 @@ export class UserService extends db.ModelService<models.User> {
         previousEndDate: string;
     }) {
         const tenantId = this.getTenantId();
-        const rankQuery = ApiServer.db.raw(
+        const knex = ApiServer.db;
+
+        const rankQuery = knex.raw(
             `
             select  ranking.rank
 from (select *, row_number() OVER (ORDER BY t.total desc) AS rank

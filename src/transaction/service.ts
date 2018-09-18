@@ -9,9 +9,7 @@ import {TenantService} from '../tenant/service';
 import {UserService} from '../user/service';
 import {raw, transaction} from 'objection';
 import {ApiServer} from '../server';
-import {event} from "../dwolla";
-
-const knex = require('knex');
+import {event} from '../dwolla';
 
 @AutoWired
 export class TransactionService extends db.ModelService<models.Transaction> {
@@ -50,6 +48,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
                      {userId, startDate, endDate, status}: { userId: string; startDate?: string; endDate?: string; status?: string }) {
         limit = this.paginationLimit(limit);
         const query = this.modelType.query();
+        const knex = ApiServer.db;
         query.where({userId});
         query.page(page - 1, limit);
         const eagerObject = {
