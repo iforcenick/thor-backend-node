@@ -286,7 +286,7 @@ export class UserService extends db.ModelService<models.User> {
     async delete(user: models.User) {
         user.deletedAt = new Date();
         user.tenantProfile.anonymise();
-
+        delete user.lastActivity;
         await transaction(this.transaction(), async trx => {
             await this.update(user);
             await this.profileService.update(user.tenantProfile);
