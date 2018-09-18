@@ -166,8 +166,9 @@ export class TransactionService extends db.ModelService<models.Transaction> {
             raw(`sum(${db.Tables.transactions}.quantity * ${models.Relations.job}.value) as total`),
             raw(`count("${db.Tables.transactions}"."userId") as users`)
         ]);
-        query.groupBy([`${db.Tables.transactions}.tenantId`]);
-        return (await query)[0];
+        query.groupBy([`${db.Tables.transactions}.tenantId`]).first();
+        const queryResult = await query;
+        return queryResult || {total: '0', users: '0'};
     }
 
     async getByTransferId(id: string) {
