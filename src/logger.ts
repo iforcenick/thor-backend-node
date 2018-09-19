@@ -21,10 +21,10 @@ export class Logger {
         this.expressWinston = this.instantiateLoggerMiddleware();
     }
 
-    private getOptions(): any {
+    private getOptions(): Winston.LoggerOptions {
         this.level = LogLevel[this.config.get('logs.level')];
 
-        return {
+        const options: Winston.LoggerOptions = {
             exitOnError: false,
             format: Winston.format.combine(
                 Winston.format.timestamp(),
@@ -32,6 +32,12 @@ export class Logger {
             ),
             transports: [new Winston.transports.Console()]
         };
+
+        if (this.config.get('logs.silent')) {
+            options.silent = true;
+        }
+
+        return options;
     }
 
     private instantiateLogger() {
@@ -41,7 +47,7 @@ export class Logger {
     }
 
     private instantiateLoggerMiddleware() {
-        const options = this.getOptions();
+        const options: any = this.getOptions();
         options.meta = false;
         options.msg = 'HTTP {{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}} | {{req.connection.remoteAddress}}';
 

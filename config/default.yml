@@ -3,6 +3,7 @@ express:
   port: 8081
 logs:
   level: info
+  silent: false
 authorization:
   jwtSecret: jwt
   tokenExpirationTime: 30days

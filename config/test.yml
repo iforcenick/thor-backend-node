@@ -1,3 +1,5 @@
 ---
 express:
   port: 9099
+logs:
+  silent: true

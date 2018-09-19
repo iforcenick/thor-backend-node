@@ -67,8 +67,16 @@ export class ModelService<T> {
     protected modelType;
     protected tenant: any;
 
+    private getTenant() {
+        if (!getNamespace('authContext')) {
+            return null;
+        }
+
+        return getNamespace('authContext').get('tenant');
+    }
+
     constructor() {
-        this.tenant = getNamespace('authContext').get('tenant');
+        this.tenant = this.getTenant();
     }
 
     getOptions(query) {

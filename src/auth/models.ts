@@ -5,6 +5,18 @@ export class AuthUserResponse extends UserResponse {
     token: string;
 }
 
+export interface LoginRequest {
+    login: string;
+    password: string;
+    tenant: string;
+}
+
+export interface PasswordRequest {
+    oldPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+}
+
 export const loginRequestSchema = Joi.object().keys({
     login: Joi.string().required(),
     password: Joi.string().required(),
