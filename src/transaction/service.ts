@@ -149,7 +149,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         models.Transaction.periodFilter(query, startDate, endDate, status);
         query.select([
             raw(`sum(${db.Tables.transactions}.quantity * ${models.Relations.job}.value) as total`),
-            raw(`count("${db.Tables.transactions}"."userId") as users`)
+            raw(`count(distinct "${db.Tables.transactions}"."userId") as users`)
         ]);
         query.groupBy([`${db.Tables.transactions}.tenantId`]).first();
         const queryResult = await query;
