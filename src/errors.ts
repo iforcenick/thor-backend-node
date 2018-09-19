@@ -12,35 +12,38 @@ export class ValidationError extends Errors.ConflictError {
         } else {
             message = ValidationError.buildValidationErrorString(entity);
         }
+
         super(message);
         this.entity = {error: message};
         Object.setPrototypeOf(this, ValidationError.prototype);
     }
 
     private static buildValidationErrorString(err: Joi.ValidationError) {
-        const requiredFields: Array<string> = [];
-        const unexpectedFields: Array<string> = [];
-        const invalidFields: Array<string> = [];
+        const fields = {};
+
         err.details.forEach(e => {
-            if (_.endsWith(e.type, 'required')) {
-                requiredFields.push(e.path.join(','));
-            } else if (_.endsWith(e.type, 'Unknown')) {
-                unexpectedFields.push(e.path.join(','));
-            } else {
-                invalidFields.push(e.path.join(','));
+            let pointer = fields;
+            const last = e.path.slice(-1)[0];
+
+            for (let i = 0; i < e.path.length - 1; i++) { // skip last row
+                const field = e.path[i];
+                if (!_.has(pointer, field)) {
+                    pointer[field] = {};
+                }
+
+                pointer = pointer[field];
             }
+
+            if (!_.has(pointer, last)) {
+                pointer[last] = [];
+            }
+
+            pointer[last].push({
+                message: e.message,
+                type: e.type,
+            });
         });
 
-        const result = [];
-        if (requiredFields.length > 0) {
-            result.push(`Missing Required Fields: ${requiredFields.join(', ')}`);
-        }
-        if (unexpectedFields.length > 0) {
-            result.push(`Unexpected Fields: ${unexpectedFields.join(', ')}`);
-        }
-        if (invalidFields.length > 0) {
-            result.push(`Invalid value for Fields: ${invalidFields.join(', ')}`);
-        }
-        return result.join('\n');
+        return fields;
     }
 }

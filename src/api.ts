@@ -19,6 +19,12 @@ export interface PaginatedResponse {
     pagination: Pagination;
 }
 
+const validationOptions = {
+    abortEarly: false, // abort after the last validation error
+    allowUnknown: true, // allow unknown keys that will be ignored
+    stripUnknown: true // remove unknown keys from the validated data
+};
+
 export class BaseController {
     static _requireRole(req: any, role: role.models.Types) {
         const user: user.User = req.user;
@@ -39,7 +45,7 @@ export class BaseController {
 
     validate(data, schema) {
         return new Promise((resolve, reject) => {
-            Joi.validate(data, schema, (err, value) => {
+            Joi.validate(data, schema, validationOptions, (err, value) => {
                 if (err) {
                     reject(new ValidationError(err));
                 } else {
