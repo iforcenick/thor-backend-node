@@ -234,6 +234,30 @@ export class UserController extends BaseController {
         }
     }
 
+    @DELETE
+    @Path(':id/fundingSource')
+    @Preprocessor(BaseController.requireAdmin)
+    async deleteUserFundingSource(@PathParam('id') id: string) {
+        const user = await this.service.get(id);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+
+        const profile = user.tenantProfile;
+
+        try {
+            await this.dwollaClient.authorize();
+            await this.dwollaClient.deleteFundingSource(profile.dwollaSourceUri);
+            profile.dwollaSourceUri = null;
+            profile.dwollaRouting = null;
+            profile.dwollaAccount = null;
+            await this.service.profileService.update(profile);
+        } catch (err) {
+            this.logger.error(err);
+            throw new Errors.InternalServerError(err.message);
+        }
+    }
+
     @PATCH
     @Path(':id/profile')
     @Preprocessor(BaseController.requireAdmin)

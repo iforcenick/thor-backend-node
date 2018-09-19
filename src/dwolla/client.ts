@@ -77,6 +77,13 @@ export class Client {
         return response.headers.get('location');
     }
 
+    public async deleteFundingSource(localization: string): Promise<string> {
+        const response = await this.client.post(`${localization}`, {
+            removed: true,
+        });
+        return response;
+    }
+
     public async createPlaidFundingSource(localization, plaidToken, accountName: string): Promise<string> {
         const response = await this.client.post(`${localization}/funding-sources`, {
             plaidToken,
