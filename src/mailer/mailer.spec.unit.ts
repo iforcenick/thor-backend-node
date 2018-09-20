@@ -28,20 +28,37 @@ describe('Mailer service', () => {
             sandbox.stub(client, 'send').returns(Promise.resolve(true));
             expect(await service.send('', '', '', '', '')).to.be.true;
         });
+
+        it('should override to', async () => {
+            const client = (service as any).client;
+            const sendFake = sandbox.fake.resolves(true);
+            sandbox.replace(client, 'send', sendFake);
+            const email = 'frank@gothor.com';
+            process.env['mailer_override_to'] = email;
+            await service.send('john@gothor.com', '', '', '', '');
+            expect(sendFake.getCall(0).args[0]).to.equal(email);
+        });
     });
 
-    describe('sendTemplate', () => {
-        it('should return true', async () => {
-            const client = (service as any).client;
+    describe('send with template', () => {
+        let client;
+        let sendSpy;
+        let user;
+        let profile;
+        const email = 'test@test.com';
+
+        beforeEach(async () => {
+            client = (service as any).client;
             sandbox.stub(client, 'send').returns(Promise.resolve(true));
-            const sendSpy = sandbox.spy(service, 'send');
-            const user = new users.User();
-            const profile = new profiles.Profile();
-            const email = 'test@test.com';
+            sendSpy = sandbox.spy(service, 'send');
+            user = new users.User();
+            profile = new profiles.Profile();
             profile.email = email;
             profile.tenantId = 'test';
             user.profiles = [profile];
-            const tenant = new tenants.Tenant();
+        });
+
+        it('should return true', async () => {
             const template = new mailer.Template();
             sandbox.stub(template, 'readTemplateFile').returns('test {{ test }}');
             const subject = 'test subject';
@@ -53,6 +70,62 @@ describe('Mailer service', () => {
             expect(sendSpy.getCall(0).args[2]).to.equal(subject);
             expect(sendSpy.getCall(0).args[3]).to.equal('test test');
             expect(sendSpy.getCall(0).args[4]).to.equal('test test');
+        });
+
+        it('should send sendFundingSourceCreated', async () => {
+            expect(await service.sendFundingSourceCreated(user, {})).to.be.true;
+            expect(sendSpy.calledOnce).to.be.true;
+            expect(sendSpy.getCall(0).args[0]).to.equal(email);
+            expect(sendSpy.getCall(0).args[3]).to.be.a('string');
+            expect(sendSpy.getCall(0).args[4]).to.be.a('string');
+        });
+
+        it('should send sendFundingSourceRemoved', async () => {
+            expect(await service.sendFundingSourceRemoved(user, {})).to.be.true;
+            expect(sendSpy.calledOnce).to.be.true;
+            expect(sendSpy.getCall(0).args[0]).to.equal(email);
+            expect(sendSpy.getCall(0).args[3]).to.be.a('string');
+            expect(sendSpy.getCall(0).args[4]).to.be.a('string');
+        });
+
+        it('should send sendTransferProcessed', async () => {
+            expect(await service.sendTransferProcessed(user, {})).to.be.true;
+            expect(sendSpy.calledOnce).to.be.true;
+            expect(sendSpy.getCall(0).args[0]).to.equal(email);
+            expect(sendSpy.getCall(0).args[3]).to.be.a('string');
+            expect(sendSpy.getCall(0).args[4]).to.be.a('string');
+        });
+
+        it('should send sendTransferFailed', async () => {
+            expect(await service.sendTransferFailed(user, {})).to.be.true;
+            expect(sendSpy.calledOnce).to.be.true;
+            expect(sendSpy.getCall(0).args[0]).to.equal(email);
+            expect(sendSpy.getCall(0).args[3]).to.be.a('string');
+            expect(sendSpy.getCall(0).args[4]).to.be.a('string');
+        });
+
+        it('should send sendCustomerVerificationRetry', async () => {
+            expect(await service.sendCustomerVerificationRetry(user, {})).to.be.true;
+            expect(sendSpy.calledOnce).to.be.true;
+            expect(sendSpy.getCall(0).args[0]).to.equal(email);
+            expect(sendSpy.getCall(0).args[3]).to.be.a('string');
+            expect(sendSpy.getCall(0).args[4]).to.be.a('string');
+        });
+
+        it('should send sendCustomerVerificationDocument', async () => {
+            expect(await service.sendCustomerVerificationDocument(user, {})).to.be.true;
+            expect(sendSpy.calledOnce).to.be.true;
+            expect(sendSpy.getCall(0).args[0]).to.equal(email);
+            expect(sendSpy.getCall(0).args[3]).to.be.a('string');
+            expect(sendSpy.getCall(0).args[4]).to.be.a('string');
+        });
+
+        it('should send sendCustomerVerificationSuspended', async () => {
+            expect(await service.sendCustomerVerificationSuspended(user, {})).to.be.true;
+            expect(sendSpy.calledOnce).to.be.true;
+            expect(sendSpy.getCall(0).args[0]).to.equal(email);
+            expect(sendSpy.getCall(0).args[3]).to.be.a('string');
+            expect(sendSpy.getCall(0).args[4]).to.be.a('string');
         });
     });
 });

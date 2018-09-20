@@ -10,7 +10,7 @@ export class Config {
     }
 
     private env_key(key) {
-        return key.replace('.', '_');
+        return key.replace(/\./g, '_');
     }
 
     get(key) {
@@ -22,6 +22,10 @@ export class Config {
     }
 
     has(key) {
+        if (process.env[this.env_key(key)]) {
+            return true;
+        }
+
         return this.config.has(key);
     }
 

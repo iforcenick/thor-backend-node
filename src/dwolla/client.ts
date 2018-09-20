@@ -7,7 +7,7 @@ import {Config} from '../config';
 import {AutoWired, Inject} from 'typescript-ioc';
 import _ from 'lodash';
 import * as profile from '../profile/models';
-import {CUSTOMER_TYPE} from './customer';
+import {CUSTOMER_STATUS} from './customer';
 
 @AutoWired
 export class Client {
@@ -49,9 +49,9 @@ export class Client {
 
     static pickFieldsToUpdate(profile) {
         switch (profile.dwollaStatus) {
-            case CUSTOMER_TYPE.Verified:
+            case CUSTOMER_STATUS.Verified:
                 return _.pick(profile, ['email', 'address1', 'address2', 'city', 'state', 'postalCode', 'phone']);
-            case CUSTOMER_TYPE.Unverified:
+            case CUSTOMER_STATUS.Unverified:
                 return _.pick(profile, ['firstName', 'lastName', 'email', 'businessName']);
 
         }

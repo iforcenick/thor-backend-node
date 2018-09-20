@@ -274,8 +274,8 @@ export class UserService extends db.ModelService<models.User> {
             const profileEntity = await this.profileService.createProfile(profile, [customerRole], trx, false, tenantId);
             const baseProfileEntity = await this.profileService.createProfile(baseProfile, [], trx, true, tenantId);
 
-            // await user.$relatedQuery(models.Relations.profile, trx).relate(profileEntity.id);
-            // await user.$relatedQuery(models.Relations.profile, trx).relate(baseProfileEntity.id);
+            // await users.$relatedQuery(models.Relations.profile, trx).relate(profileEntity.id);
+            // await users.$relatedQuery(models.Relations.profile, trx).relate(baseProfileEntity.id);
         });
 
         return user;

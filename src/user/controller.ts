@@ -25,12 +25,14 @@ import * as dwolla from '../dwolla';
 import {ValidationError} from '../errors';
 import {TransactionResponse, PaginatedTransactionResponse} from '../transaction/models';
 import {TransactionService} from '../transaction/service';
+import {MailerService} from '../mailer';
 
 @Security('api_key')
 @Path('/users')
 @Tags('users')
 export class UserController extends BaseController {
     @Inject private logger: Logger;
+    @Inject private mailer: MailerService;
     @Inject private dwollaClient: dwolla.Client;
     private service: UserService;
     private profileService: ProfileService;
@@ -186,6 +188,7 @@ export class UserController extends BaseController {
 
             user = await this.service.createWithProfile(user, profile);
             user = await this.service.get(user.id);
+            await this.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
         } catch (err) {
             this.logger.error(err);
             if (err.body) {
@@ -227,13 +230,25 @@ export class UserController extends BaseController {
 
             profile.dwollaRouting = parsedData['routingNumber'];
             profile.dwollaAccount = parsedData['accountNumber'];
+
+            const sourceInfo = {
+                sourceUri: profile.dwollaSourceUri,
+                routing: profile.dwollaRouting,
+                account: profile.dwollaAccount,
+            };
+
+            try {
+                await this.mailer.sendFundingSourceRemoved(user, sourceInfo);
+            } catch (e) {
+                this.logger.error(e);
+            }
+
             await this.service.profileService.update(profile);
         } catch (err) {
             this.logger.error(err);
             throw new Errors.InternalServerError(err.message);
         }
     }
-
 
 
     @DELETE
@@ -248,11 +263,24 @@ export class UserController extends BaseController {
         const profile = user.tenantProfile;
 
         try {
+            const sourceInfo = {
+                sourceUri: profile.dwollaSourceUri,
+                routing: profile.dwollaRouting,
+                account: profile.dwollaAccount,
+            };
+
             await this.dwollaClient.authorize();
             await this.dwollaClient.deleteFundingSource(profile.dwollaSourceUri);
             profile.dwollaSourceUri = null;
             profile.dwollaRouting = null;
             profile.dwollaAccount = null;
+
+            try {
+                await this.mailer.sendFundingSourceRemoved(user, sourceInfo);
+            } catch (e) {
+                this.logger.error(e);
+            }
+
             await this.service.profileService.update(profile);
         } catch (err) {
             this.logger.error(err);
@@ -356,5 +384,23 @@ export class UserController extends BaseController {
             previousEndDate,
         });
         return this.map(models.UserStatisticsResponse, statistics);
+    }
+
+    async sendNotificationForDwollaCustomer(user: models.User, status: string) {
+        try {
+            switch (status) {
+                case dwolla.customer.CUSTOMER_STATUS.Retry:
+                    await this.mailer.sendCustomerVerificationRetry(user, user);
+                    break;
+                case dwolla.customer.CUSTOMER_STATUS.Document:
+                    await this.mailer.sendCustomerVerificationDocument(user, user);
+                    break;
+                case dwolla.customer.CUSTOMER_STATUS.Suspended:
+                    await this.mailer.sendCustomerVerificationSuspended(user, user);
+                    break;
+            }
+        } catch (e) {
+            this.logger.error(e.message);
+        }
     }
 }

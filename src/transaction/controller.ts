@@ -71,7 +71,7 @@ export class TransactionController extends BaseController {
      * @param limit transactions per page
      * @param dateFrom starting Date() of transactions e.g. 2018-08-22T14:44:27.727Z
      * @param dateTill end Date() of transactions, e.g. 2018-08-22T14:44:27.727Z
-     * @param userId user id as uuidv4 string
+     * @param userId users id as uuidv4 string
      * @param status transaction status
      */
     @GET
@@ -153,7 +153,7 @@ export class TransactionController extends BaseController {
     }
 
     @POST
-    @Path(':id/transfer')
+    @Path(':id/transfers')
     @Preprocessor(BaseController.requireAdmin)
     async createTransactionTransfer(@PathParam('id') id: string, @ContextRequest context: ServiceContext): Promise<models.TransactionResponse> {
         const transaction = await this.service.get(id);

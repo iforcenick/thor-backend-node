@@ -11,9 +11,15 @@ profile.tenantId = 'test';
 user.profiles = [profile];
 const template = new mailer.Template();
 const params = {name: 'Tester Pawel', link: 'gothor-api.gothor.com'};
-template.setSubject('test email').setHtml(mailer.TemplatesFiles.SUMMARY_HTML).setText(mailer.TemplatesFiles.SUMMARY_TEXT).setParams(params);
+template.setSubject('test email').setHtml(mailer.TemplatesFiles.TRANSFER_PROCESSED_HTML).setText(mailer.TemplatesFiles.TRANSFER_PROCESSED_TEXT).setParams(params);
 
 service.sendTemplate(user, template).then(r => {
+    console.log('result', r);
+}).catch(e => {
+    console.log(e);
+});
+
+service.sendTransferFailed(user, {}).then(r => {
     console.log('result', r);
 }).catch(e => {
     console.log(e);

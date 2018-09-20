@@ -15,8 +15,8 @@ passport.use(new JWTStrategy({
     },
     function (jwtPayload, cb) {
         // const service = Container.get(UserService);
-        // service.get(jwtPayload.id).then((user) => {
-        //     return cb(null, user);
+        // service.get(jwtPayload.id).then((users) => {
+        //     return cb(null, users);
         // });
         return cb(null, user.User.fromJson(jwtPayload));
     }

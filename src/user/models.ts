@@ -42,6 +42,10 @@ export class User extends db.Model {
     lastActivity?: Date;
 
     get profile(): profile.Profile {
+        if (!_.isArray(this.profiles)) {
+            return undefined;
+        }
+
         for (const profile of this.profiles) {
             if (!profile.tenantId) {
                 return profile;
@@ -52,6 +56,10 @@ export class User extends db.Model {
     }
 
     get tenantProfile(): profile.Profile {
+        if (!_.isArray(this.profiles)) {
+            return undefined;
+        }
+
         for (const profile of this.profiles) {
             if (profile.tenantId) {
                 return profile;
@@ -78,7 +86,7 @@ export class User extends db.Model {
 
     checkTransactionAbility() {
         if (!this.hasRole(role.models.Types.customer)) {
-            throw new Errors.BadRequestError('user is not customer');
+            throw new Errors.BadRequestError('users is not customer');
         }
         if (!this.hasBankAccount()) {
             throw new Errors.NotAcceptableError('User don\'t have bank account');

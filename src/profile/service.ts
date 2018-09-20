@@ -26,7 +26,7 @@ export class ProfileService extends db.ModelService<models.Profile> {
         if (!dateOfBirth) return;
         const age = moment().diff(dateOfBirth, 'years');
         if (age >= 18) return;
-        throw new ValidationError('user is too young');
+        throw new ValidationError('users is too young');
     }
 
     async createProfile(profile: models.Profile, roles: Array<any>, trx?: transaction<any>, baseProfile?: boolean, tenantId?) {
@@ -45,12 +45,13 @@ export class ProfileService extends db.ModelService<models.Profile> {
     }
 
     async updateWithDwolla(profile: models.Profile, trx?: transaction<any>): Promise<any> {
-        await this.dwollaClient.authorize();
         try {
+            await this.dwollaClient.authorize();
             await this.dwollaClient.updateCustomer(profile);
             return await this.update(profile, trx);
         } catch (err) {
             this.logger.error(err);
+            throw err;
         }
     }
 }

@@ -75,6 +75,18 @@ export class MissingTemplateFileException extends Error {
 }
 
 export enum TemplatesFiles {
-    SUMMARY_TEXT = 'summary_text.twig',
-    SUMMARY_HTML = 'summary_html.twig',
+    TRANSFER_PROCESSED_TEXT = 'transfer_processed_text.twig',
+    TRANSFER_PROCESSED_HTML = 'transfer_processed_html.twig',
+    TRANSFER_FAILED_TEXT = 'transfer_failed_text.twig',
+    TRANSFER_FAILED_HTML = 'transfer_failed_html.twig',
+    CUSTOMER_VERIFICATION_DOCUMENT_TEXT = 'customer_verification_document_text.twig',
+    CUSTOMER_VERIFICATION_DOCUMENT_HTML = 'customer_verification_document_html.twig',
+    CUSTOMER_VERIFICATION_RETRY_TEXT = 'customer_verification_retry_text.twig',
+    CUSTOMER_VERIFICATION_RETRY_HTML = 'customer_verification_retry_html.twig',
+    CUSTOMER_VERIFICATION_SUSPENDED_TEXT = 'customer_verification_suspended_text.twig',
+    CUSTOMER_VERIFICATION_SUSPENDED_HTML = 'customer_verification_suspended_html.twig',
+    FUNDING_SOURCE_CREATED_TEXT = 'funding_source_created_text.twig',
+    FUNDING_SOURCE_CREATED_HTML = 'funding_source_created_html.twig',
+    FUNDING_SOURCE_REMOVED_TEXT = 'funding_source_removed_text.twig',
+    FUNDING_SOURCE_REMOVED_HTML = 'funding_source_removed_html.twig',
 }

@@ -34,7 +34,7 @@ describe('Auth login', () => {
         await expect(controller.login(data)).to.be.rejectedWith(Errors.UnauthorizedError);
     });
 
-    it('should return user model with JWT token when credentials are correct', async () => {
+    it('should return users model with JWT token when credentials are correct', async () => {
         const service: UserService = (controller as any).service;
         const data: models.LoginRequest = {
             login: 'test',

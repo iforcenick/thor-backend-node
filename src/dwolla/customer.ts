@@ -56,7 +56,7 @@ export class Customer implements ICustomer {
     }
 }
 
-export const CUSTOMER_TYPE = {
+export const CUSTOMER_STATUS = {
     Personal: 'personal',
     Unverified: 'unverified',
     Verified: 'verified',
@@ -72,7 +72,7 @@ export const factory = (data): ICustomer => {
 
 export const factoryFromProfile = (profile: profile.Profile): ICustomer => {
     const data = profile.toJSON();
-    data['type'] = CUSTOMER_TYPE.Personal;
+    data['type'] = CUSTOMER_STATUS.Personal;
 
     return new Customer(data);
 };
