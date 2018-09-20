@@ -1,6 +1,5 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
-import * as sinon from 'sinon';
 import {Container} from 'typescript-ioc';
 import {Errors} from 'typescript-rest';
 import {AuthController} from './controller';
@@ -11,6 +10,7 @@ import {UserService} from '../user/service';
 import 'mocha';
 import * as jwt from 'jsonwebtoken';
 import {Config} from '../config';
+import {sandbox} from '../test-setup.spec.unit';
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -47,7 +47,7 @@ describe('Auth login', () => {
         user.profiles = [new profiles.Profile(), tenantProfile];
         user.password = await service.hashPassword(data.password);
 
-        sinon.stub(service, 'findByEmailAndTenant').returns(user);
+        sandbox.stub(service, 'findByEmailAndTenant').returns(user);
         const result = await controller.login(data);
 
         expect(result).to.not.be.undefined;

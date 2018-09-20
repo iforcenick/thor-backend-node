@@ -7,7 +7,7 @@
     "start": "node dist/index.js",
     "start:dev": "cross-env NODE_ENV=development nodemon dist/index.js",
     "test": "echo \"no test specified\" && exit 0",
-    "build": "tsc",
+    "build": "tsc && cp -rf src/mailer/templates dist/mailer/",
     "watch": "tsc -w",
     "db": "knex migrate:latest && knex seed:run",
     "swagger": "swaggerGen -c ./swagger.config.json",
@@ -17,24 +17,6 @@
     "stop:docker": "docker-compose down --remove-orphans",
     "test-unit": "nyc cross-env NODE_ENV=test mocha src/**/*.spec.unit.ts",
     "test-api": "nyc cross-env NODE_ENV=test mocha src/**/*.spec.ts"
-  },
-  "nyc": {
-    "extension": [
-      ".ts",
-      ".tsx"
-    ],
-    "include": [
-      "src/**/*.ts"
-    ],
-    "exclude": [
-      "src/**/*.spec.unit.ts",
-      "src/**/*.spec.ts"
-    ],
-    "reporter": [
-      "html",
-      "text"
-    ],
-    "all": true
   },
   "repository": {
     "type": "git",
@@ -59,6 +41,7 @@
     "jsonwebtoken": "^8.3.0",
     "knex": "^0.15.2",
     "lodash": "^4.17.5",
+    "mailgun-js": "^0.21.0",
     "method-override": "^2.3.10",
     "moment": "^2.22.2",
     "objection": "^1.2.6",
@@ -69,6 +52,7 @@
     "pg": "^7.4.3",
     "reflect-metadata": "^0.1.12",
     "request": "^2.85.0",
+    "twig": "^1.12.0",
     "typescript-ioc": "^1.2.3",
     "typescript-rest": "^1.5.2",
     "typescript-rest-swagger": "0.0.18",
@@ -90,6 +74,7 @@
     "@types/node": "^9.6.6",
     "@types/passport": "^0.4.5",
     "@types/sinon": "^5.0.2",
+    "@types/twig": "^1.12.1",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "chai-http": "^4.2.0",

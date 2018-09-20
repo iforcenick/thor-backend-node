@@ -2,6 +2,5 @@
 --require source-map-support/register
 --recursive
 --full-trace
---bail
 --timeout 25000
 --exit
