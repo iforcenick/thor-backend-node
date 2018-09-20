@@ -7,6 +7,7 @@ import * as role from './role';
 import Joi = require('joi');
 import _ from 'lodash';
 import {Transaction, TransactionResponse} from '../transaction/models';
+import {Errors} from 'typescript-rest';
 
 export const enum Relations {
     roles = 'roles',
@@ -66,6 +67,22 @@ export class User extends db.Model {
 
     hasRole(role: role.models.Types) {
         return this.tenantProfile.hasRole(role);
+    }
+
+    hasBankAccount(): boolean {
+        if (!this.tenantProfile) {
+            return false;
+        }
+        return !!this.tenantProfile.dwollaSourceUri;
+    }
+
+    checkTransactionAbility() {
+        if (!this.hasRole(role.models.Types.customer)) {
+            throw new Errors.BadRequestError('user is not customer');
+        }
+        if (!this.hasBankAccount()) {
+            throw new Errors.NotAcceptableError('User don\'t have bank account');
+        }
     }
 }
 

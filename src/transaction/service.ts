@@ -77,11 +77,16 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
     }
 
-
-    async createTransaction(transaction: models.Transaction): Promise<models.Transaction> {
+    async insert(transaction: models.Transaction, trx?: transaction<any>): Promise<models.Transaction> {
+        delete transaction.job;
         transaction.tenantId = this.getTenantId();
         transaction.status = models.Statuses.new;
-        return await this.insert(transaction);
+        return await super.insert(transaction, trx);
+    }
+
+    async update(transaction: models.Transaction, trx?: transaction<any>): Promise<models.Transaction> {
+        delete transaction.job;
+        return await super.update(transaction, trx);
     }
 
     async prepareTransfer(_transaction: models.Transaction, admin: user.User): Promise<transfer.Transfer> {

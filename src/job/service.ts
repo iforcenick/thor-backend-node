@@ -1,6 +1,7 @@
 import {AutoWired} from 'typescript-ioc';
 import * as models from './models';
 import * as db from '../db';
+import {transaction} from 'objection';
 
 @AutoWired
 export class JobService extends db.ModelService<models.Job> {
@@ -10,8 +11,8 @@ export class JobService extends db.ModelService<models.Job> {
         return await query.where('tenantId', this.getTenantId());
     }
 
-    async createJob(data: models.Job) {
+    async insert(data: models.Job, trx?: transaction<any>): Promise<models.Job> {
         data.tenantId = this.getTenantId();
-        return this.insert(data);
+        return await super.insert(data, trx);
     }
 }

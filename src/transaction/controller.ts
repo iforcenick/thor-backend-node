@@ -2,6 +2,7 @@ import {
     ContextRequest,
     Errors,
     GET,
+    HttpError,
     Path,
     PathParam,
     POST,
@@ -18,9 +19,8 @@ import {TransactionService} from './service';
 import {UserService} from '../user/service';
 import {JobService} from '../job/service';
 import {Security, Tags} from 'typescript-rest-swagger';
+import {transaction} from 'objection';
 import {Job} from '../job/models';
-import * as role from '../user/role';
-import {PeriodsStatsResponse} from "./models";
 
 const validate = require('uuid-validate');
 
@@ -113,40 +113,43 @@ export class TransactionController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async createTransaction(data: models.TransactionRequest, @ContextRequest context: ServiceContext): Promise<models.TransactionResponse> {
-        const parsedData = await this.validate(data, models.transactionRequestSchema);
-        // TODO: block below should be in try/catch
-        let job = parsedData['job'];
-        if (!job['id']) {
-            delete job['id'];
-            const jobEntity = Job.fromJson(job);
-            // TODO: this should be run in the same transaction as createTransaction
-            job = await this.jobService.createJob(jobEntity);
-        }
-        job = await this.jobService.get(job.id);
-        if (!job) {
-            throw new Errors.NotFoundError('Job not found');
-        }
-        const user = await this.userService.get(parsedData['userId']);
+        const parsedData: models.TransactionRequest = await this.validate(data, models.transactionRequestSchema);
+
+        const user = await this.userService.get(parsedData.userId);
         if (!user) {
             throw new Errors.NotFoundError('User not found');
         }
-        if (!user.hasRole(role.models.Types.customer)) {
-            throw new Errors.BadRequestError('user is not customer');
-        }
-        delete parsedData['job'];
-        let transaction = models.Transaction.fromJson(parsedData);
+        user.checkTransactionAbility();
 
         try {
-            transaction.jobId = job.id;
-            transaction.adminId = context['user'].id;
-            transaction = await this.service.createTransaction(transaction);
-            transaction = await this.service.get(transaction.id);
+            const transactionFromDb: models.Transaction = await transaction(models.Transaction.knex(), async trx => {
+                const {job: jobRequest} = parsedData;
+                let jobFromDb;
+                if (!jobRequest.id) {
+                    const jobEntity = Job.fromJson(jobRequest);
+                    jobFromDb = await this.jobService.insert(jobEntity, trx);
+                } else {
+                    jobFromDb = await this.jobService.get(jobRequest.id);
+                }
+                if (!jobFromDb) {
+                    throw new Errors.NotFoundError('Job not found');
+                }
+
+                const transactionEntity = models.Transaction.fromJson(parsedData);
+                transactionEntity.adminId = context['user'].id;
+                transactionEntity.jobId = jobFromDb.id;
+                const transactionFromDb = await this.service.insert(transactionEntity, trx);
+                transactionFromDb.job = jobFromDb;
+                return transactionFromDb;
+            });
+            return this.map(models.TransactionResponse, transactionFromDb);
         } catch (err) {
             this.logger.error(err);
+            if (err instanceof HttpError) {
+                throw err;
+            }
             throw new Errors.InternalServerError(err.message);
         }
-
-        return this.map(models.TransactionResponse, transaction);
     }
 
     @POST
@@ -198,7 +201,7 @@ export class TransactionController extends BaseController {
                          @QueryParam('endDate') endDate?: string,
                          @QueryParam('limit') limit?: number,
                          @QueryParam('page') page?: number,
-                         @QueryParam('status') status?: string): Promise<PeriodsStatsResponse> {
+                         @QueryParam('status') status?: string): Promise<models.PeriodsStatsResponse> {
         const _startDate = new Date(startDate);
         const _endDate = new Date(endDate);
         const _prevStartDate = new Date();

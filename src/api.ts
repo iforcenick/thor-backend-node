@@ -43,7 +43,7 @@ export class BaseController {
         return BaseController._requireRole(req, role.models.Types.customer);
     }
 
-    validate(data, schema) {
+    validate(data, schema): Promise<any> {
         return new Promise((resolve, reject) => {
             Joi.validate(data, schema, validationOptions, (err, value) => {
                 if (err) {

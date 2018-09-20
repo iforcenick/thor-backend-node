@@ -25,7 +25,7 @@ export class JobController extends BaseController {
         const parsedData = await this.validate(data, models.jobRequestSchema);
         const jobModel = models.Job.fromJson(parsedData);
         try {
-            const jobFromDB = await this.service.createJob(jobModel);
+            const jobFromDB = await this.service.insert(jobModel);
             return this.map(models.JobResponse, jobFromDB);
         } catch (err) {
             this.logger.error(err);
