@@ -8,9 +8,11 @@ import {ProfileService} from '../profile/service';
 import {raw, transaction} from 'objection';
 import * as _ from 'lodash';
 import {ApiServer} from '../server';
+import * as Errors from '../../node_modules/typescript-rest/dist/server-errors';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const validate = require('uuid-validate');
 
 @AutoWired
 export class UserService extends db.ModelService<models.User> {
@@ -65,6 +67,25 @@ export class UserService extends db.ModelService<models.User> {
             .where({
                 [`${models.Relations.profile}.tenantId`]: this.getTenantId()
             });
+    }
+
+    async _get(id: string): Promise<any> {
+        if (!validate(id)) {
+            throw new Errors.BadRequestError('Invalid id format');
+        }
+
+        const query = this.modelType.query().findById(id);
+
+
+        return await query
+            .whereNull('users.deletedAt')
+            .joinRelation(`${models.Relations.profile}.${profile.Relations.roles}`)
+            .mergeEager(`${models.Relations.profile}.[${profile.Relations.roles}]`)
+            .select([
+                `${db.Tables.users}.*`,
+                this.modelType.relatedQuery(models.Relations.transactions)
+                    .select('createdAt').orderBy('createdAt', 'desc').limit(1).as('lastActivity')
+            ]);
     }
 
     private rankingQuery(startDate: Date, endDate: Date, status?: string) {
@@ -240,7 +261,7 @@ export class UserService extends db.ModelService<models.User> {
         return await query;
     }
 
-    async createWithProfile(user: models.User, profile: profile.Profile): Promise<models.User> {
+    async createWithProfile(user: models.User, profile: profile.Profile, tenantId?): Promise<models.User> {
         const customerRole = await this.getRole(role.models.Types.customer);
         await transaction(this.transaction(), async trx => {
             user = await this.insert(user, trx);
@@ -250,8 +271,8 @@ export class UserService extends db.ModelService<models.User> {
             baseProfile.dwollaSourceUri = undefined;
             profile.userId = user.id;
             baseProfile.userId = user.id;
-            const profileEntity = await this.profileService.createProfile(profile, [customerRole], trx);
-            const baseProfileEntity = await this.profileService.createProfile(baseProfile, [], trx, true);
+            const profileEntity = await this.profileService.createProfile(profile, [customerRole], trx, false, tenantId);
+            const baseProfileEntity = await this.profileService.createProfile(baseProfile, [], trx, true, tenantId);
 
             // await user.$relatedQuery(models.Relations.profile, trx).relate(profileEntity.id);
             // await user.$relatedQuery(models.Relations.profile, trx).relate(baseProfileEntity.id);

@@ -162,7 +162,7 @@ export class ModelService<T> {
     async insert(entity: OModel, trx?: transaction<any>): Promise<T> {
         const response = await this.modelType
             .query(this.transaction(trx))
-            .insert(entity.toJSON())
+            .insert(entity)
             .returning('*');
 
         if (!(response instanceof Array)) {

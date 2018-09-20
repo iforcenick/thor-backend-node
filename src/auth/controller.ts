@@ -5,13 +5,18 @@ import {Logger} from '../logger';
 import {UserService} from '../user/service';
 import {Config} from '../config';
 import * as models from './models';
-import {User} from '../user/models';
+import {User, userRequestSchema} from '../user/models';
 import {Security, Tags} from 'typescript-rest-swagger';
+import {ProfileService} from '../profile/service';
+import {Profile} from '../profile/models';
+import * as dwolla from '../dwolla';
+import {ValidationError} from '../errors';
 
 @Path('/auth')
 export class AuthController extends BaseController {
     @Inject private logger: Logger;
     @Inject private config: Config;
+    @Inject private dwollaClient: dwolla.Client;
     private service: UserService;
 
     constructor(@Inject service: UserService) {
@@ -65,5 +70,43 @@ export class AuthController extends BaseController {
         const mapped = this.map(models.AuthUserResponse, user);
         mapped.token = await this.service.generateJwt(user);
         return mapped;
+    }
+
+    @POST
+    @Path('registerDemo')
+    @Tags('auth')
+    async register(data: any) {
+        const parsedData = await this.validate(data, userRequestSchema);
+        ProfileService.validateAge(parsedData['profile']);
+        let user = User.fromJson({});
+        user.password = await this.service.hashPassword(data['password']);
+        const profile = Profile.fromJson(parsedData['profile']);
+
+        try {
+            await this.dwollaClient.authorize();
+            const customer = new dwolla.customer.Customer(dwolla.customer.factoryFromProfile(profile));
+            delete profile['ssn'];
+            profile.dwollaUri = await this.dwollaClient.createCustomer(customer);
+            const dwollaCustomer = await this.dwollaClient.getCustomer(profile.dwollaUri);
+            profile.dwollaStatus = dwollaCustomer.status;
+            user = await this.service.createWithProfile(user, profile, data['tenant']);
+            await user.$loadRelated('profiles.roles');
+            const mapped = this.map(models.AuthUserResponse, user);
+
+            mapped.token = await this.service.generateJwt(user);
+            return mapped;
+        } catch (err) {
+            this.logger.error(err);
+            if (err.body) {
+                const {body} = err;
+                if (body.code) {
+                    const {code} = body;
+                    if (code === 'ValidationError') {
+                        throw new ValidationError(`Invalid value for Fields: profile,${body._embedded.errors[0].path.replace('/', '')}`);
+                    }
+                }
+            }
+            throw new Errors.InternalServerError(err.message);
+        }
     }
 }

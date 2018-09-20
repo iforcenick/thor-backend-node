@@ -12,6 +12,7 @@ import {TransactionController} from './transaction/controller';
 import {JobController} from './job/controller';
 import * as dwolla from './dwolla';
 import {DwollaController} from './dwolla/controller';
+import {DemoController} from './demo/controller';
 
 const knex = require('knex');
 const path = require('path');
@@ -145,6 +146,7 @@ export class ApiServer {
             JobController,
             TransactionController,
             DwollaController,
+            DemoController
         );
     }
 

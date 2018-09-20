@@ -29,9 +29,9 @@ export class ProfileService extends db.ModelService<models.Profile> {
         throw new ValidationError('user is too young');
     }
 
-    async createProfile(profile: models.Profile, roles: Array<any>, trx?: transaction<any>, baseProfile?: boolean) {
+    async createProfile(profile: models.Profile, roles: Array<any>, trx?: transaction<any>, baseProfile?: boolean, tenantId?) {
         if (!baseProfile) {
-            profile.tenantId = this.getTenantId();
+            profile.tenantId = tenantId || this.getTenantId();
         }
 
         profile = await this.insert(profile, trx);
