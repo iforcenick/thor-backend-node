@@ -2,12 +2,14 @@ import * as dwolla from 'dwolla-v2';
 import * as customer from './customer';
 import * as funding from './funding';
 import * as transaction from './transfer';
+import * as documents from './documents';
 import {Logger} from '../logger';
 import {Config} from '../config';
 import {AutoWired, Inject} from 'typescript-ioc';
 import _ from 'lodash';
 import * as profile from '../profile/models';
 import {CUSTOMER_STATUS} from './customer';
+const FormData = require('form-data');
 
 @AutoWired
 export class Client {
@@ -121,6 +123,31 @@ export class Client {
 
     public async listEvents(limit, offset: number): Promise<any> {
         return await this.client.get(`events?limit=${limit}&offset=${offset}`);
+    }
+
+    public async getDocument(localization: string): Promise<documents.IDocument> {
+        const response = await this.client.get(localization);
+        return documents.factory(response.body).setLocalization(localization);
+    }
+
+    public async listDocuments(localization: string): Promise<Array<documents.IDocument>> {
+        const response = await this.client.get(`${localization}/documents`);
+        const _documents = [];
+
+        for (const source of response.body._embedded['documents']) {
+            _documents.push(documents.factory(source));
+        }
+
+        return _documents;
+    }
+
+    public async createDocument(localization: string, data: Buffer, name, type: string): Promise<any> {
+        const form = new FormData();
+        form.append('file', data, {filename: name});
+        form.append('documentType', type);
+
+        const response = await this.client.post(`${localization}/documents`, form);
+        return response.headers.get('location');
     }
 
     public async registerWebhookEndpoint(endpointUrl: string): Promise<string> {

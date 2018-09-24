@@ -65,7 +65,8 @@ export class Paginated<T> {
 export class ModelService<T> {
     @Inject protected config: Config;
     protected modelType;
-    protected tenant: any;
+    // TODO: change to protected when file upload is fixed
+    public tenant: any;
 
     private getTenant() {
         if (!getNamespace('authContext')) {

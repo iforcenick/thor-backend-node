@@ -10,7 +10,7 @@ import {
     ContextRequest,
     ServiceContext,
     DELETE,
-    HttpError,
+    HttpError, FilesParam, FileParam,
 } from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
@@ -26,6 +26,7 @@ import {ValidationError} from '../errors';
 import {TransactionResponse, PaginatedTransactionResponse} from '../transaction/models';
 import {TransactionService} from '../transaction/service';
 import {MailerService} from '../mailer';
+import * as _ from 'lodash';
 
 @Security('api_key')
 @Path('/users')
@@ -384,6 +385,58 @@ export class UserController extends BaseController {
             previousEndDate,
         });
         return this.map(models.UserStatisticsResponse, statistics);
+    }
+
+    @POST
+    @Path(':id/documents')
+    async createUserDocument(@PathParam('id') userId: string,
+                             @QueryParam('type') type: string,
+                             @FileParam('file') file, @ContextRequest context: ServiceContext): Promise<models.UserDocument> {
+        if (!file) {
+            throw new Errors.NotAcceptableError('File missing');
+        }
+
+        if (!_.has(dwolla.documents.TYPE, type)) {
+            throw new Errors.ConflictError('Invalid type');
+        }
+
+        try {
+            // TODO: fix tenant passing
+            this.service.tenant = context['user'].tenantProfile.tenantId;
+            const user = await this.service.get(userId);
+            if (!user) {
+                throw new Errors.NotFoundError('User not found');
+            }
+
+            await this.dwollaClient.authorize();
+            const location = await this.dwollaClient.createDocument(user.tenantProfile.dwollaUri, file.buffer, file.originalname, type);
+            const doc = await this.dwollaClient.getDocument(location);
+            return this.map(models.UserDocument, doc);
+        } catch (e) {
+            this.logger.error(e.message);
+            throw new Errors.InternalServerError(e);
+        }
+    }
+
+    @GET
+    @Path(':id/documents')
+    async getUserDocuments(@PathParam('id') userId: string): Promise<Array<models.UserDocument>> {
+        try {
+            const user = await this.service.get(userId);
+            if (!user) {
+                throw new Errors.NotFoundError('User not found');
+            }
+
+            await this.dwollaClient.authorize();
+            const docs = await this.dwollaClient.listDocuments(user.tenantProfile.dwollaUri);
+
+            return docs.map((doc) => {
+                return this.map(models.UserDocument, doc);
+            });
+        } catch (e) {
+            this.logger.error(e.message);
+            throw new Errors.InternalServerError(e);
+        }
     }
 
     async sendNotificationForDwollaCustomer(user: models.User, status: string) {

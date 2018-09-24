@@ -196,3 +196,10 @@ export class UserStatisticsResponse extends Mapper {
     current: string = mapper.FIELD_STR;
     ytd: string = mapper.FIELD_STR;
 }
+
+export class UserDocument extends Mapper {
+    type: string = mapper.FIELD_STR;
+    status: string = mapper.FIELD_STR;
+    created: Date = mapper.FIELD_DATE;
+    failureReason: string = mapper.FIELD_STR;
+}
