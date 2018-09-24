@@ -21,6 +21,7 @@ const methodOverride = require('method-override');
 const bodyParser = require('body-parser');
 const passport = require('./auth/passport');
 const createNamespace = require('continuation-local-storage').createNamespace;
+const authContext = createNamespace('authContext');
 
 export class ApiServer {
     @Inject private config: Config;
@@ -68,7 +69,8 @@ export class ApiServer {
     }
 
     private static tenantExtractor(req, res, next): void {
-        const authContext = createNamespace('authContext');
+        authContext.bindEmitter(req);
+        authContext.bindEmitter(res);
 
         authContext.run(() => {
             if (req.user) {

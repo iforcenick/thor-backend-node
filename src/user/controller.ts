@@ -401,8 +401,6 @@ export class UserController extends BaseController {
         }
 
         try {
-            // TODO: fix tenant passing
-            this.service.tenant = context['user'].tenantProfile.tenantId;
             const user = await this.service.get(userId);
             if (!user) {
                 throw new Errors.NotFoundError('User not found');
