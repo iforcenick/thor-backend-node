@@ -51,6 +51,8 @@ export class DwollaController extends BaseController {
                     await this.transactionService.updateTransactionStatus(transaction, _event.topic);
                     break;
                 }
+                default:
+                    this.logger.info(_event);
             }
         } catch (e) {
             this.logger.error(e.message);
