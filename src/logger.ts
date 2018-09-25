@@ -48,7 +48,7 @@ export class Logger {
 
     private instantiateLoggerMiddleware() {
         const options: any = this.getOptions();
-        options.meta = false;
+        options.meta = this.config.get('logs.node.meta');
         options.msg = 'HTTP {{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}} | {{req.connection.remoteAddress}}';
 
         return expressWinston.logger(options);

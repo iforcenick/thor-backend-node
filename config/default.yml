@@ -4,6 +4,8 @@ express:
 logs:
   level: info
   silent: false
+  node:
+    meta: false
 authorization:
   jwtSecret: jwt
   tokenExpirationTime: 30days
