@@ -21,6 +21,7 @@ import {JobService} from '../job/service';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {transaction} from 'objection';
 import {Job} from '../job/models';
+import moment from 'moment';
 
 const validate = require('uuid-validate');
 
@@ -204,10 +205,8 @@ export class TransactionController extends BaseController {
                          @QueryParam('status') status?: string): Promise<models.PeriodsStatsResponse> {
         const _startDate = new Date(startDate);
         const _endDate = new Date(endDate);
-        const _prevStartDate = new Date();
-        const _prevEndDate = new Date();
-        _prevStartDate.setDate(_startDate.getDate() - 7);
-        _prevEndDate.setDate(_endDate.getDate() - 7);
+        const _prevEndDate = moment(_startDate).subtract(1, 'day').toDate();
+        const _prevStartDate = moment(_prevEndDate).subtract(14, 'day').toDate();
 
         const current: any = await this.service.getPeriodStats(_startDate, _endDate, page, limit, status);
         current.startDate = _startDate;
