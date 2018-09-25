@@ -4,6 +4,7 @@ import {Logger} from './logger';
 import {Inject} from 'typescript-ioc';
 import {AuthController} from './auth/controller';
 import {UserController} from './user/controller';
+import {MonitoringController} from './monitoring/controller';
 import {Model} from 'objection';
 import {TenantController} from './tenant/controller';
 import {ProfileController} from './profile/controller';
@@ -148,7 +149,8 @@ export class ApiServer {
             JobController,
             TransactionController,
             DwollaController,
-            DemoController
+            DemoController,
+            MonitoringController
         );
     }
 
