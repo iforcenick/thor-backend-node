@@ -406,6 +406,10 @@ export class UserController extends BaseController {
                 throw new Errors.NotFoundError('User not found');
             }
 
+            if (user.tenantProfile.externalStatus != dwolla.customer.CUSTOMER_STATUS.Document) {
+                throw new Errors.NotAcceptableError('User cannot upload documents');
+            }
+
             await this.dwollaClient.authorize();
             const location = await this.dwollaClient.createDocument(user.tenantProfile.dwollaUri, file.buffer, file.originalname, type);
             const doc = await this.dwollaClient.getDocument(location);
