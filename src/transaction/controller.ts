@@ -205,7 +205,7 @@ export class TransactionController extends BaseController {
                          @QueryParam('status') status?: string): Promise<models.PeriodsStatsResponse> {
         const _startDate = new Date(startDate);
         const _endDate = new Date(endDate);
-        const _prevEndDate = moment(_startDate).subtract(1, 'day').toDate();
+        const _prevEndDate = moment(_startDate).subtract(1, 'second').toDate();
         const _prevStartDate = moment(_prevEndDate).subtract(14, 'day').toDate();
 
         const current: any = await this.service.getPeriodStats(_startDate, _endDate, page, limit, status);
