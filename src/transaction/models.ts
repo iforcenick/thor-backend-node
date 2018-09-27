@@ -21,7 +21,7 @@ export const enum Statuses {
     processing = 'processing',
     failed = 'failed',
     reclaimed = 'reclaimed',
-    canceled = 'canceled',
+    cancelled = 'cancelled',
     processed = 'processed',
 }
 
@@ -99,6 +99,10 @@ export class Transaction extends db.Model {
         if (status) {
             query.where(`${db.Tables.transactions}.status`, status);
         }
+    }
+
+    canBeCancelled() {
+        return this.status == Statuses.processing || this.status == Statuses.new;
     }
 }
 

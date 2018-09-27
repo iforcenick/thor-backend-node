@@ -1,5 +1,5 @@
 import {
-    ContextRequest,
+    ContextRequest, DELETE,
     Errors,
     GET,
     HttpError,
@@ -217,5 +217,34 @@ export class TransactionController extends BaseController {
         previous.endDate = _prevEndDate;
 
         return this.map(models.PeriodsStatsResponse, {current: current, previous: previous});
+    }
+
+    @DELETE
+    @Path(':id/transfers')
+    @Preprocessor(BaseController.requireAdmin)
+    async cancelTransactionTransfer(@PathParam('id') id: string, @ContextRequest context: ServiceContext): Promise<models.TransactionResponse> {
+        const _transaction = await this.service.get(id);
+        if (!_transaction) {
+            throw new Errors.NotFoundError();
+        }
+
+        try {
+            const user = await this.userService.get(context['user'].id);
+
+            if (!_transaction.transferId || _transaction.canBeCancelled()) {
+                throw new Errors.NotAcceptableError('Transfer cannot be cancelled');
+            }
+
+            await this.service.cancelTransaction(_transaction);
+        } catch (e) {
+            if (e instanceof Errors.NotAcceptableError) {
+                throw new Errors.NotAcceptableError(e.message);
+            }
+
+            this.logger.error(e);
+            throw new Errors.InternalServerError(e.message);
+        }
+
+        return this.map(models.TransactionResponse, _transaction);
     }
 }

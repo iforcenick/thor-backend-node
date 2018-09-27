@@ -116,8 +116,15 @@ export class Client {
         return response.headers.get('location');
     }
 
+    public async cancelTransfer(localization: string): Promise<boolean> {
+        const response = await this.client.post(localization, {status: 'cancelled'});
+
+        return response.body.status == 'cancelled';
+    }
+
     public async getTransfer(localization: string): Promise<transaction.ITransfer> {
         const response = await this.client.get(localization);
+        console.log(response.body);
         return transaction.factory(response.body).setLocalization(localization);
     }
 
@@ -193,16 +200,28 @@ export class Client {
             }
         });
 
-        if (unsubscribe.length > 0) {
-            this.logger.info('[dwolla] Unsubscribe endpoints count: ', unsubscribe.length);
-            const resp = await Promise.all(unsubscribe);
-            this.logger.info('[dwolla] Unsubscribe endpoints count response: ', resp);
-        }
+        // if (unsubscribe.length > 0) {
+        //     this.logger.info('[dwolla] Unsubscribe endpoints count: ', unsubscribe.length);
+        //     const resp = await Promise.all(unsubscribe);
+        //     this.logger.info('[dwolla] Unsubscribe endpoints count response: ', resp);
+        // }
 
         if (!hasSubscription) {
             this.logger.info('[dwolla] Register new webhook endpoint');
             const registerRes = await this.registerWebhookEndpoint(endpointUrl);
             this.logger.info('[dwolla] Register new webhook endpoint response: ', registerRes);
         }
+    }
+
+    public async getBalanceFundingSource(localization: string): Promise<funding.ISource> {
+        const sources = await this.listFundingSource(localization);
+
+        for (const source of sources) {
+            if (source.type == 'balance') {
+                return source;
+            }
+        }
+
+        return undefined;
     }
 }

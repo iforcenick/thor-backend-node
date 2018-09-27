@@ -174,7 +174,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     private mapDwollaStatus(status: string) {
         switch (status) {
             case event.TYPE.transferCanceled:
-                return models.Statuses.canceled;
+                return models.Statuses.cancelled;
             case event.TYPE.transferFailed:
                 return models.Statuses.failed;
             case event.TYPE.transferReclaimed:
@@ -207,6 +207,19 @@ export class TransactionService extends db.ModelService<models.Transaction> {
             }
         } catch (e) {
             this.logger.error(e);
+        }
+    }
+
+    async cancelTransaction(_transaction: models.Transaction) {
+        try {
+            await this.dwollaClient.authorize();
+            const result = await this.dwollaClient.cancelTransfer(_transaction.transfer.externalId);
+
+            if (result) {
+                await this.updateTransactionStatus(_transaction, models.Statuses.cancelled);
+            }
+        } catch (e) {
+            throw e;
         }
     }
 }
