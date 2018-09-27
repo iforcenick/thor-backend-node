@@ -1,5 +1,5 @@
 import {
-    ContextRequest, DELETE, 
+    DELETE,
     Errors,
     GET,
     HttpError,
@@ -228,14 +228,14 @@ export class TransactionController extends BaseController {
     @DELETE
     @Path(':id/transfers')
     @Preprocessor(BaseController.requireAdmin)
-    async cancelTransactionTransfer(@PathParam('id') id: string, @ContextRequest context: ServiceContext): Promise<models.TransactionResponse> {
+    async cancelTransactionTransfer(@PathParam('id') id: string): Promise<models.TransactionResponse> {
         const _transaction = await this.service.get(id);
         if (!_transaction) {
             throw new Errors.NotFoundError();
         }
 
         try {
-            const user = await this.userService.get(context['user'].id);
+            const user = await this.userService.get(this.userContext.get().id);
 
             if (!_transaction.transferId || _transaction.canBeCancelled()) {
                 throw new Errors.NotAcceptableError('Transfer cannot be cancelled');
