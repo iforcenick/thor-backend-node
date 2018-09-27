@@ -3,9 +3,69 @@ import * as expressWinston from 'express-winston';
 import {AutoWired, Inject, Singleton} from 'typescript-ioc';
 import {inspect} from 'util';
 import {Config} from './config';
+import * as context from './context';
+
+const MESSAGE = Symbol.for('message');
 
 export enum LogLevel {
     error, warn, info, debug
+}
+
+expressWinston.bodyBlacklist.push('headers');
+
+const defaultOptions = (config: Config, requestId?: string) => {
+    const options: any = {
+        exitOnError: false,
+        format: Winston.format.combine(
+            Winston.format.timestamp(),
+            Winston.format.json(),
+            Winston.format(message => {
+                if (!requestId) {
+                    return message;
+                }
+
+                message.message = `[ReqID: ${requestId}] ` + message.message;
+                const index: any = MESSAGE;
+                message[index] = JSON.stringify(message);
+                return message;
+            })(),
+        ),
+        transports: [new Winston.transports.Console()],
+    };
+    options.meta = config.get('logs.node.meta');
+    options.requestFilter = (req, propName) => {
+        if (propName == 'headers') {
+            delete req[propName]['authorization'];
+        }
+
+        return req[propName];
+    };
+
+    return options;
+};
+
+export class ExpressLogger {
+    @Inject private config: Config;
+    level: any;
+
+    private options() {
+        return defaultOptions(this.config);
+    }
+
+    public middleware() {
+        const options = this.options();
+        options.msg = `[ReqID: {{req.requestId}}] `;
+        options.msg += 'HTTP {{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}} | {{req.connection.remoteAddress}}';
+
+        return expressWinston.logger(options);
+    }
+
+    public errorMiddleware() {
+        const options = this.options();
+        options.msg = `[ReqID: {{req.requestId}}] MiddlewareReport`;
+
+        return expressWinston.errorLogger(options);
+    }
 }
 
 @AutoWired
@@ -13,24 +73,19 @@ export class Logger {
     @Inject private config: Config;
     level: any;
     winston: Winston.Logger;
-    expressWinston: any;
+    protected correlationId: string;
+    protected requestId: string;
 
-    constructor() {
+    constructor(@Inject requestId: context.RequestIdContext, @Inject correlationId: context.CorrelationIdContext) {
+        this.requestId = requestId.get();
+        this.correlationId = correlationId.get();
         this.winston = this.instantiateLogger();
-        this.expressWinston = this.instantiateLoggerMiddleware();
     }
 
     private getOptions(): Winston.LoggerOptions {
         this.level = LogLevel[this.config.get('logs.level')];
 
-        const options: Winston.LoggerOptions = {
-            exitOnError: false,
-            format: Winston.format.combine(
-                Winston.format.timestamp(),
-                Winston.format.json(),
-            ),
-            transports: [new Winston.transports.Console()]
-        };
+        const options = defaultOptions(this.config, this.requestId);
 
         if (this.config.get('logs.silent')) {
             options.silent = true;
@@ -43,14 +98,6 @@ export class Logger {
         const options = this.getOptions();
         options.level = LogLevel[this.level];
         return Winston.createLogger(options);
-    }
-
-    private instantiateLoggerMiddleware() {
-        const options: any = this.getOptions();
-        options.meta = this.config.get('logs.node.meta');
-        options.msg = 'HTTP {{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}} | {{req.connection.remoteAddress}}';
-
-        return expressWinston.logger(options);
     }
 
     isDebugEnabled(): boolean {

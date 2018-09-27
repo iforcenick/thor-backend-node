@@ -5,6 +5,7 @@ import * as mapper from './mapper';
 import * as user from './user/models';
 import * as role from './user/role';
 import * as db from './db';
+import * as context from './context';
 import {Inject} from 'typescript-ioc';
 import {Logger} from './logger';
 import {Config} from './config';
@@ -32,7 +33,7 @@ export class BaseController {
     protected logger: Logger;
     protected config: Config;
 
-    constructor(@Inject logger: Logger, @Inject config: Config) {
+    constructor(logger: Logger, config: Config) {
         this.logger = logger;
         this.config = config;
     }

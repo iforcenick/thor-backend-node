@@ -124,7 +124,6 @@ export class Client {
 
     public async getTransfer(localization: string): Promise<transaction.ITransfer> {
         const response = await this.client.get(localization);
-        console.log(response.body);
         return transaction.factory(response.body).setLocalization(localization);
     }
 

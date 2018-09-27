@@ -6,3 +6,4 @@ swagger:
   schema: http
 logs:
   level: debug
+  stackDump: true

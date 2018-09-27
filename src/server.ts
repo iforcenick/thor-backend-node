@@ -1,6 +1,6 @@
 import {Server} from 'typescript-rest';
 import {Config} from './config';
-import {Logger} from './logger';
+import {Logger, ExpressLogger} from './logger';
 import {Inject} from 'typescript-ioc';
 import {AuthController} from './auth/controller';
 import {UserController} from './user/controller';
@@ -12,7 +12,7 @@ import express = require('express');
 import {TransactionController} from './transaction/controller';
 import {JobController} from './job/controller';
 import * as dwolla from './dwolla';
-import * as context from './context';
+import * as middleware from './middleware';
 import {DwollaController} from './dwolla/controller';
 
 const knex = require('knex');
@@ -21,12 +21,12 @@ const cors = require('cors');
 const methodOverride = require('method-override');
 const bodyParser = require('body-parser');
 const passport = require('./auth/passport');
-const createNamespace = require('continuation-local-storage').createNamespace;
-const authContext = createNamespace(context.Type.auth);
+
 
 export class ApiServer {
     @Inject private config: Config;
     @Inject private logger: Logger;
+    @Inject private expressLogger: ExpressLogger;
     @Inject private dwollaClient: dwolla.Client;
     private app: express.Application;
     private server: any = null;
@@ -41,7 +41,7 @@ export class ApiServer {
 
         this.app.use(methodOverride());
 
-        this.app.use(this.logger.expressWinston);
+        this.app.use(this.expressLogger.middleware());
 
         this.app.use(express.static(path.join(__dirname, 'public'), {maxAge: 31557600000}));
         this.app.use(cors());
@@ -50,37 +50,15 @@ export class ApiServer {
 
         this.addAuthorization();
 
-        this.app.use(ApiServer.tokenExtractor);
-        this.app.use(ApiServer.tenantExtractor);
+        this.app.use(middleware.authExtractor);
+        this.app.use(middleware.requestId);
+        this.app.use(middleware.correlationId);
 
         this.addControllers();
         Server.swagger(this.app, './dist/swagger.json', '/api-docs', this.config.get('swagger.host'), [this.config.get('swagger.schema')]);
 
+        this.app.use(this.expressLogger.errorMiddleware());
         this.app.use(this.errorHandler.bind(this));
-    }
-
-    private static tokenExtractor(req, res, next): void {
-        const header = req.header('Authorization');
-
-        if (header) {
-            req.userToken = header.replace('Bearer ', '');
-        }
-
-        next();
-    }
-
-    private static tenantExtractor(req, res, next): void {
-        authContext.bindEmitter(req);
-        authContext.bindEmitter(res);
-
-        authContext.run(() => {
-            if (req.user) {
-                authContext.set('tenant', req.user.tenantProfile.tenantId);
-                authContext.set('user', req.user);
-            }
-
-            next();
-        });
     }
 
     /**
@@ -154,7 +132,9 @@ export class ApiServer {
     }
 
     private errorHandler(err, req, res, next): void {
-        this.logger.error(err.message);
+        if (this.config.get('logs.stackDump')) {
+            console.log(err);
+        }
 
         if (res.headersSent) {
             // important to allow default error handler to close connection if headers already sent

@@ -4,6 +4,7 @@ const getNamespace = require('continuation-local-storage').getNamespace;
 
 export const enum Type {
     auth = 'authContext',
+    request = 'requestContext',
 }
 
 export interface IContext {
@@ -49,5 +50,27 @@ export class UserContext extends Context {
 
     getNamespaceName() {
         return Type.auth;
+    }
+}
+
+@AutoWired
+export class RequestIdContext extends Context {
+    set() {
+        this.value = this.namespace.get('requestId');
+    }
+
+    getNamespaceName() {
+        return Type.request;
+    }
+}
+
+@AutoWired
+export class CorrelationIdContext extends Context {
+    set() {
+        this.value = this.namespace.get('correlationId');
+    }
+
+    getNamespaceName() {
+        return Type.request;
     }
 }

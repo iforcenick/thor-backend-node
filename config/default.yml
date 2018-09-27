@@ -6,6 +6,7 @@ logs:
   silent: false
   node:
     meta: false
+  stackDump: false
 authorization:
   jwtSecret: jwt
   tokenExpirationTime: 30days
