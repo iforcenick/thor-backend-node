@@ -6,22 +6,23 @@ import * as models from './models';
 import {transaction} from 'objection';
 import {ProfileService} from './service';
 import {Security, Tags} from 'typescript-rest-swagger';
+import {Config} from '../config';
 
 @Security('api_key')
 @Path('/profiles')
+@Tags('profiles')
 export class ProfileController extends BaseController {
-    @Inject private logger: Logger;
     private service: ProfileService;
 
-    constructor(@Inject service: ProfileService) {
-        super();
+    constructor(@Inject service: ProfileService,
+                @Inject logger: Logger, @Inject config: Config) {
+        super(logger, config);
         this.service = service;
     }
 
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('profiles')
     async getProfile(@PathParam('id') id: string): Promise<models.ProfileResponse> {
         const profile = await this.service.get(id);
         if (!profile) {
@@ -34,7 +35,6 @@ export class ProfileController extends BaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('profiles')
     async createProfile(data: models.ProfileRequest): Promise<models.ProfileResponse> {
         const parsedData = await this.validate(data, models.profileRequestSchema);
         let profile = models.Profile.fromJson(parsedData);

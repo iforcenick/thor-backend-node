@@ -12,27 +12,35 @@ import {ApiServer} from '../server';
 import {event} from '../dwolla';
 import {MailerService} from '../mailer';
 import {Logger} from '../logger';
+import * as context from "../context";
+import {Config} from "../config";
 
 @AutoWired
 export class TransactionService extends db.ModelService<models.Transaction> {
-    @Inject private logger: Logger;
-    @Inject private dwollaClient: dwolla.Client;
-    @Inject private mailer: MailerService;
     protected modelType = models.Transaction;
+    protected dwollaClient: dwolla.Client;
+    protected mailer: MailerService;
     public transferService: TransferService;
     protected tenantService: TenantService;
     protected userService: UserService;
 
     constructor(@Inject transferService: TransferService,
                 @Inject tenantService: TenantService,
-                @Inject userService: UserService) {
-        super();
+                @Inject userService: UserService,
+                @Inject dwollaClient: dwolla.Client,
+                @Inject mailer: MailerService,
+                @Inject config: Config,
+                @Inject logger: Logger,
+                @Inject tenantContext: context.TenantContext) {
+        super(config, logger, tenantContext);
+        this.dwollaClient = dwollaClient;
+        this.mailer = mailer;
         this.transferService = transferService;
         this.userService = userService;
         this.tenantService = tenantService;
     }
 
-    tenantContext(query) {
+    useTenantContext(query) {
         return query.where(`${db.Tables.transactions}.tenantId`, this.getTenantId());
     }
 
@@ -77,7 +85,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
             .select(['transactions.*', knex.raw('transactions.quantity * jobs.value as value')]);
         query.eager(eagerObject, eagerFilters);
         query.orderBy(`${db.Tables.transactions}.createdAt`, 'desc');
-        const result = await this.tenantContext(query);
+        const result = await this.useTenantContext(query);
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
     }
 
@@ -152,7 +160,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     }
 
     async getPeriodStats(startDate: Date, endDate: Date, page?: number, limit?: number, status?: string) {
-        const query = this.tenantContext(this.modelType.query());
+        const query = this.useTenantContext(this.modelType.query());
         query.joinRelation(models.Relations.job);
         models.Transaction.periodFilter(query, startDate, endDate, status);
         query.select([

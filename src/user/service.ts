@@ -9,6 +9,9 @@ import {raw, transaction} from 'objection';
 import * as _ from 'lodash';
 import {ApiServer} from '../server';
 import * as Errors from '../../node_modules/typescript-rest/dist/server-errors';
+import {Logger} from '../logger';
+import {Config} from '../config';
+import * as context from '../context';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -20,8 +23,11 @@ export class UserService extends db.ModelService<models.User> {
     protected rolesService: role.service.RoleService;
     public profileService: ProfileService;
 
-    constructor(@Inject rolesService: role.service.RoleService, @Inject profileService: ProfileService) {
-        super();
+    constructor(@Inject rolesService: role.service.RoleService,
+                @Inject profileService: ProfileService,
+                @Inject config: Config, @Inject logger: Logger,
+                @Inject tenantContext: context.TenantContext) {
+        super(config, logger, tenantContext);
         this.rolesService = rolesService;
         this.profileService = profileService;
     }
@@ -62,7 +68,7 @@ export class UserService extends db.ModelService<models.User> {
         return this.getOptions(this.filterCustomerRole(query));
     }
 
-    tenantContext(query) {
+    useTenantContext(query) {
         return query
             .where({
                 [`${models.Relations.profile}.tenantId`]: this.getTenantId()
@@ -89,7 +95,7 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     private rankingQuery(startDate: Date, endDate: Date, status?: string) {
-        const query = this.tenantContext(this.getMinOptions(this.filterCustomerRole(this.modelType.query())));
+        const query = this.useTenantContext(this.getMinOptions(this.filterCustomerRole(this.modelType.query())));
         query.joinRelation(models.Relations.transactions);
         query.join(db.Tables.jobs, `${db.Tables.transactions}.jobId`, `${db.Tables.jobs}.id`);
         transactions.Transaction.periodFilter(query, startDate, endDate, status);
@@ -237,7 +243,7 @@ export class UserService extends db.ModelService<models.User> {
         );
         query.page(page - 1, limit);
 
-        const result: any = await this.tenantContext(query);
+        const result: any = await this.useTenantContext(query);
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
     }
 
@@ -300,7 +306,7 @@ export class UserService extends db.ModelService<models.User> {
             .whereNot({[`${db.Tables.transactions}.status`]: transactions.Statuses.processed})
             .joinRelation(`${models.Relations.transactions}`)
             .count().first();
-        const {count} = await this.getMinOptions(this.tenantContext(this.filterCustomerRole(query)));
+        const {count} = await this.getMinOptions(this.useTenantContext(this.filterCustomerRole(query)));
         return parseInt(count) > 0;
     }
 
@@ -484,7 +490,7 @@ export class UserService extends db.ModelService<models.User> {
 
         query.page(page - 1, limit);
 
-        // const result = await this.tenantContext(query);
+        // const result = await this.useTenantContext(query);
         const result: any = await query;
         return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
     }

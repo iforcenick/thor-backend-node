@@ -1,5 +1,5 @@
 import {
-    ContextRequest, DELETE,
+    ContextRequest, DELETE, 
     Errors,
     GET,
     HttpError,
@@ -8,7 +8,6 @@ import {
     POST,
     Preprocessor,
     QueryParam,
-    ServiceContext,
 } from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
@@ -22,6 +21,8 @@ import {Security, Tags} from 'typescript-rest-swagger';
 import {transaction} from 'objection';
 import {Job} from '../job/models';
 import moment from 'moment';
+import * as context from '../context';
+import {Config} from '../config';
 
 const validate = require('uuid-validate');
 
@@ -29,16 +30,21 @@ const validate = require('uuid-validate');
 @Path('/transactions')
 @Tags('transactions')
 export class TransactionController extends BaseController {
-    @Inject private logger: Logger;
     private service: TransactionService;
     private userService: UserService;
     private jobService: JobService;
+    private userContext: context.UserContext;
 
-    constructor(@Inject service: TransactionService, @Inject userService: UserService, @Inject jobService: JobService) {
-        super();
+    constructor(@Inject service: TransactionService,
+                @Inject userService: UserService,
+                @Inject jobService: JobService,
+                @Inject userContext: context.UserContext,
+                @Inject logger: Logger, @Inject config: Config) {
+        super(logger, config);
         this.service = service;
         this.userService = userService;
         this.jobService = jobService;
+        this.userContext = userContext;
     }
 
     /**
@@ -113,7 +119,7 @@ export class TransactionController extends BaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async createTransaction(data: models.TransactionRequest, @ContextRequest context: ServiceContext): Promise<models.TransactionResponse> {
+    async createTransaction(data: models.TransactionRequest): Promise<models.TransactionResponse> {
         const parsedData: models.TransactionRequest = await this.validate(data, models.transactionRequestSchema);
 
         const user = await this.userService.get(parsedData.userId);
@@ -137,7 +143,7 @@ export class TransactionController extends BaseController {
                 }
 
                 const transactionEntity = models.Transaction.fromJson(parsedData);
-                transactionEntity.adminId = context['user'].id;
+                transactionEntity.adminId = this.userContext.get().id;
                 transactionEntity.jobId = jobFromDb.id;
                 const transactionFromDb = await this.service.insert(transactionEntity, trx);
                 transactionFromDb.job = jobFromDb;
@@ -156,14 +162,14 @@ export class TransactionController extends BaseController {
     @POST
     @Path(':id/transfers')
     @Preprocessor(BaseController.requireAdmin)
-    async createTransactionTransfer(@PathParam('id') id: string, @ContextRequest context: ServiceContext): Promise<models.TransactionResponse> {
+    async createTransactionTransfer(@PathParam('id') id: string): Promise<models.TransactionResponse> {
         const transaction = await this.service.get(id);
         if (!transaction) {
             throw new Errors.NotFoundError();
         }
 
         try {
-            const user = await this.userService.get(context['user'].id);
+            const user = await this.userService.get(this.userContext.get().id);
 
             if (!transaction.transferId) {
                 await this.service.prepareTransfer(transaction, user);

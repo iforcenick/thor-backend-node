@@ -8,7 +8,6 @@ export enum LogLevel {
     error, warn, info, debug
 }
 
-@Singleton
 @AutoWired
 export class Logger {
     @Inject private config: Config;

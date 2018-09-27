@@ -1,11 +1,11 @@
 import {Model as OModel, transaction} from 'objection';
-import {Inject} from 'typescript-ioc';
 import {Config} from './config';
+import {Logger} from './logger';
 import {Errors} from '../node_modules/typescript-rest';
+import * as context from './context';
 
 const validate = require('uuid-validate');
 const uuid = require('uuid');
-const getNamespace = require('continuation-local-storage').getNamespace;
 
 export {OModel};
 
@@ -63,21 +63,15 @@ export class Paginated<T> {
 
 // WARNING: @Inject only through constructor not field annotation to persist namespace context
 export class ModelService<T> {
-    @Inject protected config: Config;
+    protected config: Config;
+    protected logger: Logger;
     protected modelType;
-    // TODO: change to protected when file upload is fixed
-    public tenant: any;
+    protected tenant: any;
 
-    private getTenant() {
-        if (!getNamespace('authContext')) {
-            return null;
-        }
-
-        return getNamespace('authContext').get('tenant');
-    }
-
-    constructor() {
-        this.tenant = this.getTenant();
+    constructor(config: Config, logger: Logger, tenantContext: context.TenantContext) {
+        this.tenant = tenantContext.get();
+        this.config = config;
+        this.logger = logger;
     }
 
     getOptions(query) {
@@ -119,7 +113,7 @@ export class ModelService<T> {
 
         this.getOptions(query);
 
-        return await this.tenantContext(query);
+        return await this.useTenantContext(query);
     }
 
     async getForAllTenants(id: string): Promise<T> {
@@ -131,7 +125,7 @@ export class ModelService<T> {
     }
 
     async getOneBy(field: string, value: any) {
-        return await this.tenantContext(this.getOptions(this.modelType.query().findOne({[field]: value})));
+        return await this.useTenantContext(this.getOptions(this.modelType.query().findOne({[field]: value})));
     }
 
     async list(page?: number, limit?: number, filter?: any, embed?: string): Promise<Paginated<T>> {
@@ -144,7 +138,7 @@ export class ModelService<T> {
         this.getListOptions(query);
         const pag = this.addPagination(query, page, limit);
 
-        const result = await this.tenantContext(query);
+        const result = await this.useTenantContext(query);
         return new Paginated(new Pagination(pag.page, pag.limit, result.total), result.results);
     }
 
@@ -156,7 +150,7 @@ export class ModelService<T> {
         return trx;
     }
 
-    tenantContext(query) {
+    useTenantContext(query) {
         return query;
     }
 

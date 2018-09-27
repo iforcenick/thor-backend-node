@@ -5,6 +5,9 @@ import * as mapper from './mapper';
 import * as user from './user/models';
 import * as role from './user/role';
 import * as db from './db';
+import {Inject} from 'typescript-ioc';
+import {Logger} from './logger';
+import {Config} from './config';
 
 export {mapper};
 
@@ -26,6 +29,14 @@ const validationOptions = {
 };
 
 export class BaseController {
+    protected logger: Logger;
+    protected config: Config;
+
+    constructor(@Inject logger: Logger, @Inject config: Config) {
+        this.logger = logger;
+        this.config = config;
+    }
+
     static _requireRole(req: any, role: role.models.Types) {
         const user: user.User = req.user;
         if (!user || !user.hasRole(role)) {

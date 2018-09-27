@@ -4,21 +4,22 @@ import * as db from '../db';
 import {transaction} from 'objection';
 import {RoleService} from '../user/role/service';
 import * as dwolla from '../dwolla';
-import {Logger} from '../logger';
 import moment from 'moment';
 import {ValidationError} from '../errors';
+import {Logger} from '../logger';
+import {Config} from '../config';
+import * as context from '../context';
 
 @AutoWired
 export class ProfileService extends db.ModelService<models.Profile> {
     protected modelType = models.Profile;
     protected roleService: RoleService;
-    @Inject private dwollaClient: dwolla.Client;
-    @Inject private logger: Logger;
+    protected dwollaClient: dwolla.Client;
 
-    constructor(@Inject roleService: RoleService) {
-        super();
-        // TODO: add model specific profile filter
+    constructor(@Inject roleService: RoleService, @Inject dwollaClient: dwolla.Client, @Inject config: Config, @Inject logger: Logger, @Inject tenantContext: context.TenantContext) {
+        super(config, logger, tenantContext);
         this.roleService = roleService;
+        this.dwollaClient = dwollaClient;
     }
 
     static validateAge(profile) {

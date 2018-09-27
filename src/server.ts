@@ -12,8 +12,8 @@ import express = require('express');
 import {TransactionController} from './transaction/controller';
 import {JobController} from './job/controller';
 import * as dwolla from './dwolla';
+import * as context from './context';
 import {DwollaController} from './dwolla/controller';
-import {DemoController} from './demo/controller';
 
 const knex = require('knex');
 const path = require('path');
@@ -22,7 +22,7 @@ const methodOverride = require('method-override');
 const bodyParser = require('body-parser');
 const passport = require('./auth/passport');
 const createNamespace = require('continuation-local-storage').createNamespace;
-const authContext = createNamespace('authContext');
+const authContext = createNamespace(context.Type.auth);
 
 export class ApiServer {
     @Inject private config: Config;
@@ -149,7 +149,6 @@ export class ApiServer {
             JobController,
             TransactionController,
             DwollaController,
-            DemoController,
             MonitoringController
         );
     }

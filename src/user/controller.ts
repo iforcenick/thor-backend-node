@@ -1,51 +1,61 @@
 import {
+    ContextRequest,
+    DELETE,
     Errors,
+    FileParam,
     GET,
-    Path,
+    HttpError,
     PATCH,
+    Path,
     PathParam,
     POST,
     Preprocessor,
     QueryParam,
-    ContextRequest,
     ServiceContext,
-    DELETE,
-    HttpError, FilesParam, FileParam,
 } from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
-import {Inject} from 'typescript-ioc';
+import {AutoWired, Inject} from 'typescript-ioc';
 import {UserService} from './service';
 import * as models from './models';
 import {Profile, ProfileResponse} from '../profile/models';
 import {ProfileService} from '../profile/service';
-import {transaction} from 'objection';
 import {Security, Tags} from 'typescript-rest-swagger';
 import * as dwolla from '../dwolla';
 import {ValidationError} from '../errors';
-import {TransactionResponse, PaginatedTransactionResponse} from '../transaction/models';
+import {PaginatedTransactionResponse, TransactionResponse} from '../transaction/models';
 import {TransactionService} from '../transaction/service';
 import {MailerService} from '../mailer';
 import * as _ from 'lodash';
+import * as context from '../context';
+import {Config} from '../config';
 
 @Security('api_key')
 @Path('/users')
 @Tags('users')
 export class UserController extends BaseController {
-    @Inject private logger: Logger;
-    @Inject private mailer: MailerService;
-    @Inject private dwollaClient: dwolla.Client;
+    private mailer: MailerService;
+    private dwollaClient: dwolla.Client;
     private service: UserService;
     private profileService: ProfileService;
     private transactionService: TransactionService;
+    private userContext: context.UserContext;
 
-    constructor(@Inject service: UserService,
+    constructor(@Inject mailer: MailerService,
+                @Inject dwollaClient: dwolla.Client,
+                @Inject service: UserService,
                 @Inject profileService: ProfileService,
-                @Inject transactionService: TransactionService) {
-        super();
+                @Inject transactionService: TransactionService,
+                @Inject userContext: context.UserContext,
+                @Inject tenantContext: context.TenantContext,
+                @Inject logger: Logger, @Inject config: Config) {
+        super(logger, config);
+        this.mailer = mailer;
+        this.dwollaClient = dwollaClient;
         this.service = service;
         this.profileService = profileService;
         this.transactionService = transactionService;
+        this.userContext = userContext;
     }
 
     @GET
@@ -315,9 +325,9 @@ export class UserController extends BaseController {
 
     @DELETE
     @Path('')
-    async deleteSelf(@ContextRequest context: ServiceContext) {
+    async deleteSelf() {
         try {
-            await this.service.deleteFull(context['user'].id);
+            await this.service.deleteFull(this.userContext.get().id);
         } catch (e) {
             this.logger.error(e);
             throw new Errors.InternalServerError(e);
@@ -326,7 +336,7 @@ export class UserController extends BaseController {
 
     @DELETE
     @Path(':id')
-    async delete(@PathParam('id') id: string, @ContextRequest context: ServiceContext) {
+    async delete(@PathParam('id') id: string) {
         const user = await this.service.get(id);
         if (!user) {
             throw new Errors.NotFoundError('User not found');

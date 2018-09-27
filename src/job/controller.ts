@@ -1,19 +1,19 @@
-import {Errors, GET, HttpError, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
+import {Errors, GET, Path, POST, Preprocessor, QueryParam} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
 import {JobService} from './service';
 import {Security, Tags} from 'typescript-rest-swagger';
+import {Config} from '../config';
 
 @Security('api_key')
 @Path('/jobs')
 export class JobController extends BaseController {
-    @Inject private logger: Logger;
     private service: JobService;
-
-    constructor(@Inject service: JobService) {
-        super();
+    constructor(@Inject service: JobService,
+                @Inject logger: Logger, @Inject config: Config) {
+        super(logger, config);
         this.service = service;
     }
 

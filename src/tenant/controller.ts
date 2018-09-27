@@ -6,15 +6,15 @@ import * as models from './models';
 import {transaction} from 'objection';
 import {TenantService} from './service';
 import {Security, Tags} from 'typescript-rest-swagger';
+import {Config} from '../config';
 
 @Security('api_key')
 @Path('/tenants')
 export class TenantController extends BaseController {
-    @Inject private logger: Logger;
     private service: TenantService;
-
-    constructor(@Inject service: TenantService) {
-        super();
+    constructor(@Inject service: TenantService,
+                @Inject logger: Logger, @Inject config: Config) {
+        super(logger, config);
         this.service = service;
     }
 

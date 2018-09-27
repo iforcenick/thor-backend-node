@@ -7,16 +7,18 @@ import {event} from './index';
 import {IEvent} from './event';
 import {Tags} from 'typescript-rest-swagger';
 import {TransactionService} from '../transaction/service';
+import {Config} from '../config';
 
 @Tags('dwolla')
 @Path('/dwolla/events')
 export class DwollaController extends BaseController {
-    @Inject private logger: Logger;
-    @Inject private dwollaClient: dwolla.Client;
+    private dwollaClient: dwolla.Client;
     private transactionService: TransactionService;
 
-    constructor(@Inject transactionService: TransactionService) {
-        super();
+    constructor(@Inject dwollaClient: dwolla.Client, @Inject transactionService: TransactionService,
+                @Inject logger: Logger, @Inject config: Config) {
+        super(logger, config);
+        this.dwollaClient = dwollaClient;
         this.transactionService = transactionService;
     }
 
