@@ -11,12 +11,11 @@ def DOCKER_REPOSITORY = "us.gcr.io/odin-214321/thor-api"
 def GCR_CREDENTIALS = "odin-214321"
 def PROD_BRANCH = "prod"
 def GCR_URL = "https://us.gcr.io"
-// TODO: Uncommnet and update for prod deployment
-// def PROD_SERVICE_ACCOUNT = ""
-// def PROD_SERVICE_ACCOUNT_KEY = ""
-// def PROD_GCP_PROJECT = ""
-// def PROD_CLUSTER_NAME = ""
-// def PROD_ZONE = ""
+def PROD_SERVICE_ACCOUNT = "jenkins-thor-deployer@odin-214321.iam.gserviceaccount.com"
+def PROD_SERVICE_ACCOUNT_KEY = "thor-dev-service-account-key"
+def PROD_GCP_PROJECT = "odin-214321"
+def PROD_CLUSTER_NAME = "thor-prod"
+def PROD_ZONE = "us-west1-a"
 def DEV_BRANCH = "master"
 def DEV_SERVICE_ACCOUNT = "jenkins-thor-deployer@odin-214321.iam.gserviceaccount.com"
 def DEV_SERVICE_ACCOUNT_KEY = "thor-dev-service-account-key"
@@ -85,25 +84,17 @@ node('docker') {
             } 
         }
 
-        // TODO: Update deployment process to use helm. Using kubectl directly is a deprecated approach.
         stage('Deploy') {
 			if (env.BRANCH_NAME == DEV_BRANCH) {
 				echo "Deploy to dev"
                 withCredentials([file(credentialsId: DEV_SERVICE_ACCOUNT_KEY, variable: 'KEY_FILE')]) {
-                    sh 'mkdir -p gcloud'
-                    sh 'mkdir -p kube'
-                    docker.image('google/cloud-sdk').inside("-v ${WORKSPACE}/gcloud:/.config/gcloud -v ${WORKSPACE}/kube:/.kube") {
-                        sh "gcloud auth activate-service-account ${DEV_SERVICE_ACCOUNT} --key-file=${KEY_FILE}"
-                        sh "gcloud container clusters get-credentials ${DEV_CLUSTER_NAME} --zone ${DEV_ZONE} --project ${DEV_GCP_PROJECT}"
-                        sh "kubectl --namespace=${NAMESPACE} set image deployment/${SERVICE_NAME} ${APP_CONTAINER_NAME}=${DOCKER_REPOSITORY}:${version} --record"
-                        try {
-                            timeout(time: 300, unit: 'SECONDS') {
-                                sh "kubectl --namespace=${NAMESPACE} rollout status deployment/${SERVICE_NAME}"
+                    docker.withRegistry("${GCR_URL}", "gcr:${GCR_CREDENTIALS}") { 
+                        docker.image('us.gcr.io/odin-214321/jenkins-deployer:0.1.0').inside("-u root") {
+                            sh "/root/google-cloud-sdk/bin/gcloud auth activate-service-account ${DEV_SERVICE_ACCOUNT} --key-file=${KEY_FILE}"
+                            sh "/root/google-cloud-sdk/bin/gcloud container clusters get-credentials ${DEV_CLUSTER_NAME} --zone ${DEV_ZONE} --project ${DEV_GCP_PROJECT}"
+                            retry(3) {
+                                sh "helm upgrade --values kubernetes/thor-api/values/values-dev.yaml thor-api kubernetes/thor-api --set env.DOCKER_REPOSITORY=${DOCKER_REPOSITORY} --set env.TAG=${version} --wait --timeout 600"
                             }
-                        }
-                        catch (ex) {
-                            sh "kubectl --namespace=${NAMESPACE} rollout undo deployment/${SERVICE_NAME}"
-                            throw ex
                         }
                     }
                 }
@@ -113,20 +104,13 @@ node('docker') {
             if (env.BRANCH_NAME == PROD_BRANCH) {
 				echo "Deploy to prod"
                 withCredentials([file(credentialsId: PROD_SERVICE_ACCOUNT_KEY, variable: 'KEY_FILE')]) {
-                    sh 'mkdir -p gcloud'
-                    sh 'mkdir -p kube'
-                    docker.image('google/cloud-sdk').inside("-v ${WORKSPACE}/gcloud:/.config/gcloud -v ${WORKSPACE}/kube:/.kube") {
-                        sh "gcloud auth activate-service-account ${PROD_SERVICE_ACCOUNT} --key-file=${KEY_FILE}"
-                        sh "gcloud container clusters get-credentials ${PROD_CLUSTER_NAME} --zone ${PROD_ZONE} --project ${PROD_GCP_PROJECT}"
-                        sh "kubectl --namespace=${NAMESPACE} set image deployment/${SERVICE_NAME} ${APP_CONTAINER_NAME}=${DOCKER_REPOSITORY}:${version} --record"
-                        try {
-                            timeout(time: 300, unit: 'SECONDS') {
-                                sh "kubectl --namespace=${NAMESPACE} rollout status deployment/${SERVICE_NAME}"
+                    docker.withRegistry("${GCR_URL}", "gcr:${GCR_CREDENTIALS}") { 
+                        docker.image('us.gcr.io/odin-214321/jenkins-deployer:0.1.0').inside("-u root") {
+                            sh "/root/google-cloud-sdk/bin/gcloud auth activate-service-account ${PROD_SERVICE_ACCOUNT} --key-file=${KEY_FILE}"
+                            sh "/root/google-cloud-sdk/bin/gcloud container clusters get-credentials ${PROD_CLUSTER_NAME} --zone ${PROD_ZONE} --project ${PROD_GCP_PROJECT}"
+                            retry(3) {
+                                sh "helm upgrade --values kubernetes/thor-api/values/values-prod.yaml thor-api kubernetes/thor-api --set env.DOCKER_REPOSITORY=${DOCKER_REPOSITORY} --set env.TAG=${version} --wait --timeout 600"
                             }
-                        }
-                        catch (ex) {
-                            sh "kubectl --namespace=${NAMESPACE} rollout undo deployment/${SERVICE_NAME}"
-                            throw ex
                         }
                     }
                 }

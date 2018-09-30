@@ -1,0 +1,6 @@
+---
+db:
+  connection:
+    host: 35.233.154.25
+    password: bzm1tdHrM7C9hNdj
+    database: development

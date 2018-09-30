@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "thor-api.fullname" . }}
+  name: "thor-api-backend"
   labels:
     app: {{ template "thor-api.name" . }}
     chart: {{ template "thor-api.chart" . }}
@@ -11,9 +11,8 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: https
       protocol: TCP
-      name: https
+      targetPort: {{ .Values.service.port }}
   selector:
     app: {{ template "thor-api.name" . }}
     release: {{ .Release.Name }}

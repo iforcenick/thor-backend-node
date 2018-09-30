@@ -20,3 +20,5 @@
 .idea/
 *.tmproj
 *.encrypted
+letsencrypt-issuer.yaml
+certificate.yaml

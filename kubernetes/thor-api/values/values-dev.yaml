@@ -1,0 +1,41 @@
+# Default values for thor-api.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  pullPolicy: IfNotPresent
+  imagePullSecrets: gcrcred
+  containerPort: 8081
+
+app:
+  nodeEnv: development-kubernetes-dev
+
+service:
+  type: NodePort
+  port: 8081
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: odin-api-dev-static-ip
+  hosts:
+  - odin-api.dev.gothor.com 
+  tls:
+  - secretName: odin-api-tls
+    hosts:
+    - odin-api.dev.gothor.com
+  path: /
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+postgresql:
+  postgresPassword: qwe123
+  postgresDatabase: development
