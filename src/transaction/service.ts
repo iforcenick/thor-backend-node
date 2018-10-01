@@ -8,12 +8,11 @@ import * as dwolla from '../dwolla';
 import {TenantService} from '../tenant/service';
 import {UserService} from '../user/service';
 import {raw, transaction} from 'objection';
-import {ApiServer} from '../server';
 import {event} from '../dwolla';
 import {MailerService} from '../mailer';
 import {Logger} from '../logger';
-import * as context from "../context";
-import {Config} from "../config";
+import * as context from '../context';
+import {Config} from '../config';
 
 @AutoWired
 export class TransactionService extends db.ModelService<models.Transaction> {
@@ -54,39 +53,6 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         query.eager({[models.Relations.job]: true});
 
         return query;
-    }
-
-    async getForUser({page = 1, limit}: { page?: number; limit?: number },
-                     {userId, startDate, endDate, status}: { userId: string; startDate?: string; endDate?: string; status?: string }) {
-        limit = this.paginationLimit(limit);
-        const query = this.modelType.query();
-        const knex = ApiServer.db;
-        query.where({userId});
-        query.page(page - 1, limit);
-        const eagerObject = {
-            job: {$modify: ['job']},
-        };
-        const eagerFilters = {
-            job: builder => {
-                builder.select(['id', 'value', 'name', 'description']);
-            },
-        };
-        if (startDate && endDate) {
-            query.whereRaw('"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')', [
-                startDate,
-                endDate,
-            ]);
-        }
-        if (status) {
-            query.where('transactions.status', status);
-        }
-        query
-            .join('jobs', 'transactions.jobId', 'jobs.id')
-            .select(['transactions.*', knex.raw('transactions.quantity * jobs.value as value')]);
-        query.eager(eagerObject, eagerFilters);
-        query.orderBy(`${db.Tables.transactions}.createdAt`, 'desc');
-        const result = await this.useTenantContext(query);
-        return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
     }
 
     async insert(transaction: models.Transaction, trx?: transaction<any>): Promise<models.Transaction> {
@@ -143,26 +109,10 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         }
     }
 
-    async getStatistics({startDate, endDate}: { startDate: string; endDate: string }) {
-        // TODO: I think it should be moved to stats service, also is it injection safe?
-        const base = ApiServer.db
-            .from('transactions')
-            .where({'transactions.tenantId': this.getTenantId()})
-            .whereRaw('"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')', [
-                startDate,
-                endDate,
-            ]);
-        const totalQuery = base.count('* as total').first();
-        const a = await Promise.all([totalQuery]);
-        const [{total}] = a;
-        // TODO: missing stats response definition
-        return {approved: '0', postponed: '0', total};
-    }
-
     async getPeriodStats(startDate: Date, endDate: Date, page?: number, limit?: number, status?: string) {
         const query = this.useTenantContext(this.modelType.query());
         query.joinRelation(models.Relations.job);
-        models.Transaction.periodFilter(query, startDate, endDate, status);
+        models.Transaction.filter(query, startDate, endDate, status);
         query.select([
             raw(`sum(${db.Tables.transactions}.quantity * ${models.Relations.job}.value) as total`),
             raw(`count(distinct "${db.Tables.transactions}"."userId") as users`)

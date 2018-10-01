@@ -99,12 +99,6 @@ export class FundingSourceBaseInfo extends Mapper {
     accountNumber: string = mapper.FIELD_STR;
 }
 
-export class FundingSourceResponse extends FundingSourceBaseInfo {
-    id: string = mapper.FIELD_STR;
-    createdAt: Date = mapper.FIELD_DATE;
-    updatedAt: Date = mapper.FIELD_DATE;
-}
-
 export class FundingSourceRequest extends FundingSourceBaseInfo {
 }
 
@@ -126,14 +120,6 @@ export class RankingJobs extends Mapper {
     jobsCount: number = mapper.FIELD_NUM;
     transactionsIds: Array<string> = mapper.FIELD_ARR;
     jobs: Array<RankingJobsEntry> = mapper.FIELD_ARR;
-}
-
-export class Ranking extends Mapper {
-    id: string = mapper.FIELD_STR;
-    rank: number = mapper.FIELD_NUM;
-    firstName: string = mapper.FIELD_STR;
-    lastName: string = mapper.FIELD_STR;
-    total: number = mapper.FIELD_NUM;
 }
 
 export class UserResponse extends UserBaseInfo {
@@ -165,10 +151,6 @@ export interface PaginatedUserResponse extends PaginatedResponse {
 
 export interface PaginatedRankingJobs extends PaginatedResponse {
     items: Array<RankingJobs>;
-}
-
-export interface PaginatedRanking extends PaginatedResponse {
-    items: Array<Ranking>;
 }
 
 export const userRequestSchema = Joi.object().keys({

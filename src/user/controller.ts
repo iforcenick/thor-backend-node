@@ -15,7 +15,7 @@ import {
 } from 'typescript-rest';
 import {BaseController} from '../api';
 import {Logger} from '../logger';
-import {AutoWired, Inject} from 'typescript-ioc';
+import {Inject} from 'typescript-ioc';
 import {UserService} from './service';
 import * as models from './models';
 import {Profile, ProfileResponse} from '../profile/models';
@@ -23,7 +23,7 @@ import {ProfileService} from '../profile/service';
 import {Security, Tags} from 'typescript-rest-swagger';
 import * as dwolla from '../dwolla';
 import {ValidationError} from '../errors';
-import {PaginatedTransactionResponse, TransactionResponse} from '../transaction/models';
+import * as transactions from '../transaction/models';
 import {TransactionService} from '../transaction/service';
 import {MailerService} from '../mailer';
 import * as _ from 'lodash';
@@ -98,65 +98,6 @@ export class UserController extends BaseController {
                 user.jobs = user.transactions;
                 user.jobsCount = user.jobs.length;
                 return this.map(models.RankingJobs, user);
-            }),
-        );
-    }
-
-    /**
-     * @param page page to be queried, starting from 0
-     * @param limit transactions per page
-     * @param startDate startDate
-     * @param endDate endDate
-     * @param status status
-     */
-    @GET
-    @Path('/rating/period')
-    @Preprocessor(BaseController.requireAdmin)
-    async getRatingPeriodList(@QueryParam('startDate') startDate: string,
-                              @QueryParam('endDate') endDate: string,
-                              @QueryParam('limit') limit?: number,
-                              @QueryParam('page') page?: number,
-                              @QueryParam('status') status?: string): Promise<models.PaginatedRanking> {
-        const dates: any = await this.validate({startDate, endDate}, models.rankingRequestSchema);
-        const users: any = await this.service.getRankings(dates.startDate, dates.endDate, page, limit, status);
-
-        return this.paginate(
-            users.pagination,
-            users.rows.map(user => {
-                user['rank'] = parseInt(user['rank']);
-                user['total'] = parseFloat(user['total']);
-                return this.map(models.Ranking, user);
-            }),
-        );
-    }
-
-    /**
-     * @param page page to be queried, starting from 0
-     * @param limit transactions per page
-     * @param embed embed
-     * @param startDate startDate
-     * @param endDate endDate
-     * @param status status
-     */
-    @GET
-    @Path('/payments/list')
-    @Preprocessor(BaseController.requireAdmin)
-    async getUsersPaymentsList(@QueryParam('page') page?: number,
-                               @QueryParam('limit') limit?: number,
-                               @QueryParam('embed') embed?: string,
-                               @QueryParam('startDate') startDate?: string,
-                               @QueryParam('endDate') endDate?: string,
-                               @QueryParam('status') status?: string): Promise<models.PaginatedUserResponse> {
-        let users;
-        if (embed) {
-            users = await this.service.getWithTransactions(page, limit, embed, startDate, endDate, status);
-        } else {
-            users = await this.service.listWithPayments(page, limit, startDate, endDate);
-        }
-        return this.paginate(
-            users.pagination,
-            users.rows.map(user => {
-                return this.map(models.UserResponse, user);
             }),
         );
     }
@@ -362,18 +303,19 @@ export class UserController extends BaseController {
     async getUserTransactions(@PathParam('id') userId: string,
                               @QueryParam('page') page?: number,
                               @QueryParam('limit') limit?: number,
-                              @QueryParam('startDate') startDate?: string,
-                              @QueryParam('endDate') endDate?: string,
-                              @QueryParam('status') status?: string): Promise<PaginatedTransactionResponse> {
-        const transactions = await this.transactionService.getForUser(
-            {page, limit},
-            {userId, startDate, endDate, status},
-        );
+                              @QueryParam('startDate') startDate?: Date,
+                              @QueryParam('endDate') endDate?: Date,
+                              @QueryParam('status') status?: string): Promise<transactions.PaginatedTransactionResponse> {
+        const filter = builder => {
+            transactions.Transaction.filter(builder, startDate, endDate, status, userId);
+        };
+
+        const transactionsList = await this.transactionService.list(page, limit, filter);
 
         return this.paginate(
-            transactions.pagination,
-            transactions.rows.map(transaction => {
-                return this.map(TransactionResponse, transaction);
+            transactionsList.pagination,
+            transactionsList.rows.map(transaction => {
+                return this.map(transactions.TransactionResponse, transaction);
             }),
         );
     }

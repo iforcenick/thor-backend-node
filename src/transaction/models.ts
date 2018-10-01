@@ -91,13 +91,17 @@ export class Transaction extends db.Model {
         };
     }
 
-    static periodFilter(query, startDate?: Date, endDate?: Date, status?: string) {
+    static filter(query, startDate?: Date, endDate?: Date, status?: string, userId?: string) {
         if (startDate && endDate) {
             query.whereBetween(`${db.Tables.transactions}.createdAt`, [startDate, endDate]);
         }
 
         if (status) {
             query.where(`${db.Tables.transactions}.status`, status);
+        }
+
+        if (userId) {
+            query.where(`${db.Tables.transactions}.userId`, userId);
         }
     }
 
@@ -119,12 +123,6 @@ export class TransactionResponse extends TransactionBaseInfo {
     updatedAt: Date = mapper.FIELD_DATE;
     job: job.JobResponse = new job.JobResponse();
     value: string = mapper.FIELD_STR;
-}
-
-export class TransactionsStatisticsResponse extends Mapper {
-    approved: string = mapper.FIELD_STR;
-    postponed: string = mapper.FIELD_STR;
-    total: string = mapper.FIELD_STR;
 }
 
 export class PeriodStatsResponse extends Mapper {

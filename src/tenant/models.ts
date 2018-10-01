@@ -42,10 +42,6 @@ export class TenantResponse extends TenantBaseInfo {
 export class TenantRequest extends TenantBaseInfo {
 }
 
-export interface PaginatedTenantResponse extends PaginatedResponse {
-    items: Array<TenantResponse>;
-}
-
 export const tenantRequestSchema = Joi.object().keys({
     name: Joi.string().required(),
     dwollaUri: Joi.string(),
@@ -54,11 +50,4 @@ export const tenantRequestSchema = Joi.object().keys({
 export class TenantStatsPeriod extends Mapper {
     count: string = mapper.FIELD_STR;
     percent: string = mapper.FIELD_STR;
-}
-
-export class TenantStatsResponse extends Mapper {
-    total: string = mapper.FIELD_STR;
-    active: TenantStatsPeriod = new TenantStatsPeriod();
-    resting: TenantStatsPeriod = new TenantStatsPeriod();
-    inactive: TenantStatsPeriod = new TenantStatsPeriod();
 }

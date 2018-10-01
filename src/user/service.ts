@@ -8,14 +8,12 @@ import {ProfileService} from '../profile/service';
 import {raw, transaction} from 'objection';
 import * as _ from 'lodash';
 import {ApiServer} from '../server';
-import * as Errors from '../../node_modules/typescript-rest/dist/server-errors';
 import {Logger} from '../logger';
 import {Config} from '../config';
 import * as context from '../context';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const validate = require('uuid-validate');
 
 @AutoWired
 export class UserService extends db.ModelService<models.User> {
@@ -75,30 +73,11 @@ export class UserService extends db.ModelService<models.User> {
             });
     }
 
-    async _get(id: string): Promise<any> {
-        if (!validate(id)) {
-            throw new Errors.BadRequestError('Invalid id format');
-        }
-
-        const query = this.modelType.query().findById(id);
-
-
-        return await query
-            .whereNull('users.deletedAt')
-            .joinRelation(`${models.Relations.profile}.${profile.Relations.roles}`)
-            .mergeEager(`${models.Relations.profile}.[${profile.Relations.roles}]`)
-            .select([
-                `${db.Tables.users}.*`,
-                this.modelType.relatedQuery(models.Relations.transactions)
-                    .select('createdAt').orderBy('createdAt', 'desc').limit(1).as('lastActivity')
-            ]);
-    }
-
     private rankingQuery(startDate: Date, endDate: Date, status?: string) {
         const query = this.useTenantContext(this.getMinOptions(this.filterCustomerRole(this.modelType.query())));
         query.joinRelation(models.Relations.transactions);
         query.join(db.Tables.jobs, `${db.Tables.transactions}.jobId`, `${db.Tables.jobs}.id`);
-        transactions.Transaction.periodFilter(query, startDate, endDate, status);
+        transactions.Transaction.filter(query, startDate, endDate, status);
 
         const columns = [
             `${db.Tables.users}.id`,
@@ -130,14 +109,14 @@ export class UserService extends db.ModelService<models.User> {
                     raw(`count("${db.Tables.transactions}"."jobId") as jobs`),
                 ]);
                 builder.joinRelation(transactions.Relations.job);
-                transactions.Transaction.periodFilter(builder, startDate, endDate, status);
+                transactions.Transaction.filter(builder, startDate, endDate, status);
 
                 builder.groupBy(['userId', 'jobId', 'value', 'name']);
             },
         });
 
         const transactionsQuery = this.modelType.relatedQuery(models.Relations.transactions);
-        transactions.Transaction.periodFilter(transactionsQuery, startDate, endDate, status);
+        transactions.Transaction.filter(transactionsQuery, startDate, endDate, status);
         transactionsQuery
             .select(raw('string_agg("transactions"."id"::character varying, \',\')'))
             .groupBy('userId').as('ids');
@@ -146,125 +125,6 @@ export class UserService extends db.ModelService<models.User> {
 
         const results: any = await query;
         return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results);
-    }
-
-    async getRankings(startDate: Date, endDate: Date, page?: number, limit?: number, status?: string) {
-        const query = this.rankingQuery(startDate, endDate, status);
-        const pag = this.addPagination(query, page, limit);
-        const results: any = await query;
-        return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results);
-    }
-
-    async getWithTransactions(page?: number,
-                              limit?: number,
-                              embed?: string,
-                              startDate?: string,
-                              endDate?: string,
-                              status?: string): Promise<db.Paginated<models.User>> {
-        if (!page) {
-            page = 1;
-        }
-        limit = this.paginationLimit(limit);
-        const query = this.modelType.query();
-
-        const eagerObject = {
-            profiles: {
-                roles: {
-                    $modify: ['roles'],
-                },
-                $modify: ['profiles'],
-            },
-        };
-        if (embed.includes('transactions')) {
-            eagerObject['transactions'] = {$modify: ['transactions'], job: {$modify: ['job']}};
-        }
-        const tenantId = this.getTenantId();
-        const knex = ApiServer.db;
-        const eagerFilters = {
-            profiles: builder => {
-                const tenantId = this.getTenantId();
-                builder.orWhere(function () {
-                    this.where('tenantId', tenantId).orWhere('tenantId', null);
-                });
-            },
-            transactions: builder => {
-                builder
-                    .select(['transactions.*', knex.raw('transactions.quantity * jobs.value as value')])
-                    .join('jobs', 'transactions.jobId', 'jobs.id');
-                if (startDate && endDate) {
-                    builder.whereRaw(
-                        '"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')',
-                        [startDate, endDate],
-                    );
-                }
-                if (status) {
-                    builder.where('transactions.status', status);
-                }
-            },
-            job: builder => {
-                builder.select(['id', 'value', 'name', 'description']);
-            },
-            roles: builder => {
-                builder.select(['name']);
-            },
-        };
-        query.eager(eagerObject, eagerFilters);
-        query.joinRelation(`${models.Relations.profile}.${profile.Relations.roles}`).where(`${models.Relations.profile}:roles.name`, role.models.Types.customer);
-
-        query
-            .select(['users.id', 'r.rank']).whereNull('users.deletedAt').orderBy('r.rank');
-        query.join(
-            knex
-                .from('users')
-                .join('profiles', function () {
-                    this.on('profiles.userId', 'users.id').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
-                })
-                .leftJoin('transactions', function () {
-                    this.on('transactions.userId', 'users.id').andOn(
-                        knex.raw(`"transactions"."createdAt" between ? and ? :: timestamptz + interval '1 day' `, [
-                            startDate,
-                            endDate,
-                        ]),
-                    );
-                })
-                .leftJoin('jobs', function () {
-                    this.on('jobs.id', 'transactions.jobId');
-                })
-                .groupBy('users.id')
-                .select([
-                    'users.id',
-                    knex.raw(
-                        'row_number() OVER (ORDER BY coalesce(sum(transactions.quantity * jobs.value), 0) desc) AS rank',
-                    ),
-                ])
-                .as('r'),
-            'r.id',
-            'users.id',
-        );
-        query.page(page - 1, limit);
-
-        const result: any = await this.useTenantContext(query);
-        return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
-    }
-
-    embed(query, embed) {
-        return query;
-    }
-
-    async activity() {
-        const query = this.modelType.query();
-        const tenantId = this.getTenantId();
-        const knex = ApiServer.db;
-        query
-            .join('profiles', function () {
-                this.on('users.id', 'profiles.userId').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
-            })
-            .join('transactions', 'users.id', 'transactions.userId')
-            .join('jobs', 'transactions.jobId', 'jobs.id')
-            // .select(['*', knex.raw('transactions.quantity * jobs.value as value')])
-            .groupBy('transactions.status')
-            .select(['transactions.status']);
-        return await query;
     }
 
     async createWithProfile(user: models.User, profile: profile.Profile, tenantId?): Promise<models.User> {
@@ -277,11 +137,8 @@ export class UserService extends db.ModelService<models.User> {
             baseProfile.dwollaSourceUri = undefined;
             profile.userId = user.id;
             baseProfile.userId = user.id;
-            const profileEntity = await this.profileService.createProfile(profile, [customerRole], trx, false, tenantId);
-            const baseProfileEntity = await this.profileService.createProfile(baseProfile, [], trx, true, tenantId);
-
-            // await users.$relatedQuery(models.Relations.profile, trx).relate(profileEntity.id);
-            // await users.$relatedQuery(models.Relations.profile, trx).relate(baseProfileEntity.id);
+            await this.profileService.createProfile(profile, [customerRole], trx, false, tenantId);
+            await this.profileService.createProfile(baseProfile, [], trx, true, tenantId);
         });
 
         return user;
@@ -310,15 +167,6 @@ export class UserService extends db.ModelService<models.User> {
         return parseInt(count) > 0;
     }
 
-    async update(entity: models.User, trx?: transaction<any>): Promise<any> {
-        delete entity.lastActivity;
-        return await entity
-            .$query(this.transaction(trx))
-            .patch(entity.toJSON())
-            .returning('*')
-            .first();
-    }
-
     async delete(user: models.User) {
         user.deletedAt = new Date();
         user.tenantProfile.anonymise();
@@ -326,19 +174,6 @@ export class UserService extends db.ModelService<models.User> {
             await this.update(user, trx);
             await this.profileService.update(user.tenantProfile, trx);
         });
-    }
-
-    async findByPhone(phone: string): Promise<models.User> {
-        return await this.getOneBy('phone', phone);
-    }
-
-    async findByEmail(email: string): Promise<models.User> {
-        return await this.modelType
-            .query()
-            .join('profiles', 'users.id', 'profiles.userId')
-            .where('profiles.email', email)
-            .first()
-            .eager('profiles.roles');
     }
 
     async findByEmailAndTenant(email: string, tenantId: string): Promise<models.User> {
@@ -385,114 +220,6 @@ export class UserService extends db.ModelService<models.User> {
             return null;
         }
         return user;
-    }
-
-    async listWithPayments(page?: number,
-                           limit?: number,
-                           startDate?: string,
-                           endDate?: string): Promise<db.Paginated<models.User>> {
-        if (!page) {
-            page = 1;
-        }
-
-        const tenantId = this.getTenantId();
-        const knex = ApiServer.db;
-        limit = this.paginationLimit(limit);
-        const query = this.modelType.query();
-        const eagerObject = {
-            [models.Relations.profile]: {
-                roles: true,
-                $modify: ['profiles'],
-            },
-        };
-        const eagerFilters = {
-            profiles: builder => {
-                const tenantId = this.getTenantId();
-                builder.orWhere(function () {
-                    this.where('tenantId', tenantId).orWhere('tenantId', null);
-                });
-            },
-        };
-        query.joinRelation(`${models.Relations.profile}.${profile.Relations.roles}`).where(`${models.Relations.profile}:roles.name`, role.models.Types.customer);
-
-        query.join('profiles', function () {
-            this.on('users.id', 'profiles.userId').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
-        });
-        // rank
-        query.join(
-            knex
-                .from('users')
-                .join('profiles', function () {
-                    this.on('profiles.userId', 'users.id').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
-                })
-                .leftJoin('transactions', function () {
-                    this.on('transactions.userId', 'users.id').andOn(
-                        knex.raw(`"transactions"."createdAt" between ? and ? :: timestamptz + interval '1 day' `, [
-                            startDate,
-                            endDate,
-                        ]),
-                    );
-                })
-                .leftJoin('jobs', function () {
-                    this.on('jobs.id', 'transactions.jobId');
-                })
-                .groupBy('users.id')
-                .select([
-                    'users.id',
-                    knex.raw(
-                        'row_number() OVER (ORDER BY coalesce(sum(transactions.quantity * jobs.value), 0) desc) AS rank',
-                    ),
-                ])
-                .as('r'),
-            'r.id',
-            'users.id',
-        );
-        // lastActivity
-        query.join(
-            knex
-                .from('users')
-                .select(['users.id'])
-                .max('transactions.createdAt as lastActivity')
-                .join('profiles', function () {
-                    this.on('profiles.userId', 'users.id').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
-                })
-                .leftJoin('transactions', function () {
-                    this.on('transactions.userId', 'users.id');
-                })
-                .groupBy('users.id')
-                .as('a'),
-            'a.id',
-            'users.id',
-        );
-        // prev
-        query.join(
-            knex
-                .distinct(knex.raw(' on (users.id) users.id')).select(['transfers.value'])
-                .from('users')
-                .join('profiles', function () {
-                    this.on('profiles.userId', 'users.id').andOn('profiles.tenantId', knex.raw('?', [tenantId]));
-                })
-                .leftJoin('transactions', function () {
-                    this.on('users.id', 'transactions.userId')
-                        .andOn('transactions.tenantId', knex.raw('?', [tenantId]))
-                        .andOn(knex.raw('"transactions"."transferId" is not null'));
-                })
-                .leftJoin('transfers', 'transfers.id', 'transactions.transferId')
-                .orderBy('users.id')
-                .orderBy('transactions.createdAt', 'desc')
-                .as('prev'),
-            'prev.id',
-            'users.id',
-        );
-        query.orderBy('r.rank');
-        query.select(['users.id', 'r.rank', 'a.lastActivity', 'prev.value as prev']);
-        query.eager(eagerObject, eagerFilters);
-
-        query.page(page - 1, limit);
-
-        // const result = await this.useTenantContext(query);
-        const result: any = await query;
-        return new db.Paginated(new db.Pagination(page, limit, result.total), result.results);
     }
 
     async generateJwt(user: models.User) {

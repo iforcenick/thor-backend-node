@@ -47,19 +47,6 @@ export class TransactionController extends BaseController {
         this.userContext = userContext;
     }
 
-    /**
-     * Transactions statistics, both startDate and endDate needs to be provided
-     * @param startDate start date of transactions e.g. 2018-08-22
-     * @param endDate end date of transactions, e.g. 2018-08-26
-     */
-    @GET
-    @Path('statistics')
-    @Preprocessor(BaseController.requireAdmin)
-    async getStatistics(@QueryParam('startDate') startDate?: string, @QueryParam('endDate') endDate?: string): Promise<models.TransactionsStatisticsResponse> {
-        const stats = await this.service.getStatistics({startDate, endDate});
-        return this.map(models.TransactionsStatisticsResponse, stats);
-    }
-
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
@@ -93,17 +80,9 @@ export class TransactionController extends BaseController {
         if (userId && !validate(userId)) {
             throw new Errors.BadRequestError('userId must be uuid');
         }
+
         const filter = builder => {
-            if (dateFrom && dateTill) {
-                builder.whereBetween('createdAt', [dateFrom, dateTill]);
-            }
-            if (userId) {
-                builder.where({userId});
-            }
-            if (status) {
-                builder.where({status});
-            }
-            return builder;
+            models.Transaction.filter(builder, dateFrom, dateTill, status, userId);
         };
 
         const transactions = await this.service.list(page, limit, filter);
