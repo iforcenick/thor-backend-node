@@ -27,7 +27,7 @@ export class DwollaController extends BaseController {
     async events(data: IEvent) {
         try {
             const _event = event.factory(data);
-            this.logger.info(_event);
+            this.logger.info(JSON.stringify(_event, null, 2));
             await this.dwollaClient.authorize();
 
             switch (_event.topic) {
