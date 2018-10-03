@@ -206,7 +206,7 @@ export class Client {
         // }
 
         if (!hasSubscription) {
-            this.logger.info('[dwolla] Register new webhook endpoint');
+            this.logger.info('[dwolla] Register new webhook endpoint: ', endpointUrl);
             const registerRes = await this.registerWebhookEndpoint(endpointUrl);
             this.logger.info('[dwolla] Register new webhook endpoint response: ', registerRes);
         }
