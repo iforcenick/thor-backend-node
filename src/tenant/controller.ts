@@ -37,7 +37,7 @@ export class TenantController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async createTenant(data: models.TenantRequest): Promise<models.TenantResponse> {
         const parsedData = await this.validate(data, models.tenantRequestSchema);
-        let tenant = models.Tenant.fromJson(parsedData);
+        let tenant = models.Tenant.factory(parsedData);
         try {
             await transaction(models.Tenant.knex(), async trx => {
                 tenant = await this.service.insert(tenant, trx);

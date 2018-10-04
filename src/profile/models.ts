@@ -6,6 +6,7 @@ import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import * as tenant from '../tenant/models';
 import * as user from '../user/models';
 import * as role from '../user/role';
+import * as _ from 'lodash';
 
 export const enum Relations {
     user = 'user',
@@ -15,26 +16,26 @@ export const enum Relations {
 
 export class Profile extends db.Model {
     static tableName = db.Tables.profiles;
-    firstName?: string;
-    lastName?: string;
-    phone?: string;
-    email?: string;
-    dwollaUri?: string;
-    dwollaSourceUri?: string;
-    dwollaStatus?: string;
-    dwollaRouting?: string;
-    dwollaAccount?: string;
-    tenantId?: string;
-    country?: string;
-    state?: string;
-    city?: string;
-    postalCode?: string;
-    address1?: string;
-    address2?: string;
-    dateOfBirth?: string;
-    userId?: string;
+    firstName?: string = null;
+    lastName?: string = null;
+    phone?: string = null;
+    email?: string = null;
+    dwollaUri?: string = null;
+    dwollaSourceUri?: string = null;
+    dwollaStatus?: string = null;
+    dwollaRouting?: string = null;
+    dwollaAccount?: string = null;
+    tenantId?: string = null;
+    country?: string = null;
+    state?: string = null;
+    city?: string = null;
+    postalCode?: string = null;
+    address1?: string = null;
+    address2?: string = null;
+    dateOfBirth?: string = null;
+    userId?: string = null;
     roles?: Array<role.models.Role>;
-    deletedAt?: Date;
+    deletedAt?: Date = null;
 
     get externalStatus() {
         return this.dwollaStatus;

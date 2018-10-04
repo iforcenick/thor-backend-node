@@ -11,10 +11,10 @@ export const enum Relations {
 
 export class Job extends db.Model {
     static tableName = db.Tables.jobs;
-    tenantId?: string;
-    value?: number;
-    name?: string;
-    description?: string;
+    tenantId?: string = null;
+    value?: number = null;
+    name?: string = null;
+    description?: string = null;
 
     static get relationMappings() {
         return {

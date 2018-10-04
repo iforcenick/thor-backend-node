@@ -11,8 +11,8 @@ export const enum Relations {
 
 export class Tenant extends db.Model {
     static tableName = db.Tables.tenants;
-    name?: string;
-    dwollaUri?: string;
+    name?: string = null;
+    dwollaUri?: string = null;
 
     static get relationMappings() {
         return {

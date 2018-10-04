@@ -66,13 +66,17 @@ export const CUSTOMER_STATUS = {
     Deactivated: 'deactivated',
 };
 
+export const TYPE = {
+    Personal: 'personal',
+};
+
 export const factory = (data): ICustomer => {
     return new Customer(data);
 };
 
 export const factoryFromProfile = (profile: profile.Profile): ICustomer => {
     const data = profile.toJSON();
-    data['type'] = CUSTOMER_STATUS.Personal;
+    data['type'] = TYPE.Personal;
 
     return new Customer(data);
 };

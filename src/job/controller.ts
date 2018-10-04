@@ -23,7 +23,7 @@ export class JobController extends BaseController {
     @Tags('jobs')
     async create(data: models.JobRequest): Promise<models.JobResponse> {
         const parsedData = await this.validate(data, models.jobRequestSchema);
-        const jobModel = models.Job.fromJson(parsedData);
+        const jobModel = models.Job.factory(parsedData);
         try {
             const jobFromDB = await this.service.insert(jobModel);
             return this.map(models.JobResponse, jobFromDB);

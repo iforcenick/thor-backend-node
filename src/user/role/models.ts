@@ -9,7 +9,7 @@ export enum Types {
 
 export class Role extends db.Model {
     static tableName = db.Tables.roles;
-    name?: string;
+    name?: string = null;
 }
 
 export class RoleResponse extends Mapper {

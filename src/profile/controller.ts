@@ -37,7 +37,7 @@ export class ProfileController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async createProfile(data: models.ProfileRequest): Promise<models.ProfileResponse> {
         const parsedData = await this.validate(data, models.profileRequestSchema);
-        let profile = models.Profile.fromJson(parsedData);
+        let profile = models.Profile.factory(parsedData);
         try {
             await transaction(models.Profile.knex(), async (trx) => {
                 profile = await this.service.insert(profile, trx);

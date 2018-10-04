@@ -2,6 +2,7 @@ import {Model as OModel, transaction} from 'objection';
 import {Config} from './config';
 import {Logger} from './logger';
 import {Errors} from '../node_modules/typescript-rest';
+import * as _ from 'lodash';
 import * as context from './context';
 
 const validate = require('uuid-validate');
@@ -11,8 +12,8 @@ export {OModel};
 
 export class Model extends OModel {
     id: string;
-    createdAt?: Date;
-    updatedAt?: Date;
+    createdAt?: Date = null;
+    updatedAt?: Date = null;
 
     $beforeInsert() {
         this.createdAt = new Date();
@@ -22,6 +23,14 @@ export class Model extends OModel {
 
     $beforeUpdate() {
         this.updatedAt = new Date();
+    }
+
+    static filterFields(json: any) {
+        return _.pick(json, Object.keys(new this()));
+    }
+
+    static factory(json: any): any {
+        return this.fromJson(this.filterFields(json));
     }
 }
 
@@ -170,7 +179,7 @@ export class ModelService<T> {
     async update(entity: OModel, trx?: transaction<any>): Promise<any> {
         return await entity
             .$query(this.transaction(trx))
-            .patch(entity.toJSON())
+            .patch(entity)
             .returning('*')
             .first();
     }

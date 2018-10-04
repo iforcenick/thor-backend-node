@@ -112,7 +112,7 @@ export class TransactionController extends BaseController {
                 const {job: jobRequest} = parsedData;
                 let jobFromDb;
                 if (!jobRequest.id) {
-                    const jobEntity = Job.fromJson(jobRequest);
+                    const jobEntity = Job.factory(jobRequest);
                     jobFromDb = await this.jobService.insert(jobEntity, trx);
                 } else {
                     jobFromDb = await this.jobService.get(jobRequest.id);
@@ -121,7 +121,7 @@ export class TransactionController extends BaseController {
                     throw new Errors.NotFoundError('Job not found');
                 }
 
-                const transactionEntity = models.Transaction.fromJson(parsedData);
+                const transactionEntity = models.Transaction.factory(parsedData);
                 transactionEntity.adminId = this.userContext.get().id;
                 transactionEntity.jobId = jobFromDb.id;
                 const transactionFromDb = await this.service.insert(transactionEntity, trx);

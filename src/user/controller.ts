@@ -127,13 +127,14 @@ export class UserController extends BaseController {
         const parsedData = await this.validate(data, models.userRequestSchema);
         ProfileService.validateAge(parsedData['profile']);
 
-        let user = models.User.fromJson({});
-        const profile = Profile.fromJson(parsedData['profile']);
+        let user = models.User.factory({});
+        const profile = Profile.factory(parsedData['profile']);
 
         try {
             await this.dwollaClient.authorize();
-            const customer = new dwolla.customer.Customer(dwolla.customer.factoryFromProfile(profile));
-            delete profile['ssn'];
+            const customerData = dwolla.customer.factory(parsedData['profile']);
+            customerData.type = dwolla.customer.TYPE.Personal;
+            const customer = new dwolla.customer.Customer(customerData);
             profile.dwollaUri = await this.dwollaClient.createCustomer(customer);
             const dwollaCustomer = await this.dwollaClient.getCustomer(profile.dwollaUri);
             profile.dwollaStatus = dwollaCustomer.status;

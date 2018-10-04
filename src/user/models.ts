@@ -35,8 +35,8 @@ export class User extends db.Model {
             },
         },
     };
-    password?: string;
-    deletedAt?: Date;
+    password?: string = null;
+    deletedAt?: Date = null;
     profiles?: Array<profile.Profile>;
     transactions?: Array<Transaction>;
     lastActivity?: Date;
@@ -69,9 +69,9 @@ export class User extends db.Model {
         return undefined;
     }
 
-    $formatJson(json: Pojo): Pojo {
-        return _.omit(json, 'password');
-    }
+    // $formatJson(json: Pojo): Pojo {
+    //     return _.omit(json, 'password');
+    // }
 
     hasRole(role: role.models.Types) {
         return this.tenantProfile.hasRole(role);
