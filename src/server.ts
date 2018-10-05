@@ -14,6 +14,7 @@ import {JobController} from './job/controller';
 import * as dwolla from './dwolla';
 import * as middleware from './middleware';
 import {DwollaController} from './dwolla/controller';
+import {InvitationController, InvitationCheckController} from './invitation/controller';
 
 const knex = require('knex');
 const path = require('path');
@@ -115,6 +116,7 @@ export class ApiServer {
         this.app.use('/transactions', passport.authenticate('jwt', {session: false}));
         this.app.use('/tenants', passport.authenticate('jwt', {session: false}));
         this.app.use('/auth/password', passport.authenticate('jwt', {session: false}));
+        this.app.use('/contractors/invitations', passport.authenticate('jwt', {session: false}));
     }
 
     private addControllers() {
@@ -127,7 +129,9 @@ export class ApiServer {
             JobController,
             TransactionController,
             DwollaController,
-            MonitoringController
+            MonitoringController,
+            InvitationController,
+            InvitationCheckController,
         );
     }
 

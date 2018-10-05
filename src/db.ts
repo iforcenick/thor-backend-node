@@ -43,7 +43,7 @@ export const enum Tables {
     transactions = 'transactions',
     jobs = 'jobs',
     transfers = 'transfers',
-    ranks = 'ranks',
+    contractorInvitations = 'contractorInvitations'
 }
 
 export class Pagination {
