@@ -27,13 +27,13 @@ export const enum Statuses {
 
 export class Transaction extends db.Model {
     static tableName = db.Tables.transactions;
-    userId?: string;
-    adminId?: string;
-    tenantId?: string;
-    transferId?: string;
-    jobId?: string;
-    quantity?: number;
-    status?: string;
+    userId?: string = null;
+    adminId?: string = null;
+    tenantId?: string = null;
+    transferId?: string = null;
+    jobId?: string = null;
+    quantity?: number = null;
+    status?: string = null;
     user?: user.User;
     job?: job.Job;
     transfer?: transfer.Transfer;
