@@ -9,6 +9,7 @@ logs:
   stackDump: false
 authorization:
   jwtSecret: jwt
+  payloadSecret: someSecretValuePleaseChange
   tokenExpirationTime: 30days
 pagination:
   limit: 10

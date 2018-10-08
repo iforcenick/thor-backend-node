@@ -11,6 +11,7 @@ import {ApiServer} from '../server';
 import {Logger} from '../logger';
 import {Config} from '../config';
 import * as context from '../context';
+import {JWTTokenProvider} from '../auth/encryption';
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -20,14 +21,16 @@ export class UserService extends db.ModelService<models.User> {
     protected modelType = models.User;
     protected rolesService: role.service.RoleService;
     public profileService: ProfileService;
+    private jwtTokenProvider: JWTTokenProvider;
 
     constructor(@Inject rolesService: role.service.RoleService,
                 @Inject profileService: ProfileService,
                 @Inject config: Config, @Inject logger: Logger,
-                @Inject tenantContext: context.TenantContext) {
+                @Inject tenantContext: context.TenantContext, @Inject jwtTokenProvider: JWTTokenProvider) {
         super(config, logger, tenantContext);
         this.rolesService = rolesService;
         this.profileService = profileService;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     getMinOptions(query) {
@@ -223,9 +226,7 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async generateJwt(user: models.User) {
-        return jwt.sign(user.toJSON(), this.config.get('authorization.jwtSecret'), {
-            expiresIn: this.config.get('authorization.tokenExpirationTime'),
-        });
+       return this.jwtTokenProvider.generateJwt(user);
     }
 
     async hashPassword(password) {

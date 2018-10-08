@@ -187,4 +187,8 @@ export class ModelService<T> {
     getTenantId(): string {
         return this.tenant;
     }
+
+    setTenantId(id: string) {
+        this.tenant = id;
+    }
 }
