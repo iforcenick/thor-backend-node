@@ -83,8 +83,8 @@ export class UserService extends db.ModelService<models.User> {
 
         const columns = [
             `${db.Tables.users}.id`,
-            `${db.Tables.profiles}.firstName`,
-            `${db.Tables.profiles}.lastName`,
+            `${models.Relations.tenantProfile}.firstName`,
+            `${models.Relations.tenantProfile}.lastName`,
         ];
 
         const totalValue = `sum(${models.Relations.transactions}.quantity * ${db.Tables.jobs}.value)`;
