@@ -52,7 +52,7 @@ export class BaseController {
     }
 
     static requireCustomer(req: any) {
-        return BaseController._requireRole(req, role.models.Types.customer);
+        return BaseController._requireRole(req, role.models.Types.contractor);
     }
 
     validate(data, schema): Promise<any> {

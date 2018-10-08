@@ -18,7 +18,7 @@ passport.use(new JWTStrategy({
         const jwtDecryptor = Container.get(JWTEncryption);
         const payload = jwtDecryptor.decryptPayload(jwtPayload);
         const service = Container.get(UserService);
-        service.setTenantId(payload.user.profiles[0].tenantId);
+        service.setTenantId(payload.user.tenantProfile.tenantId);
         service.get(payload.user.id).then((user) => {
             return cb(null, user);
         });

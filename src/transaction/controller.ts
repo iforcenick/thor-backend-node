@@ -105,7 +105,13 @@ export class TransactionController extends BaseController {
         if (!user) {
             throw new Errors.NotFoundError('User not found');
         }
-        user.checkTransactionAbility();
+
+        try {
+            user.checkTransactionAbility();
+        } catch (e) {
+            throw new Errors.NotAcceptableError(e);
+        }
+
 
         try {
             const transactionFromDb: models.Transaction = await transaction(models.Transaction.knex(), async trx => {

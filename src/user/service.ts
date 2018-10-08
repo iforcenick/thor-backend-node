@@ -14,7 +14,6 @@ import * as context from '../context';
 import {JWTTokenProvider} from '../auth/encryption';
 
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 
 @AutoWired
 export class UserService extends db.ModelService<models.User> {
@@ -35,8 +34,8 @@ export class UserService extends db.ModelService<models.User> {
 
     getMinOptions(query) {
         query
-            .whereNull('users.deletedAt')
-            .joinRelation(`${models.Relations.profile}.${profile.Relations.roles}`);
+            .whereNull(`${this.modelType.tableName}.deletedAt`)
+            .joinRelation(`${models.Relations.tenantProfile}.${profile.Relations.roles}`);
 
         return query;
     }
@@ -44,10 +43,10 @@ export class UserService extends db.ModelService<models.User> {
     getOptions(query) {
         const tenantId = this.getTenantId();
         query = this.getMinOptions(query);
-        query.mergeEager(`${models.Relations.profile}(profile).[${profile.Relations.roles}]`, {
-            profile: builder => {
+        query.mergeEager(`${models.Relations.tenantProfile}(tenantProfile).[${profile.Relations.roles}]`, {
+            tenantProfile: builder => {
                 builder.where(function () {
-                    this.where('tenantId', tenantId).orWhere('tenantId', null);
+                    this.where('tenantId', tenantId).limit(1);
                 });
             },
         });
@@ -62,7 +61,7 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     filterCustomerRole(query) {
-        return query.where(`${models.Relations.profile}:roles.name`, role.models.Types.customer);
+        return query.where(`${models.Relations.tenantProfile}:roles.name`, role.models.Types.contractor);
     }
 
     getListOptions(query) {
@@ -72,7 +71,7 @@ export class UserService extends db.ModelService<models.User> {
     useTenantContext(query) {
         return query
             .where({
-                [`${models.Relations.profile}.tenantId`]: this.getTenantId()
+                [`${models.Relations.tenantProfile}.tenantId`]: this.getTenantId()
             });
     }
 
@@ -131,7 +130,7 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async createWithProfile(user: models.User, profile: profile.Profile, tenantId?): Promise<models.User> {
-        const customerRole = await this.getRole(role.models.Types.customer);
+        const customerRole = await this.getRole(role.models.Types.contractor);
         await transaction(this.transaction(), async trx => {
             user = await this.insert(user, trx);
             const baseProfile = _.clone(profile);
@@ -180,12 +179,13 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async findByEmailAndTenant(email: string, tenantId: string): Promise<models.User> {
-        return await this.modelType
-            .query()
-            .join('profiles', 'users.id', 'profiles.userId')
-            .where({'profiles.email': email, 'profiles.tenantId': tenantId})
-            .first()
-            .eager('profiles.roles');
+        const tmpTenant = this.getTenantId();
+        this.setTenantId(tenantId);
+        const query = this.useTenantContext(this.getOptions(this.modelType.query()));
+        query.where(`${models.Relations.tenantProfile}.email`, email);
+        query.first();
+        this.setTenantId(tmpTenant);
+        return await query;
     }
 
     async getRole(role: role.models.Types): Promise<role.models.Role> {
@@ -213,6 +213,7 @@ export class UserService extends db.ModelService<models.User> {
 
     async authenticate(login: string, password: string, tenant: string) {
         const user = await this.findByEmailAndTenant(login, tenant);
+        console.log(user);
         if (!user) {
             return null;
         }
@@ -226,7 +227,7 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async generateJwt(user: models.User) {
-       return this.jwtTokenProvider.generateJwt(user);
+        return this.jwtTokenProvider.generateJwt(user);
     }
 
     async hashPassword(password) {

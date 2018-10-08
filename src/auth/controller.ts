@@ -60,7 +60,7 @@ export class AuthController extends BaseController {
         try {
             user = await this.service.authenticate(data.login, data.password, data.tenant);
         } catch (err) {
-            this.logger.error(err);
+            this.logger.error(err.message);
             throw new Errors.UnauthorizedError();
         }
 

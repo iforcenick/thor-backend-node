@@ -12,6 +12,7 @@ import {Errors} from 'typescript-rest';
 export const enum Relations {
     roles = 'roles',
     profile = 'profiles',
+    tenantProfile = 'tenantProfile',
     transactions = 'transactions',
 }
 
@@ -20,6 +21,14 @@ export class User extends db.Model {
     static relationMappings = {
         [Relations.profile]: {
             relation: db.Model.HasManyRelation,
+            modelClass: profile.Profile,
+            join: {
+                from: `${db.Tables.users}.id`,
+                to: `${db.Tables.profiles}.userId`,
+            },
+        },
+        [Relations.tenantProfile]: {
+            relation: db.Model.HasOneRelation,
             modelClass: profile.Profile,
             join: {
                 from: `${db.Tables.users}.id`,
@@ -40,38 +49,7 @@ export class User extends db.Model {
     profiles?: Array<profile.Profile>;
     transactions?: Array<Transaction>;
     lastActivity?: Date;
-
-    get profile(): profile.Profile {
-        if (!_.isArray(this.profiles)) {
-            return undefined;
-        }
-
-        for (const profile of this.profiles) {
-            if (!profile.tenantId) {
-                return profile;
-            }
-        }
-
-        return undefined;
-    }
-
-    get tenantProfile(): profile.Profile {
-        if (!_.isArray(this.profiles)) {
-            return undefined;
-        }
-
-        for (const profile of this.profiles) {
-            if (profile.tenantId) {
-                return profile;
-            }
-        }
-
-        return undefined;
-    }
-
-    // $formatJson(json: Pojo): Pojo {
-    //     return _.omit(json, 'password');
-    // }
+    tenantProfile?: profile.Profile;
 
     hasRole(role: role.models.Types) {
         return this.tenantProfile.hasRole(role);
@@ -85,11 +63,11 @@ export class User extends db.Model {
     }
 
     checkTransactionAbility() {
-        if (!this.hasRole(role.models.Types.customer)) {
-            throw new Errors.BadRequestError('users is not customer');
+        if (!this.hasRole(role.models.Types.contractor)) {
+            throw new Errors.BadRequestError('User is not a contractor');
         }
         if (!this.hasBankAccount()) {
-            throw new Errors.NotAcceptableError('User don\'t have bank account');
+            throw new Errors.NotAcceptableError('User does not have a bank account');
         }
     }
 }
@@ -130,14 +108,10 @@ export class UserResponse extends UserBaseInfo {
     lastActivity: Date = mapper.FIELD_DATE;
     rank: number = mapper.FIELD_NUM;
     prev: number = mapper.FIELD_NUM;
-    profile: profile.ProfileResponse = new profile.ProfileResponse();
     tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
-    transactions: Array<TransactionResponse> = mapper.FIELD_ARR;
 }
 
-mapper.registerRelation(UserResponse, 'profile', new mapper.Relation(profile.ProfileResponse));
 mapper.registerRelation(UserResponse, 'tenantProfile', new mapper.Relation(profile.ProfileResponse));
-mapper.registerRelation(UserResponse, Relations.transactions, new mapper.ArrayRelation(TransactionResponse));
 mapper.registerRelation(RankingJobs, 'jobs', new mapper.ArrayRelation(RankingJobsEntry));
 
 export class UserRequest extends UserBaseInfo {

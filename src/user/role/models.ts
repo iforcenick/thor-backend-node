@@ -4,7 +4,7 @@ import {mapper} from '../../api';
 
 export enum Types {
     admin = 'admin',
-    customer = 'customer',
+    contractor = 'contractor',
 }
 
 export class Role extends db.Model {
