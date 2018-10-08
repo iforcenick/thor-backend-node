@@ -49,6 +49,8 @@ export class InvitationRequest extends InvitationBase {}
 export class InvitationResponse extends InvitationBase {
     id: string = mapper.FIELD_STR;
     status: string = mapper.FIELD_STR;
+    createdAt: Date = mapper.FIELD_DATE;
+    updatedAt: Date = mapper.FIELD_DATE;
 }
 
 export interface InvitationPaginatedResponse extends PaginatedResponse {
