@@ -6,3 +6,6 @@ db:
     database: dev2
 dwolla:
   webhookUri: https://odin-api.dev.gothor.com/dwolla/events
+swagger:
+  host: odin-api.dev.gothor.com
+  schema: https
