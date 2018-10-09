@@ -29,6 +29,7 @@ import {MailerService} from '../mailer';
 import * as _ from 'lodash';
 import * as context from '../context';
 import {Config} from '../config';
+import {DwollaNotifier} from '../dwolla/notifier';
 
 @Security('api_key')
 @Path('/users')
@@ -40,6 +41,7 @@ export class UserController extends BaseController {
     private profileService: ProfileService;
     private transactionService: TransactionService;
     private userContext: context.UserContext;
+    private dwollaNotifier: DwollaNotifier;
 
     constructor(@Inject mailer: MailerService,
                 @Inject dwollaClient: dwolla.Client,
@@ -48,7 +50,7 @@ export class UserController extends BaseController {
                 @Inject transactionService: TransactionService,
                 @Inject userContext: context.UserContext,
                 @Inject tenantContext: context.TenantContext,
-                @Inject logger: Logger, @Inject config: Config) {
+                @Inject logger: Logger, @Inject config: Config, @Inject dwollaNotifier: DwollaNotifier) {
         super(logger, config);
         this.mailer = mailer;
         this.dwollaClient = dwollaClient;
@@ -56,6 +58,7 @@ export class UserController extends BaseController {
         this.profileService = profileService;
         this.transactionService = transactionService;
         this.userContext = userContext;
+        this.dwollaNotifier = dwollaNotifier;
     }
 
     @GET
@@ -141,7 +144,7 @@ export class UserController extends BaseController {
 
             user = await this.service.createWithProfile(user, profile);
             user = await this.service.get(user.id);
-            await this.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
+            await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
         } catch (err) {
             this.logger.error(err);
             if (err.body) {
@@ -391,24 +394,6 @@ export class UserController extends BaseController {
         } catch (e) {
             this.logger.error(e.message);
             throw new Errors.InternalServerError(e);
-        }
-    }
-
-    async sendNotificationForDwollaCustomer(user: models.User, status: string) {
-        try {
-            switch (status) {
-                case dwolla.customer.CUSTOMER_STATUS.Retry:
-                    await this.mailer.sendCustomerVerificationRetry(user, user);
-                    break;
-                case dwolla.customer.CUSTOMER_STATUS.Document:
-                    await this.mailer.sendCustomerVerificationDocument(user, user);
-                    break;
-                case dwolla.customer.CUSTOMER_STATUS.Suspended:
-                    await this.mailer.sendCustomerVerificationSuspended(user, user);
-                    break;
-            }
-        } catch (e) {
-            this.logger.error(e.message);
         }
     }
 }
