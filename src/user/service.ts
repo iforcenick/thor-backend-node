@@ -17,10 +17,13 @@ const bcrypt = require('bcrypt');
 
 @AutoWired
 export class UserService extends db.ModelService<models.User> {
-    protected modelType = models.User;
     protected rolesService: role.service.RoleService;
     public profileService: ProfileService;
     private jwtTokenProvider: JWTTokenProvider;
+
+    protected setModelType() {
+        this.modelType = models.User;
+    }
 
     constructor(@Inject rolesService: role.service.RoleService,
                 @Inject profileService: ProfileService,

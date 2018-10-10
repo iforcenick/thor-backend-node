@@ -7,13 +7,15 @@ import * as context from '../../context';
 
 @AutoWired
 export class RoleService extends db.ModelService<models.Role> {
-    protected modelType = models.Role;
-
     constructor(@Inject config: Config, @Inject logger: Logger, @Inject tenantContext: context.TenantContext) {
         super(config, logger, tenantContext);
     }
 
     async find(role: models.Types) {
         return this.modelType.query().findOne({name: role});
+    }
+
+    protected setModelType() {
+        this.modelType = models.Role;
     }
 }

@@ -1,5 +1,5 @@
 import {Security, Tags} from 'typescript-rest-swagger';
-import {Path, POST} from 'typescript-rest';
+import {Path, PathParam, POST, Preprocessor} from 'typescript-rest';
 import {BaseController} from '../api';
 import {MailerService} from '../mailer';
 import * as dwolla from '../dwolla';
@@ -14,8 +14,17 @@ import {Profile} from '../profile/models';
 import {ValidationError} from '../errors';
 import * as Errors from 'typescript-rest/dist/server-errors';
 import {DwollaNotifier} from '../dwolla/notifier';
-import {ContractorRequest, contractorRequestSchema, ContractorResponse} from './models';
-import * as models from '../user/models';
+import {
+    ContractorRequest,
+    contractorRequestSchema,
+    ContractorResponse,
+    FundingSourceRequest,
+    fundingSourceRequestSchema
+} from './models';
+import * as usersModels from '../user/models';
+import {FundingSource} from '../foundingSource/models';
+import {FoundingSourceService} from '../foundingSource/services';
+import {transaction} from 'objection';
 
 @Security('api_key')
 @Path('/contractors')
@@ -28,6 +37,7 @@ export class ContractorController extends BaseController {
     private transactionService: TransactionService;
     private userContext: context.UserContext;
     private dwollaNotifier: DwollaNotifier;
+    private foundingSourceService: FoundingSourceService;
     constructor(@Inject mailer: MailerService,
                 @Inject dwollaClient: dwolla.Client,
                 @Inject service: UserService,
@@ -36,7 +46,7 @@ export class ContractorController extends BaseController {
                 @Inject userContext: context.UserContext,
                 @Inject tenantContext: context.TenantContext,
                 @Inject logger: Logger, @Inject config: Config,
-                @Inject dwollaNotifier: DwollaNotifier) {
+                @Inject dwollaNotifier: DwollaNotifier, @Inject foundingSourceService: FoundingSourceService) {
         super(logger, config);
         this.mailer = mailer;
         this.dwollaClient = dwollaClient;
@@ -45,6 +55,7 @@ export class ContractorController extends BaseController {
         this.transactionService = transactionService;
         this.userContext = userContext;
         this.dwollaNotifier = dwollaNotifier;
+        this.foundingSourceService = foundingSourceService;
     }
 
     @POST
@@ -52,7 +63,7 @@ export class ContractorController extends BaseController {
     async createUser(data: ContractorRequest): Promise<ContractorResponse> {
         const parsedData = await this.validate(data, contractorRequestSchema);
         ProfileService.validateAge(parsedData['profile']);
-        let user = models.User.factory({});
+        let user: usersModels.User = usersModels.User.factory({}) ;
 
         const profile = Profile.factory(parsedData['profile']);
         try {
@@ -65,6 +76,7 @@ export class ContractorController extends BaseController {
             profile.dwollaStatus = dwollaCustomer.status;
 
             this.service.setTenantId(data.tenantId);
+            user.password = await this.service.hashPassword(data.password);
             user = await this.service.createWithProfile(user, profile, data.tenantId);
             user = await this.service.get(user.id);
             await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
@@ -80,6 +92,65 @@ export class ContractorController extends BaseController {
                     }
                 }
             }
+            throw new Errors.InternalServerError(err.message);
+        }
+    }
+
+    @POST
+    @Path('fundingSources')
+    @Preprocessor(BaseController.requireContractor)
+    async createUserFundingSource(data: FundingSourceRequest) {
+        const parsedData = await this.validate(data, fundingSourceRequestSchema);
+        const user = await this.service.get(this.userContext.get().id);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+
+        const profile: Profile = user.tenantProfile;
+        try {
+
+            await this.dwollaClient.authorize();
+            const sourceUri = await this.dwollaClient.createFundingSource(
+                profile.dwollaUri,
+                parsedData['routingNumber'],
+                parsedData['accountNumber'],
+                'checking',
+                'default',
+            );
+
+            profile.dwollaRouting = parsedData['routingNumber'];
+            profile.dwollaAccount = parsedData['accountNumber'];
+
+            const foundSource: FundingSource = FundingSource.factory({
+                routing: parsedData['routingNumber'],
+                account: parsedData['accountNumber'],
+                type: 'checking',
+                name: 'default',
+                profileId: profile.id,
+                tenantId: profile.tenantId,
+                isDefault: false,
+                dwollaUri: sourceUri
+            });
+
+            const sourceInfo = {
+                sourceUri: profile.dwollaSourceUri,
+                routing: profile.dwollaRouting,
+                account: profile.dwollaAccount,
+            };
+
+            try {
+                await this.mailer.sendFundingSourceRemoved(user, sourceInfo);
+            } catch (e) {
+                this.logger.error(e);
+            }
+
+            await transaction(this.profileService.transaction(), async trx => {
+                await this.foundingSourceService.insert(foundSource, trx);
+                await this.profileService.addFundingSource(profile, foundSource, trx);
+            });
+
+        } catch (err) {
+            this.logger.error(err);
             throw new Errors.InternalServerError(err.message);
         }
     }

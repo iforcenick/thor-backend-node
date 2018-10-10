@@ -8,8 +8,6 @@ import * as context from '../context';
 
 @AutoWired
 export class JobService extends db.ModelService<models.Job> {
-    protected modelType = models.Job;
-
     constructor(@Inject config: Config, @Inject logger: Logger, @Inject tenantContext: context.TenantContext) {
         super(config, logger, tenantContext);
     }
@@ -21,5 +19,9 @@ export class JobService extends db.ModelService<models.Job> {
     async insert(data: models.Job, trx?: transaction<any>): Promise<models.Job> {
         data.tenantId = this.getTenantId();
         return await super.insert(data, trx);
+    }
+
+    protected setModelType() {
+        this.modelType = models.Job;
     }
 }

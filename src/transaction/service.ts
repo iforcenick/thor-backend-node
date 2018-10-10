@@ -16,7 +16,6 @@ import {Config} from '../config';
 
 @AutoWired
 export class TransactionService extends db.ModelService<models.Transaction> {
-    protected modelType = models.Transaction;
     protected dwollaClient: dwolla.Client;
     protected mailer: MailerService;
     public transferService: TransferService;
@@ -179,5 +178,9 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         } catch (e) {
             throw e;
         }
+    }
+
+    protected setModelType() {
+        this.modelType = models.Transaction;
     }
 }

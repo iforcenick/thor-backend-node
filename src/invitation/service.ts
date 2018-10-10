@@ -8,8 +8,6 @@ import {transaction} from 'objection';
 
 @AutoWired
 export class InvitationService extends db.ModelService<models.Invitation> {
-    protected modelType = models.Invitation;
-
     constructor(@Inject config: Config, @Inject logger: Logger, @Inject tenantContext: context.TenantContext) {
         super(config, logger, tenantContext);
     }
@@ -25,5 +23,9 @@ export class InvitationService extends db.ModelService<models.Invitation> {
 
     async getByEmail(email: string): Promise<models.Invitation> {
         return await this.getOneBy('email', email);
+    }
+
+    protected setModelType() {
+        this.modelType = models.Invitation;
     }
 }

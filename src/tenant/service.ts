@@ -8,8 +8,6 @@ import * as context from '../context';
 
 @AutoWired
 export class TenantService extends db.ModelService<models.Tenant> {
-    protected modelType = models.Tenant;
-
     constructor(@Inject config: Config, @Inject logger: Logger, @Inject tenantContext: context.TenantContext) {
         super(config, logger, tenantContext);
     }
@@ -57,5 +55,9 @@ export class TenantService extends db.ModelService<models.Tenant> {
                 percent: inactive['percent'].toFixed(),
             },
         };
+    }
+
+    protected setModelType() {
+        this.modelType = models.Tenant;
     }
 }

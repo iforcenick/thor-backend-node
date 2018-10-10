@@ -43,7 +43,9 @@ export const enum Tables {
     transactions = 'transactions',
     jobs = 'jobs',
     transfers = 'transfers',
-    contractorInvitations = 'contractorInvitations'
+    contractorInvitations = 'contractorInvitations',
+    fundingSources = 'fundingSources',
+    profilesFundingSources = 'profilesFundingSources'
 }
 
 export class Pagination {
@@ -71,16 +73,19 @@ export class Paginated<T> {
 }
 
 // WARNING: @Inject only through constructor not field annotation to persist namespace context
-export class ModelService<T> {
+export abstract class ModelService<T extends any>  {
     protected config: Config;
     protected logger: Logger;
-    protected modelType;
+    protected modelType: any;
     protected tenant: any;
 
-    constructor(config: Config, logger: Logger, tenantContext: context.TenantContext) {
+    protected abstract setModelType();
+
+    protected constructor(config: Config, logger: Logger, tenantContext: context.TenantContext) {
         this.tenant = tenantContext.get();
         this.config = config;
         this.logger = logger;
+        this.setModelType();
     }
 
     getOptions(query) {

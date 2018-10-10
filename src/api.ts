@@ -51,7 +51,7 @@ export class BaseController {
         return BaseController._requireRole(req, role.models.Types.admin);
     }
 
-    static requireCustomer(req: any) {
+    static requireContractor(req: any) {
         return BaseController._requireRole(req, role.models.Types.contractor);
     }
 

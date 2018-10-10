@@ -9,17 +9,23 @@ import {ValidationError} from '../errors';
 import {Logger} from '../logger';
 import {Config} from '../config';
 import * as context from '../context';
+import {FundingSource} from '../foundingSource/models';
 
 @AutoWired
 export class ProfileService extends db.ModelService<models.Profile> {
-    protected modelType = models.Profile;
     protected roleService: RoleService;
     protected dwollaClient: dwolla.Client;
 
-    constructor(@Inject roleService: RoleService, @Inject dwollaClient: dwolla.Client, @Inject config: Config, @Inject logger: Logger, @Inject tenantContext: context.TenantContext) {
+    constructor(@Inject roleService: RoleService, @Inject dwollaClient: dwolla.Client,
+                @Inject config: Config, @Inject logger: Logger,
+                @Inject tenantContext: context.TenantContext) {
         super(config, logger, tenantContext);
         this.roleService = roleService;
         this.dwollaClient = dwollaClient;
+    }
+
+    protected setModelType() {
+        this.modelType = models.Profile;
     }
 
     static validateAge(profile) {
@@ -30,7 +36,7 @@ export class ProfileService extends db.ModelService<models.Profile> {
         throw new ValidationError('users is too young');
     }
 
-    async createProfile(profile: models.Profile, roles: Array<any>, trx?: transaction<any>, baseProfile?: boolean, tenantId?) {
+    async createProfile(profile: models.Profile, roles: Array<any>, trx: transaction<any>, baseProfile?: boolean, tenantId?) {
         if (!baseProfile) {
             profile.tenantId = tenantId || this.getTenantId();
         }
@@ -54,5 +60,9 @@ export class ProfileService extends db.ModelService<models.Profile> {
             this.logger.error(err);
             throw err;
         }
+    }
+
+    async addFundingSource(profile: models.Profile, fundingSource: FundingSource, trx: transaction<any>): Promise<any> {
+        return await profile.$relatedQuery(models.Relations.fundingSources, trx).relate(fundingSource.id);
     }
 }

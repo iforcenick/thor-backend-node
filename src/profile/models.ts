@@ -7,11 +7,13 @@ import * as tenant from '../tenant/models';
 import * as user from '../user/models';
 import * as role from '../user/role';
 import * as _ from 'lodash';
+import {FundingSource} from '../foundingSource/models';
 
 export const enum Relations {
     user = 'user',
     tenant = 'tenant',
     roles = 'roles',
+    fundingSources = 'fundingSources'
 }
 
 export class Profile extends db.Model {
@@ -78,6 +80,18 @@ export class Profile extends db.Model {
                     },
                     to: `${db.Tables.roles}.id`,
                 },
+            },
+            [Relations.fundingSources]: {
+                relation: db.Model.ManyToManyRelation,
+                modelClass: FundingSource,
+                join: {
+                    from: `${db.Tables.profiles}.id`,
+                    through: {
+                        from: `${db.Tables.profilesFundingSources}.profileId`,
+                        to: `${db.Tables.profilesFundingSources}.fundingSourceId`,
+                    },
+                    to: `${db.Tables.fundingSources}.id`,
+                }
             },
         };
     }
