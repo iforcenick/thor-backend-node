@@ -23,7 +23,7 @@ import {
 } from './models';
 import * as usersModels from '../user/models';
 import {FundingSource} from '../foundingSource/models';
-import {FoundingSourceService} from '../foundingSource/services';
+import {FundingSourceService} from '../foundingSource/services';
 import {transaction} from 'objection';
 
 @Security('api_key')
@@ -37,7 +37,8 @@ export class ContractorController extends BaseController {
     private transactionService: TransactionService;
     private userContext: context.UserContext;
     private dwollaNotifier: DwollaNotifier;
-    private foundingSourceService: FoundingSourceService;
+    private fundingSourceService: FundingSourceService;
+
     constructor(@Inject mailer: MailerService,
                 @Inject dwollaClient: dwolla.Client,
                 @Inject service: UserService,
@@ -46,7 +47,7 @@ export class ContractorController extends BaseController {
                 @Inject userContext: context.UserContext,
                 @Inject tenantContext: context.TenantContext,
                 @Inject logger: Logger, @Inject config: Config,
-                @Inject dwollaNotifier: DwollaNotifier, @Inject foundingSourceService: FoundingSourceService) {
+                @Inject dwollaNotifier: DwollaNotifier, @Inject fundingSourceService: FundingSourceService) {
         super(logger, config);
         this.mailer = mailer;
         this.dwollaClient = dwollaClient;
@@ -55,7 +56,7 @@ export class ContractorController extends BaseController {
         this.transactionService = transactionService;
         this.userContext = userContext;
         this.dwollaNotifier = dwollaNotifier;
-        this.foundingSourceService = foundingSourceService;
+        this.fundingSourceService = fundingSourceService;
     }
 
     @POST
@@ -63,7 +64,7 @@ export class ContractorController extends BaseController {
     async createUser(data: ContractorRequest): Promise<ContractorResponse> {
         const parsedData = await this.validate(data, contractorRequestSchema);
         ProfileService.validateAge(parsedData['profile']);
-        let user: usersModels.User = usersModels.User.factory({}) ;
+        let user: usersModels.User = usersModels.User.factory({});
 
         const profile = Profile.factory(parsedData['profile']);
         try {
@@ -145,13 +146,35 @@ export class ContractorController extends BaseController {
             }
 
             await transaction(this.profileService.transaction(), async trx => {
-                await this.foundingSourceService.insert(foundSource, trx);
+                await this.fundingSourceService.insert(foundSource, trx);
                 await this.profileService.addFundingSource(profile, foundSource, trx);
             });
 
         } catch (err) {
             this.logger.error(err);
             throw new Errors.InternalServerError(err.message);
+        }
+    }
+
+    @POST
+    @Path('fundingSources/:id/default')
+    @Preprocessor(BaseController.requireContractor)
+    async setDefaultFundingSource(@PathParam('id') id: string) {
+        try {
+            const fundingSource = await this.fundingSourceService.get(id);
+            if (!fundingSource) {
+                throw new Errors.NotFoundError(`Could not find funding source for id ${id}`);
+            }
+
+            const profile = await this.profileService.get(fundingSource.profileId);
+            if (profile.userId != this.userContext.get().id) {
+                throw new Errors.InternalServerError('Funding source can only be edited by its owner.');
+            }
+
+            await this.fundingSourceService.setDefault(fundingSource);
+        } catch (e) {
+            this.logger.error(e);
+            throw e;
         }
     }
 
