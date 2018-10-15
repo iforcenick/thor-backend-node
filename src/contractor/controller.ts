@@ -81,7 +81,10 @@ export class ContractorController extends BaseController {
             user = await this.service.createWithProfile(user, profile, data.tenantId);
             user = await this.service.get(user.id);
             await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
-            return this.map(ContractorResponse, user);
+            const contractorResponse = this.map(ContractorResponse, user);
+            contractorResponse.token = await this.service.generateJwt(user);
+
+            return contractorResponse;
         } catch (err) {
             this.logger.error(err);
             if (err.body) {

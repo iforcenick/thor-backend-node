@@ -18,12 +18,9 @@ export class ContractorResponse extends ContractorBaseModel {
     id: string = mapper.FIELD_STR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
-    lastTransaction: Date = mapper.FIELD_DATE;
     lastActivity: Date = mapper.FIELD_DATE;
-    rank: number = mapper.FIELD_NUM;
-    prev: number = mapper.FIELD_NUM;
     tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
-    transactions: Array<TransactionResponse> = mapper.FIELD_ARR;
+    token: string = null;
 }
 
 export const contractorRequestSchema = Joi.object().keys({
