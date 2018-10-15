@@ -94,4 +94,21 @@ export class InvitationCheckController extends BaseController {
 
         return this.map(models.InvitationResponse, invitation);
     }
+
+    @POST
+    @Path(':id')
+    async useInvitationToken(@PathParam('id') id: string) {
+        const invitation = await this.service.getForAllTenants(id);
+        if (!invitation) {
+            throw new Errors.NotFoundError();
+        }
+
+        if (invitation.status != models.Status.pending) {
+            throw new Errors.NotAcceptableError('Invitation already used');
+        }
+
+        invitation.status = models.Status.used;
+
+        await this.service.update(invitation);
+    }
 }

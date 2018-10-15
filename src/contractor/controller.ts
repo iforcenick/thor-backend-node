@@ -25,6 +25,9 @@ import * as usersModels from '../user/models';
 import {FundingSource} from '../foundingSource/models';
 import {FundingSourceService} from '../foundingSource/services';
 import {transaction} from 'objection';
+import {InvitationService} from '../invitation/service';
+import {Status} from '../invitation/models';
+import {BadRequestError} from 'typescript-rest/dist/server-errors';
 
 @Security('api_key')
 @Path('/contractors')
@@ -38,6 +41,7 @@ export class ContractorController extends BaseController {
     private userContext: context.UserContext;
     private dwollaNotifier: DwollaNotifier;
     private fundingSourceService: FundingSourceService;
+    private invitationService: InvitationService;
 
     constructor(@Inject mailer: MailerService,
                 @Inject dwollaClient: dwolla.Client,
@@ -47,7 +51,9 @@ export class ContractorController extends BaseController {
                 @Inject userContext: context.UserContext,
                 @Inject tenantContext: context.TenantContext,
                 @Inject logger: Logger, @Inject config: Config,
-                @Inject dwollaNotifier: DwollaNotifier, @Inject fundingSourceService: FundingSourceService) {
+                @Inject dwollaNotifier: DwollaNotifier,
+                @Inject fundingSourceService: FundingSourceService,
+                @Inject invitationService: InvitationService) {
         super(logger, config);
         this.mailer = mailer;
         this.dwollaClient = dwollaClient;
@@ -57,6 +63,7 @@ export class ContractorController extends BaseController {
         this.userContext = userContext;
         this.dwollaNotifier = dwollaNotifier;
         this.fundingSourceService = fundingSourceService;
+        this.invitationService = invitationService;
     }
 
     @POST
@@ -81,6 +88,16 @@ export class ContractorController extends BaseController {
             user = await this.service.createWithProfile(user, profile, data.tenantId);
             user = await this.service.get(user.id);
             await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
+
+            const invitation = await this.invitationService.getForAllTenants(data.invitationToken);
+
+            if (invitation.email != data.profile.email) {
+                throw new BadRequestError('Contractor and invitation emails do not match.');
+            }
+
+            invitation.status = Status.used;
+            await this.invitationService.update(invitation);
+
             const contractorResponse = this.map(ContractorResponse, user);
             contractorResponse.token = await this.service.generateJwt(user);
 

@@ -11,6 +11,7 @@ export const enum Relations {
 
 export const enum Status {
     pending = 'pending',
+    used = 'used',
     registered = 'registered',
 }
 

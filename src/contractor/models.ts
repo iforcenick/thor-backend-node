@@ -11,6 +11,7 @@ export class ContractorRequest extends ContractorBaseModel {
     password: string = mapper.FIELD_STR;
     profile: profile.ProfileRequest = new profile.ProfileRequest();
     tenantId: string = mapper.FIELD_STR;
+    invitationToken: string = mapper.FIELD_STR;
 }
 
 
