@@ -1,15 +1,75 @@
 import {IItem} from './base';
-import * as profile from '../profile/models';
 
 export interface ICustomer extends IItem {
     firstName: string;
     lastName: string;
     email: string;
-    businessName: string;
     ipAddress: string;
     type: string;
     status: string;
     created: string;
+    address1: string;
+    address2: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    dateOfBirth: string;
+    ssn: string;
+    phone: string;
+    businessName: string;
+    doingBusinessAs: string;
+    businessType: string;
+    businessClassification: string;
+    ein: string;
+    website: string;
+    controller: Owner;
+}
+
+export class Owner implements IItem {
+    id: string;
+    localization: string;
+    firstName: string;
+    lastName: string;
+    title: string;
+    dateOfBirth: string;
+    ssn: string;
+    address: OwnerAddress;
+
+    constructor(data) {
+        this.id = data.id;
+        this.firstName = data.firstName;
+        this.lastName = data.lastName;
+        this.title = data.title;
+        this.dateOfBirth = data.dateOfBirth;
+        this.ssn = data.ssn;
+
+        if (data.address) {
+            this.address = new OwnerAddress(data.address);
+        }
+    }
+
+    public setLocalization(url): Owner {
+        this.localization = url;
+        return this;
+    }
+}
+
+export class OwnerAddress {
+    address1: string;
+    address2: string;
+    city: string;
+    stateProvinceRegion: string;
+    postalCode: string;
+    country: string;
+
+    constructor(data) {
+        this.address1 = data.address1;
+        this.address2 = data.address2;
+        this.city = data.city;
+        this.stateProvinceRegion = data.stateProvinceRegion;
+        this.postalCode = data.postalCode;
+        this.country = data.country;
+    }
 }
 
 export class Customer implements ICustomer {
@@ -18,7 +78,6 @@ export class Customer implements ICustomer {
     public firstName: string;
     public lastName: string;
     public email: string;
-    public businessName: string;
     public ipAddress: string;
     public type: string;
     public status: string;
@@ -31,6 +90,13 @@ export class Customer implements ICustomer {
     public dateOfBirth: string;
     public ssn: string;
     public phone: string;
+    public businessName: string;
+    public doingBusinessAs: string;
+    public businessType: string;
+    public businessClassification: string;
+    public ein: string;
+    public website: string;
+    controller: Owner;
 
     constructor(data) {
         this.firstName = data.firstName;
@@ -48,6 +114,16 @@ export class Customer implements ICustomer {
         this.address2 = data.address2;
         this.type = data.type;
         this.status = data.status;
+        this.businessName = data.businessName;
+        this.doingBusinessAs = data.doingBusinessAs;
+        this.businessType = data.businessType;
+        this.businessClassification = data.businessClassification;
+        this.ein = data.ein;
+        this.website = data.website;
+
+        if (data.controller) {
+            this.controller = new Owner(data.controller);
+        }
     }
 
     public setLocalization(url): ICustomer {
@@ -57,7 +133,6 @@ export class Customer implements ICustomer {
 }
 
 export const CUSTOMER_STATUS = {
-    Personal: 'personal',
     Unverified: 'unverified',
     Verified: 'verified',
     Retry: 'retry',
@@ -68,15 +143,20 @@ export const CUSTOMER_STATUS = {
 
 export const TYPE = {
     Personal: 'personal',
+    Business: 'business'
+};
+
+export const BUSINESS_TYPE = {
+    Sole: 'soleProprietorship',
+    Corporation: 'corporation',
+    Llc: 'llc',
+    Partnership: 'partnership',
 };
 
 export const factory = (data): ICustomer => {
     return new Customer(data);
 };
 
-export const factoryFromProfile = (profile: profile.Profile): ICustomer => {
-    const data = profile.toJSON();
-    data['type'] = TYPE.Personal;
-
-    return new Customer(data);
+export const ownerFactory = (data): Owner => {
+    return new Owner(data);
 };

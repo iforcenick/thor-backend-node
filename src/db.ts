@@ -32,6 +32,10 @@ export class Model extends OModel {
     static factory(json: any): any {
         return this.fromJson(this.filterFields(json));
     }
+
+    merge(json): any {
+        return _.assign(this, _.pick(json, Object.keys(this)));
+    }
 }
 
 export const enum Tables {
@@ -73,7 +77,7 @@ export class Paginated<T> {
 }
 
 // WARNING: @Inject only through constructor not field annotation to persist namespace context
-export abstract class ModelService<T extends any>  {
+export abstract class ModelService<T extends any> {
     protected config: Config;
     protected logger: Logger;
     protected modelType: any;

@@ -7,8 +7,8 @@ import {Logger} from '../logger';
 import {Config} from '../config';
 import {AutoWired, Inject} from 'typescript-ioc';
 import _ from 'lodash';
-import * as profile from '../profile/models';
 import {CUSTOMER_STATUS} from './customer';
+
 const FormData = require('form-data');
 
 @AutoWired
@@ -49,7 +49,7 @@ export class Client {
         return response.headers.get('location');
     }
 
-    static pickFieldsToUpdate(profile) {
+    static pickFieldsToUpdate(profile: any) {
         switch (profile.dwollaStatus) {
             case CUSTOMER_STATUS.Verified:
                 return _.pick(profile, ['email', 'address1', 'address2', 'city', 'state', 'postalCode', 'phone']);
@@ -59,7 +59,7 @@ export class Client {
         }
     }
 
-    public async updateCustomer(_customer: profile.Profile) {
+    public async updateCustomer(_customer: any) { // TODO: refactor
         const payload = Client.pickFieldsToUpdate(_customer);
         return await this.client.post(_customer.dwollaUri, payload);
     }
@@ -67,6 +67,26 @@ export class Client {
     public async getCustomer(localization: string): Promise<customer.ICustomer> {
         const response = await this.client.get(localization);
         return customer.factory(response.body).setLocalization(localization);
+    }
+
+    public async getBusinessVerifiedBeneficialOwner(localization: string): Promise<customer.Owner> {
+        const response = await this.client.get(localization);
+        return customer.ownerFactory(response.body).setLocalization(localization);
+    }
+
+    public async createBusinessVerifiedBeneficialOwner(localization: string, owner: customer.Owner) {
+        const response = await this.client.post(`${localization}/beneficial-owners`, owner);
+        return response.headers.get('location');
+    }
+
+    public async listBusinessVerifiedBeneficialOwners(localization: string) {
+        const response = await this.client.get(`${localization}/beneficial-owners`);
+        const owners = [];
+        for (const owner of response.body._embedded['beneficial-owners']) {
+            owners.push(customer.ownerFactory(owner));
+        }
+
+        return owners;
     }
 
     public async createFundingSource(localization, routing, account, accountType, name: string): Promise<string> {
@@ -222,5 +242,9 @@ export class Client {
         }
 
         return undefined;
+    }
+
+    public async listBusinessClassification(): Promise<any> {
+        return (await this.client.get(`business-classifications`)).body._embedded['business-classifications'];
     }
 }

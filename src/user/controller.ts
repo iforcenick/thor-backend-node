@@ -124,6 +124,52 @@ export class UserController extends BaseController {
     }
 
     @POST
+    @Path('business')
+    @Preprocessor(BaseController.requireAdmin)
+    async createBusinessVerified(data: models.BusinessVerifiedRequest): Promise<models.UserResponse> {
+        let user;
+        const parsedData = await this.validate(data, models.businessVerifiedSchema);
+        ProfileService.validateAge(parsedData['profile']);
+
+        try {
+            user = await this.service.get(this.userContext.get().id);
+            await this.dwollaClient.authorize();
+            const customerData = dwolla.customer.factory(parsedData['profile']);
+            customerData.type = dwolla.customer.TYPE.Business;
+            const customer = new dwolla.customer.Customer(customerData);
+            const profile = user.tenantProfile;
+
+            if (customer.businessType == dwolla.customer.BUSINESS_TYPE.Sole) {
+                customer.controller = undefined;
+            }
+
+            profile.dwollaUri = await this.dwollaClient.createCustomer(customer);
+            const dwollaCustomer = await this.dwollaClient.getCustomer(profile.dwollaUri);
+            profile.dwollaStatus = dwollaCustomer.status;
+            profile.dwollaType = dwollaCustomer.type;
+            profile.merge(parsedData['profile']);
+
+            await this.profileService.update(profile);
+            await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
+        } catch (err) {
+            this.logger.error(err);
+            if (err.body) {
+                const {body} = err;
+                if (body.code) {
+                    const {code} = body;
+                    console.log(body._embedded.errors);
+                    if (code === 'ValidationError') {
+                        throw new ValidationError(`Invalid value for Fields: profile,${body._embedded.errors[0].path.replace('/', '')}`);
+                    }
+                }
+            }
+            throw new Errors.InternalServerError(err.message);
+        }
+
+        return this.map(models.UserResponse, user);
+    }
+
+    @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async createUser(data: models.UserRequest): Promise<models.UserResponse> {
@@ -205,7 +251,6 @@ export class UserController extends BaseController {
             throw new Errors.InternalServerError(err.message);
         }
     }
-
 
     @DELETE
     @Path(':id/fundingSource')
