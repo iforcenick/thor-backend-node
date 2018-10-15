@@ -43,4 +43,14 @@ export const fundingSourceRequestSchema = Joi.object().keys({
     accountNumber: Joi.string().required(),
 });
 
+export interface PasswordRequest {
+    oldPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+}
 
+export const passwordRequestSchema = Joi.object().keys({
+    oldPassword: Joi.string().required(),
+    newPassword: Joi.string().required(),
+    confirmPassword: Joi.string().required(),
+});

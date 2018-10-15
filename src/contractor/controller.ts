@@ -1,5 +1,5 @@
 import {Security, Tags} from 'typescript-rest-swagger';
-import {Path, PathParam, POST, Preprocessor} from 'typescript-rest';
+import {PATCH, Path, PathParam, POST, Preprocessor} from 'typescript-rest';
 import {BaseController} from '../api';
 import {MailerService} from '../mailer';
 import * as dwolla from '../dwolla';
@@ -19,7 +19,7 @@ import {
     contractorRequestSchema,
     ContractorResponse,
     FundingSourceRequest,
-    fundingSourceRequestSchema
+    fundingSourceRequestSchema, PasswordRequest, passwordRequestSchema
 } from './models';
 import * as usersModels from '../user/models';
 import {FundingSource} from '../foundingSource/models';
@@ -153,5 +153,29 @@ export class ContractorController extends BaseController {
             this.logger.error(err);
             throw new Errors.InternalServerError(err.message);
         }
+    }
+
+    @Security('api_key')
+    @PATCH
+    @Path('/password')
+    @Tags('auth')
+    async changePassword(data: PasswordRequest) {
+        const parsedData = await this.validate(data, passwordRequestSchema);
+        const oldPassword = parsedData['oldPassword'];
+        const newPassword = parsedData['newPassword'];
+        const confirmPassword = parsedData['confirmPassword'];
+        const user = await this.service.get(this.userContext.get().id);
+
+        if (newPassword !== confirmPassword) {
+            throw new Errors.ConflictError('Passwords do not match');
+        }
+
+        try {
+            await this.service.changePassword(user, newPassword, oldPassword);
+        } catch (e) {
+            this.logger.debug(e.message);
+            throw new Errors.ConflictError(e.message);
+        }
+        return;
     }
 }
