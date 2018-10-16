@@ -20,6 +20,7 @@ export class ValidationError extends Errors.ConflictError {
 
     private static buildValidationErrorString(err: Joi.ValidationError) {
         const fields = {};
+        console.log('error', err.details);
 
         err.details.forEach(e => {
             let pointer = fields;

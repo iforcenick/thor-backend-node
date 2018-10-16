@@ -8,8 +8,33 @@ import {Config} from '../config';
 import {AutoWired, Inject} from 'typescript-ioc';
 import _ from 'lodash';
 import {CUSTOMER_STATUS} from './customer';
+import {ValidationError} from '../errors';
 
 const FormData = require('form-data');
+
+export class DwollaRequestError extends Error {
+    toValidationError(prefix?: string) {
+        const errors: any = JSON.parse(this.message)._embedded.errors;
+        const parsedErrors = [];
+
+        for (const err of errors) {
+            const field = err.path.slice(1);
+            const path = prefix ? [prefix] : [];
+            path.push(field);
+
+            parsedErrors.push({
+                message: `"${field}" ${err.message.slice(0, -1)}`,
+                path: path,
+                type: `external: ${err.code}`,
+                context: {value: '', key: field, label: field}
+            });
+        }
+
+        return new ValidationError({
+            details: parsedErrors,
+        });
+    }
+}
 
 @AutoWired
 export class Client {
@@ -40,12 +65,36 @@ export class Client {
         }
     }
 
+    private async get(url: string) {
+        try {
+            return await this.client.get(url);
+        } catch (e) {
+            throw new DwollaRequestError(e.message);
+        }
+    }
+
+    private async delete(url: string) {
+        try {
+            return await this.client.delete(url);
+        } catch (e) {
+            throw new DwollaRequestError(e.message);
+        }
+    }
+
+    private async post(url: string, payload: any) {
+        try {
+            return await this.client.post(url, payload);
+        } catch (e) {
+            throw new DwollaRequestError(e.message);
+        }
+    }
+
     public async getRoot(): Promise<any> {
         return await this.client.get('/');
     }
 
     public async createCustomer(_customer: customer.ICustomer): Promise<string> {
-        const response = await this.client.post('customers', _customer);
+        const response = await this.post('customers', _customer);
         return response.headers.get('location');
     }
 
@@ -61,26 +110,26 @@ export class Client {
 
     public async updateCustomer(_customer: any) { // TODO: refactor
         const payload = Client.pickFieldsToUpdate(_customer);
-        return await this.client.post(_customer.dwollaUri, payload);
+        return await this.post(_customer.dwollaUri, payload);
     }
 
     public async getCustomer(localization: string): Promise<customer.ICustomer> {
-        const response = await this.client.get(localization);
+        const response = await this.get(localization);
         return customer.factory(response.body).setLocalization(localization);
     }
 
     public async getBusinessVerifiedBeneficialOwner(localization: string): Promise<customer.Owner> {
-        const response = await this.client.get(localization);
+        const response = await this.get(localization);
         return customer.ownerFactory(response.body).setLocalization(localization);
     }
 
     public async createBusinessVerifiedBeneficialOwner(localization: string, owner: customer.Owner) {
-        const response = await this.client.post(`${localization}/beneficial-owners`, owner);
+        const response = await this.post(`${localization}/beneficial-owners`, owner);
         return response.headers.get('location');
     }
 
     public async listBusinessVerifiedBeneficialOwners(localization: string) {
-        const response = await this.client.get(`${localization}/beneficial-owners`);
+        const response = await this.get(`${localization}/beneficial-owners`);
         const owners = [];
         for (const owner of response.body._embedded['beneficial-owners']) {
             owners.push(customer.ownerFactory(owner));
@@ -90,7 +139,7 @@ export class Client {
     }
 
     public async createFundingSource(localization, routing, account, accountType, name: string): Promise<string> {
-        const response = await this.client.post(`${localization}/funding-sources`, {
+        const response = await this.post(`${localization}/funding-sources`, {
             routingNumber: routing,
             accountNumber: account,
             bankAccountType: accountType,
@@ -100,14 +149,14 @@ export class Client {
     }
 
     public async deleteFundingSource(localization: string): Promise<string> {
-        const response = await this.client.post(`${localization}`, {
+        const response = await this.post(`${localization}`, {
             removed: true,
         });
         return response;
     }
 
     public async createPlaidFundingSource(localization, plaidToken, accountName: string): Promise<string> {
-        const response = await this.client.post(`${localization}/funding-sources`, {
+        const response = await this.post(`${localization}/funding-sources`, {
             plaidToken,
             name: accountName,
         });
@@ -115,7 +164,7 @@ export class Client {
     }
 
     public async listFundingSource(localization: string): Promise<any> {
-        const response = await this.client.get(`${localization}/funding-sources`);
+        const response = await this.get(`${localization}/funding-sources`);
         const sources = [];
 
         for (const source of response.body._embedded['funding-sources']) {
@@ -126,38 +175,38 @@ export class Client {
     }
 
     public async getFundingSource(localization: string): Promise<funding.ISource> {
-        const response = await this.client.get(localization);
+        const response = await this.get(localization);
         return funding.factory(response.body).setLocalization(localization);
     }
 
     public async createTransfer(trans: transaction.ITransfer): Promise<string> {
-        const response = await this.client.post('transfers', trans);
+        const response = await this.post('transfers', trans);
 
         return response.headers.get('location');
     }
 
     public async cancelTransfer(localization: string): Promise<boolean> {
-        const response = await this.client.post(localization, {status: 'cancelled'});
+        const response = await this.post(localization, {status: 'cancelled'});
 
         return response.body.status == 'cancelled';
     }
 
     public async getTransfer(localization: string): Promise<transaction.ITransfer> {
-        const response = await this.client.get(localization);
+        const response = await this.get(localization);
         return transaction.factory(response.body).setLocalization(localization);
     }
 
     public async listEvents(limit, offset: number): Promise<any> {
-        return await this.client.get(`events?limit=${limit}&offset=${offset}`);
+        return await this.get(`events?limit=${limit}&offset=${offset}`);
     }
 
     public async getDocument(localization: string): Promise<documents.IDocument> {
-        const response = await this.client.get(localization);
+        const response = await this.get(localization);
         return documents.factory(response.body).setLocalization(localization);
     }
 
     public async listDocuments(localization: string): Promise<Array<documents.IDocument>> {
-        const response = await this.client.get(`${localization}/documents`);
+        const response = await this.get(`${localization}/documents`);
         const _documents = [];
 
         for (const source of response.body._embedded['documents']) {
@@ -172,12 +221,12 @@ export class Client {
         form.append('file', data, {filename: name});
         form.append('documentType', type);
 
-        const response = await this.client.post(`${localization}/documents`, form);
+        const response = await this.post(`${localization}/documents`, form);
         return response.headers.get('location');
     }
 
     public async registerWebhookEndpoint(endpointUrl: string): Promise<string> {
-        const response = await this.client.post('webhook-subscriptions', {
+        const response = await this.post('webhook-subscriptions', {
             url: endpointUrl,
             secret: this.config.get('dwolla.webhookSecret'),
         });
@@ -185,15 +234,15 @@ export class Client {
     }
 
     public async deleteWebhookEndpoint(webhookUrl: string): Promise<string> {
-        return await this.client.delete(webhookUrl);
+        return await this.delete(webhookUrl);
     }
 
     public async listWebhookEndpoints() {
-        return await this.client.get('webhook-subscriptions');
+        return await this.get('webhook-subscriptions');
     }
 
     public async unpauseWebhookEndpoint(id: string) {
-        return await this.client.post(`webhook-subscriptions/${id}`, {paused: false});
+        return await this.post(`webhook-subscriptions/${id}`, {paused: false});
     }
 
     public async webhooksCleanup() {
@@ -245,6 +294,6 @@ export class Client {
     }
 
     public async listBusinessClassification(): Promise<any> {
-        return (await this.client.get(`business-classifications`)).body._embedded['business-classifications'];
+        return (await this.get(`business-classifications`)).body._embedded['business-classifications'];
     }
 }

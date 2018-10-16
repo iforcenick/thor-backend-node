@@ -152,16 +152,8 @@ export class UserController extends BaseController {
             await this.profileService.update(profile);
             await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
         } catch (err) {
-            this.logger.error(err);
-            if (err.body) {
-                const {body} = err;
-                if (body.code) {
-                    const {code} = body;
-                    console.log(body._embedded.errors);
-                    if (code === 'ValidationError') {
-                        throw new ValidationError(`Invalid value for Fields: profile,${body._embedded.errors[0].path.replace('/', '')}`);
-                    }
-                }
+            if (err instanceof dwolla.DwollaRequestError) {
+                throw err.toValidationError('profile');
             }
             throw new Errors.InternalServerError(err.message);
         }
@@ -192,15 +184,8 @@ export class UserController extends BaseController {
             user = await this.service.get(user.id);
             await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
         } catch (err) {
-            this.logger.error(err);
-            if (err.body) {
-                const {body} = err;
-                if (body.code) {
-                    const {code} = body;
-                    if (code === 'ValidationError') {
-                        throw new ValidationError(`Invalid value for Fields: profile,${body._embedded.errors[0].path.replace('/', '')}`);
-                    }
-                }
+            if (err instanceof dwolla.DwollaRequestError) {
+                throw err.toValidationError('profile');
             }
             throw new Errors.InternalServerError(err.message);
         }

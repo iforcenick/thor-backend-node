@@ -60,7 +60,7 @@ const createBusinessVerifiedBeneficialOwner = async (id) => {
         owner = await client.getBusinessVerifiedBeneficialOwner(location);
         console.log(owner);
     } catch (e) {
-        console.log(e.body._embedded);
+        console.log(e);
     }
 };
 

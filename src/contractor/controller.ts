@@ -103,15 +103,8 @@ export class ContractorController extends BaseController {
 
             return contractorResponse;
         } catch (err) {
-            this.logger.error(err);
-            if (err.body) {
-                const {body} = err;
-                if (body.code) {
-                    const {code} = body;
-                    if (code === 'ValidationError') {
-                        throw new ValidationError(`Invalid value for Fields: profile,${body._embedded.errors[0].path.replace('/', '')}`);
-                    }
-                }
+            if (err instanceof dwolla.DwollaRequestError) {
+                throw err.toValidationError('profile');
             }
             throw new Errors.InternalServerError(err.message);
         }
