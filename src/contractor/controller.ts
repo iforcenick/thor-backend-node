@@ -83,9 +83,9 @@ export class ContractorController extends BaseController {
             const dwollaCustomer = await this.dwollaClient.getCustomer(profile.dwollaUri);
             profile.dwollaStatus = dwollaCustomer.status;
 
-            this.service.setTenantId(data.tenantId);
+            this.service.setTenantId(data.tenant);
             user.password = await this.service.hashPassword(data.password);
-            user = await this.service.createWithProfile(user, profile, data.tenantId);
+            user = await this.service.createWithProfile(user, profile, data.tenant);
             user = await this.service.get(user.id);
             await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
 
