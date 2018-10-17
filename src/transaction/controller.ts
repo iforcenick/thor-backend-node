@@ -168,7 +168,7 @@ export class TransactionController extends BaseController {
 
             await this.service.createExternalTransfer(transaction);
         } catch (e) {
-            if (e instanceof models.InvalidTransferData || e instanceof Errors.NotAcceptableError) {
+            if (e instanceof models.InvalidTransferDataError || e instanceof Errors.NotAcceptableError) {
                 throw new Errors.NotAcceptableError(e.message);
             }
 

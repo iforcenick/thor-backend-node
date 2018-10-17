@@ -159,5 +159,5 @@ export const transactionRequestSchema = Joi.object().keys({
     location: Joi.string(),
 });
 
-export class InvalidTransferData extends Error {
+export class InvalidTransferDataError extends Error {
 }

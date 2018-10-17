@@ -16,6 +16,7 @@ import * as middleware from './middleware';
 import {DwollaController} from './dwolla/controller';
 import {InvitationController, InvitationCheckController} from './invitation/controller';
 import {ContractorController} from './contractor/controller';
+import {ContractorFundingSourceController, UserFundingSourceController} from './foundingSource/controller';
 
 const knex = require('knex');
 const path = require('path');
@@ -134,7 +135,9 @@ export class ApiServer {
             MonitoringController,
             InvitationController,
             InvitationCheckController,
-            ContractorController
+            ContractorController,
+            ContractorFundingSourceController,
+            UserFundingSourceController
         );
     }
 

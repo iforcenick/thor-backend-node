@@ -71,7 +71,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         const user = await this.userService.get(_transaction.userId);
 
         if (!user.tenantProfile.dwollaSourceUri) {
-            throw new models.InvalidTransferData('Bank account not configured for recipient');
+            throw new models.InvalidTransferDataError('Bank account not configured for recipient');
         }
         let transfer = new transfers.Transfer();
         transfer.adminId = admin.id;

@@ -18,8 +18,7 @@ import {
     ContractorRequest,
     contractorRequestSchema,
     ContractorResponse,
-    FundingSourceRequest,
-    fundingSourceRequestSchema, PasswordRequest, passwordRequestSchema
+    PasswordRequest, passwordRequestSchema
 } from './models';
 import * as usersModels from '../user/models';
 import {FundingSource} from '../foundingSource/models';
@@ -107,87 +106,6 @@ export class ContractorController extends BaseController {
                 throw err.toValidationError('profile');
             }
             throw new Errors.InternalServerError(err.message);
-        }
-    }
-
-    @POST
-    @Path('fundingSources')
-    @Preprocessor(BaseController.requireContractor)
-    async createUserFundingSource(data: FundingSourceRequest) {
-        const parsedData = await this.validate(data, fundingSourceRequestSchema);
-        const user = await this.service.get(this.userContext.get().id);
-        if (!user) {
-            throw new Errors.NotFoundError();
-        }
-
-        const profile: Profile = user.tenantProfile;
-        try {
-
-            await this.dwollaClient.authorize();
-            const sourceUri = await this.dwollaClient.createFundingSource(
-                profile.dwollaUri,
-                parsedData['routingNumber'],
-                parsedData['accountNumber'],
-                'checking',
-                'default',
-            );
-
-            profile.dwollaRouting = parsedData['routingNumber'];
-            profile.dwollaAccount = parsedData['accountNumber'];
-
-            const foundSource: FundingSource = FundingSource.factory({
-                routing: parsedData['routingNumber'],
-                account: parsedData['accountNumber'],
-                type: 'checking',
-                name: 'default',
-                profileId: profile.id,
-                tenantId: profile.tenantId,
-                isDefault: false,
-                dwollaUri: sourceUri
-            });
-
-            const sourceInfo = {
-                sourceUri: profile.dwollaSourceUri,
-                routing: profile.dwollaRouting,
-                account: profile.dwollaAccount,
-            };
-
-            try {
-                await this.mailer.sendFundingSourceRemoved(user, sourceInfo);
-            } catch (e) {
-                this.logger.error(e);
-            }
-
-            await transaction(this.profileService.transaction(), async trx => {
-                await this.fundingSourceService.insert(foundSource, trx);
-                await this.profileService.addFundingSource(profile, foundSource, trx);
-            });
-
-        } catch (err) {
-            this.logger.error(err);
-            throw new Errors.InternalServerError(err.message);
-        }
-    }
-
-    @POST
-    @Path('fundingSources/:id/default')
-    @Preprocessor(BaseController.requireContractor)
-    async setDefaultFundingSource(@PathParam('id') id: string) {
-        try {
-            const fundingSource = await this.fundingSourceService.get(id);
-            if (!fundingSource) {
-                throw new Errors.NotFoundError(`Could not find funding source for id ${id}`);
-            }
-
-            const profile = await this.profileService.get(fundingSource.profileId);
-            if (profile.userId != this.userContext.get().id) {
-                throw new Errors.InternalServerError('Funding source can only be edited by its owner.');
-            }
-
-            await this.fundingSourceService.setDefault(fundingSource);
-        } catch (e) {
-            this.logger.error(e);
-            throw e;
         }
     }
 

@@ -4,6 +4,7 @@ export const FIELD_STR = '';
 export const FIELD_NUM = 0;
 export const FIELD_DATE = new Date();
 export const FIELD_ARR = [];
+export const FIELD_BOOLEAN = false;
 
 const relations = {};
 

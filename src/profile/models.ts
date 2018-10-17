@@ -162,8 +162,6 @@ export class ProfileResponse extends ProfileBaseInfo {
     tenantId: string = mapper.FIELD_STR;
     externalStatus: string = mapper.FIELD_STR;
     externalType: string = mapper.FIELD_STR;
-    accountRouting: string = mapper.FIELD_STR;
-    accountNumber: string = mapper.FIELD_STR;
     roles: Array<role.models.RoleResponse> = mapper.FIELD_ARR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;

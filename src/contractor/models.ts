@@ -30,17 +30,7 @@ export const contractorRequestSchema = Joi.object().keys({
     invitationToken: Joi.string().required(),
 });
 
-export class FundingSourceBaseInfo extends Mapper {
-    routingNumber: string = mapper.FIELD_STR;
-    accountNumber: string = mapper.FIELD_STR;
-}
-export class FundingSourceRequest extends FundingSourceBaseInfo {
-}
 
-export const fundingSourceRequestSchema = Joi.object().keys({
-    routingNumber: Joi.string().required(),
-    accountNumber: Joi.string().required(),
-});
 
 export interface PasswordRequest {
     oldPassword: string;

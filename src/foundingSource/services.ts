@@ -12,11 +12,13 @@ import {ProfileService} from '../profile/service';
 @AutoWired
 export class FundingSourceService extends db.ModelService<FundingSource> {
     private profileService: ProfileService;
+    private userSerivce: UserService;
     constructor(@Inject config: Config, @Inject logger: Logger,
-                @Inject tenantContext: context.TenantContext, @Inject profileService: ProfileService) {
+                @Inject tenantContext: context.TenantContext, @Inject profileService: ProfileService, @Inject userSerivce: UserService) {
         super(config, logger, tenantContext);
 
         this.profileService = profileService;
+        this.userSerivce = userSerivce;
     }
 
     async insert(entity: FundingSource, trx?: transaction<any>): Promise<FundingSource> {
@@ -42,5 +44,15 @@ export class FundingSourceService extends db.ModelService<FundingSource> {
             fundingSource.isDefault = true;
             await this.update(fundingSource, trx);
         });
+    }
+
+    async getDefault(userId: string) {
+        const user = await this.userSerivce.get(userId);
+        const query = this.useTenantContext(this.getOptions(this.modelType.query()));
+        query.where(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id)
+            .andWhere('isDefault', true).first();
+
+        const defaultFundingSource = await query;
+        return defaultFundingSource;
     }
 }
