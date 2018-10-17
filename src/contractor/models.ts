@@ -1,6 +1,5 @@
 import * as mapper from '../mapper';
 import * as profile from '../profile/models';
-import {TransactionResponse} from '../transaction/models';
 import {Mapper} from '../mapper';
 import Joi = require('joi');
 
@@ -14,7 +13,6 @@ export class ContractorRequest extends ContractorBaseModel {
     invitationToken: string = mapper.FIELD_STR;
 }
 
-
 export class ContractorResponse extends ContractorBaseModel {
     id: string = mapper.FIELD_STR;
     createdAt: Date = mapper.FIELD_DATE;
@@ -24,12 +22,13 @@ export class ContractorResponse extends ContractorBaseModel {
     token: string = null;
 }
 
+mapper.registerRelation(ContractorResponse, 'tenantProfile', new mapper.Relation(profile.ProfileResponse));
+
 export const contractorRequestSchema = Joi.object().keys({
     profile: profile.profileRequestSchema.required(),
     tenant: Joi.string().required(),
     invitationToken: Joi.string().required(),
 });
-
 
 export class FundingSourceBaseInfo extends Mapper {
     routingNumber: string = mapper.FIELD_STR;
