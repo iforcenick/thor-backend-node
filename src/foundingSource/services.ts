@@ -55,4 +55,12 @@ export class FundingSourceService extends db.ModelService<FundingSource> {
         const defaultFundingSource = await query;
         return defaultFundingSource;
     }
+
+    async getAllFundingSource(userId: string): Promise<Array<FundingSource>> {
+        const user = await this.userSerivce.get(userId);
+        const query = this.useTenantContext(this.getOptions(this.modelType.query()));
+        query.where(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id);
+
+        return await query;
+    }
 }

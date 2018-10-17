@@ -207,6 +207,10 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
                 this.logger.error(e);
             }
 
+            const fundingSources = await this.fundingSourceService.getAllFundingSource(this.userContext.get().id);
+            if (!fundingSources || fundingSources.length == 0) {
+                fundingSource.isDefault = true;
+            }
             let fundingSourceResult;
 
             await transaction(this.profileService.transaction(), async trx => {
