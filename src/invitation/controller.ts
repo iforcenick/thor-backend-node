@@ -65,13 +65,13 @@ export class InvitationController extends BaseController {
             this.logger.error(err);
             throw new Errors.InternalServerError(err.message);
         }
+
         try {
             await this.mailer.sendInvitation(invitation.email, {
                 link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`
             });
         } catch (e) {
             this.logger.error(e);
-            throw new Errors.InternalServerError(e.message);
         }
 
         return this.map(models.InvitationResponse, invitation);
