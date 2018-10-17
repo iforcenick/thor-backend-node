@@ -216,7 +216,6 @@ export class UserService extends db.ModelService<models.User> {
 
     async authenticate(login: string, password: string, tenant: string) {
         const user = await this.findByEmailAndTenant(login, tenant);
-        console.log(user);
         if (!user) {
             return null;
         }
