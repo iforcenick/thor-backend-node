@@ -89,4 +89,6 @@ export enum TemplatesFiles {
     FUNDING_SOURCE_CREATED_HTML = 'funding_source_created_html.twig',
     FUNDING_SOURCE_REMOVED_TEXT = 'funding_source_removed_text.twig',
     FUNDING_SOURCE_REMOVED_HTML = 'funding_source_removed_html.twig',
+    INVITATION_TEXT = 'invitation_text.twig',
+    INVITATION_HTML = 'invitation_html.twig',
 }

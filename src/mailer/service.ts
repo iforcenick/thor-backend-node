@@ -94,4 +94,14 @@ export class MailerService {
             .setParams(params);
         return await this.sendTemplate(user, template);
     }
+
+    async sendInvitation(email: string, params: any) {
+        const template = new templates.Template();
+        template
+            .setSubject('sendCustomerVerificationSuspended')
+            .setHtml(templates.TemplatesFiles.INVITATION_HTML)
+            .setText(templates.TemplatesFiles.INVITATION_TEXT)
+            .setParams(params);
+        return await this.send(email, this.from, await template.getSubject(), await template.getHtml(), await template.getText());
+    }
 }

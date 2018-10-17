@@ -7,6 +7,8 @@ import {InvitationService} from './service';
 import {Security, Tags} from 'typescript-rest-swagger';
 import * as context from '../context';
 import {Config} from '../config';
+import {MailerService} from '../mailer';
+import {UserService} from '../user/service';
 
 @Security('api_key')
 @Path('/contractors/invitations')
@@ -14,13 +16,15 @@ import {Config} from '../config';
 export class InvitationController extends BaseController {
     private service: InvitationService;
     private userContext: context.UserContext;
+    private mailer: MailerService;
 
     constructor(@Inject service: InvitationService,
                 @Inject userContext: context.UserContext,
-                @Inject logger: Logger, @Inject config: Config) {
+                @Inject logger: Logger, @Inject config: Config, @Inject mailer: MailerService) {
         super(logger, config);
         this.service = service;
         this.userContext = userContext;
+        this.mailer = mailer;
     }
 
     @GET
@@ -60,6 +64,14 @@ export class InvitationController extends BaseController {
         } catch (err) {
             this.logger.error(err);
             throw new Errors.InternalServerError(err.message);
+        }
+        try {
+            await this.mailer.sendInvitation(invitation.email, {
+                link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`
+            });
+        } catch (e) {
+            this.logger.error(e);
+            throw new Errors.InternalServerError(e.message);
         }
 
         return this.map(models.InvitationResponse, invitation);

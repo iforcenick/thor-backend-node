@@ -1,4 +1,6 @@
 ---
+application:
+  frontUri: https://odin-dev.firebaseapp.com
 express:
   port: 8081
 logs:
