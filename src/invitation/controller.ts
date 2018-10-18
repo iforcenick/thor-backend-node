@@ -67,7 +67,7 @@ export class InvitationController extends BaseController {
             throw new Errors.ConflictError('Email already invited');
         }
 
-        if (await this.userService.findByEmailAndTenant(invitation.email, this.tenantContext.get().id)) {
+        if (await this.userService.findByEmailAndTenant(invitation.email, this.tenantContext.get())) {
             throw  new Errors.ConflictError('Email already used');
         }
 
