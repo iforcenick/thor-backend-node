@@ -121,6 +121,7 @@ export class TransactionResponse extends TransactionBaseInfo {
     status: string = mapper.FIELD_STR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
+    @mapper.object(job.JobResponse)
     job: job.JobResponse = new job.JobResponse();
     value: string = mapper.FIELD_STR;
 }
@@ -133,15 +134,14 @@ export class PeriodStatsResponse extends Mapper {
 }
 
 export class PeriodsStatsResponse extends Mapper {
+    @mapper.object(PeriodStatsResponse)
     previous: PeriodStatsResponse = new PeriodStatsResponse();
+    @mapper.object(PeriodStatsResponse)
     current: PeriodStatsResponse = new PeriodStatsResponse();
 }
 
-mapper.registerRelation(TransactionResponse, Relations.job, new mapper.Relation(job.JobResponse));
-mapper.registerRelation(PeriodsStatsResponse, 'previous', new mapper.Relation(PeriodStatsResponse));
-mapper.registerRelation(PeriodsStatsResponse, 'current', new mapper.Relation(PeriodStatsResponse));
-
 export class TransactionRequest extends TransactionBaseInfo {
+    @mapper.object(job.JobRequest)
     job: job.JobRequest = new job.JobRequest();
 }
 

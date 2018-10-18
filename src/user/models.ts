@@ -97,6 +97,7 @@ export class RankingJobs extends Mapper {
     total: number = mapper.FIELD_NUM;
     jobsCount: number = mapper.FIELD_NUM;
     transactionsIds: Array<string> = mapper.FIELD_ARR;
+    @mapper.array(RankingJobsEntry)
     jobs: Array<RankingJobsEntry> = mapper.FIELD_ARR;
 }
 
@@ -108,18 +109,18 @@ export class UserResponse extends UserBaseInfo {
     lastActivity: Date = mapper.FIELD_DATE;
     rank: number = mapper.FIELD_NUM;
     prev: number = mapper.FIELD_NUM;
+    @mapper.object(profile.ProfileResponse)
     tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
 }
 
-mapper.registerRelation(UserResponse, 'tenantProfile', new mapper.Relation(profile.ProfileResponse));
-mapper.registerRelation(RankingJobs, 'jobs', new mapper.ArrayRelation(RankingJobsEntry));
-
 export class UserRequest extends UserBaseInfo {
     password: string = mapper.FIELD_STR;
+    @mapper.object(profile.ProfileRequest)
     profile: profile.ProfileRequest = new profile.ProfileRequest();
 }
 
 export class BusinessVerifiedRequest extends UserBaseInfo {
+    @mapper.object(profile.ProfileRequest)
     profile: profile.ProfileRequest = new profile.BusinessVerifiedRequest();
 }
 

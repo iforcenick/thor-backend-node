@@ -162,6 +162,7 @@ export class ProfileResponse extends ProfileBaseInfo {
     tenantId: string = mapper.FIELD_STR;
     externalStatus: string = mapper.FIELD_STR;
     externalType: string = mapper.FIELD_STR;
+    @mapper.array(role.models.RoleResponse)
     roles: Array<role.models.RoleResponse> = mapper.FIELD_ARR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
@@ -172,8 +173,6 @@ export class ProfileResponse extends ProfileBaseInfo {
     ein?: string = mapper.FIELD_STR;
     website?: string = mapper.FIELD_STR;
 }
-
-mapper.registerRelation(ProfileResponse, Relations.roles, new mapper.ArrayRelation(role.models.RoleResponse));
 
 export class ProfileRequest extends ProfileBaseInfo {
     ssn: string = mapper.FIELD_STR;
@@ -194,6 +193,7 @@ export class BusinessVerifiedController extends Mapper {
     title: string = mapper.FIELD_STR;
     dateOfBirth: string = mapper.FIELD_STR;
     ssn: string = mapper.FIELD_STR;
+    @mapper.object(BusinessVerifiedControllerAddress)
     address: BusinessVerifiedControllerAddress = new BusinessVerifiedControllerAddress();
 }
 
@@ -204,6 +204,7 @@ export class BusinessVerifiedRequest extends ProfileRequest {
     businessClassification: string = mapper.FIELD_STR;
     ein: string = mapper.FIELD_STR;
     website: string = mapper.FIELD_STR;
+    @mapper.object(BusinessVerifiedController)
     controller: BusinessVerifiedController = new BusinessVerifiedController();
 }
 

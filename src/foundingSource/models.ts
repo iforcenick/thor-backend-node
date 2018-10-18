@@ -46,6 +46,7 @@ export class FundingSourceBaseInfo extends Mapper {
     account: string = mapper.FIELD_STR;
     name: string = mapper.FIELD_STR;
 }
+
 export class FundingSourceRequest extends FundingSourceBaseInfo {
 }
 
