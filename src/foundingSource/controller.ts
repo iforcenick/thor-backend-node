@@ -69,6 +69,8 @@ export abstract class FundingSourceBaseController extends BaseController {
             }
 
             await this.fundingSourceService.setDefault(fundingSource);
+
+            return this.map(FundingSourceResponse, fundingSource);
         } catch (e) {
             this.logger.error(e);
             throw e;

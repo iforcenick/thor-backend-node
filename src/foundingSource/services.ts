@@ -42,7 +42,7 @@ export class FundingSourceService extends db.ModelService<FundingSource> {
                 await this.update(fs, trx);
             }
             fundingSource.isDefault = true;
-            await this.update(fundingSource, trx);
+            return await this.update(fundingSource, trx);
         });
     }
 
