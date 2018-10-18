@@ -6,3 +6,9 @@ db:
     host: 35.233.154.25
     password: bzm1tdHrM7C9hNdj
     database: development
+mailer:
+  mailgun:
+    url: https://api.mailgun.net/v3
+    domain: gothor.com
+    key: 7a6bfca3ea51a176c6915860175de72b-c1fe131e-16d8cc08
+    user: api

@@ -11,3 +11,11 @@ dwolla:
 swagger:
   host: odin-api.dev.gothor.com
   schema: https
+mailer:
+  override:
+    to: test.acsft@gmail.com
+  mailgun:
+    url: https://api.mailgun.net/v3
+    domain: gothor.com
+    key: 7a6bfca3ea51a176c6915860175de72b-c1fe131e-16d8cc08
+    user: api

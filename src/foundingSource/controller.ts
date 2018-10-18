@@ -126,7 +126,7 @@ export abstract class FundingSourceBaseController extends BaseController {
             try {
                 await this.mailer.sendFundingSourceCreated(user, sourceInfo);
             } catch (e) {
-                this.logger.error(e);
+                this.logger.error(e.message);
             }
 
             let fundingSourceResult;
