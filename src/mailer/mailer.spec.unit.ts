@@ -55,7 +55,7 @@ describe('Mailer service', () => {
             profile = new profiles.Profile();
             profile.email = email;
             profile.tenantId = 'test';
-            user.profiles = [profile];
+            user.tenantProfile = profile;
         });
 
         it('should return true', async () => {
