@@ -16,15 +16,23 @@ import {UserService} from '../user/service';
 export class InvitationController extends BaseController {
     private service: InvitationService;
     private userContext: context.UserContext;
+    private tenantContext: context.TenantContext;
+    private userService: UserService;
     private mailer: MailerService;
 
     constructor(@Inject service: InvitationService,
                 @Inject userContext: context.UserContext,
-                @Inject logger: Logger, @Inject config: Config, @Inject mailer: MailerService) {
+                @Inject logger: Logger,
+                @Inject config: Config,
+                @Inject mailer: MailerService,
+                @Inject userService: UserService,
+                @Inject tenantContext: context.TenantContext) {
         super(logger, config);
         this.service = service;
         this.userContext = userContext;
         this.mailer = mailer;
+        this.userService = userService;
+        this.tenantContext = tenantContext;
     }
 
     @GET
@@ -57,6 +65,10 @@ export class InvitationController extends BaseController {
 
         if (await this.service.getByEmail(invitation.email)) {
             throw new Errors.ConflictError('Email already invited');
+        }
+
+        if (await this.userService.findByEmailAndTenant(invitation.email, this.tenantContext.get().id)) {
+            throw  new Errors.ConflictError('Email already used');
         }
 
         try {
