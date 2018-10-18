@@ -45,7 +45,11 @@ export class InvitationController extends BaseController {
             models.Invitation.filter(builder, status);
         };
 
-        const transactions = await this.service.list(page, limit, filter);
+        const options = builder => {
+            builder.orderBy(`${models.Invitation.tableName}.createdAt`, 'desc');
+        };
+
+        const transactions = await this.service.list(page, limit, filter, options);
 
         return this.paginate(
             transactions.pagination,

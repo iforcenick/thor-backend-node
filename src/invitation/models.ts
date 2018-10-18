@@ -36,7 +36,7 @@ export class Invitation extends db.Model {
 
     static filter(query, status?: string) {
         if (status) {
-            query.where(`${db.Tables.contractorInvitations}.status`, status);
+            query.where(`${Invitation.tableName}.status`, status);
         }
     }
 }

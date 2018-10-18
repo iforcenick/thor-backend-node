@@ -146,15 +146,18 @@ export abstract class ModelService<T extends any> {
         return await this.useTenantContext(this.getOptions(this.modelType.query().findOne({[field]: value})));
     }
 
-    async list(page?: number, limit?: number, filter?: any, embed?: string): Promise<Paginated<T>> {
+    async list(page?: number, limit?: number, filter?: any, options?: any): Promise<Paginated<T>> {
         const query = this.modelType.query();
-
         if (filter) {
             query.where(filter);
         }
-        this.embed(query, embed);
+
         this.getListOptions(query);
         const pag = this.addPagination(query, page, limit);
+
+        if (options) {
+            options(query);
+        }
 
         const result = await this.useTenantContext(query);
         return new Paginated(new Pagination(pag.page, pag.limit, result.total), result.results);
