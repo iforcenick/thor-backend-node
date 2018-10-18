@@ -12,13 +12,13 @@ import {ProfileService} from '../profile/service';
 @AutoWired
 export class FundingSourceService extends db.ModelService<FundingSource> {
     private profileService: ProfileService;
-    private userSerivce: UserService;
+    private userService: UserService;
     constructor(@Inject config: Config, @Inject logger: Logger,
                 @Inject tenantContext: context.TenantContext, @Inject profileService: ProfileService, @Inject userSerivce: UserService) {
         super(config, logger, tenantContext);
 
         this.profileService = profileService;
-        this.userSerivce = userSerivce;
+        this.userService = userSerivce;
     }
 
     async insert(entity: FundingSource, trx?: transaction<any>): Promise<FundingSource> {
@@ -47,7 +47,7 @@ export class FundingSourceService extends db.ModelService<FundingSource> {
     }
 
     async getDefault(userId: string) {
-        const user = await this.userSerivce.get(userId);
+        const user = await this.userService.get(userId);
         const query = this.useTenantContext(this.getOptions(this.modelType.query()));
         query.where(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id)
             .andWhere('isDefault', true).first();
@@ -57,7 +57,7 @@ export class FundingSourceService extends db.ModelService<FundingSource> {
     }
 
     async getAllFundingSource(userId: string): Promise<Array<FundingSource>> {
-        const user = await this.userSerivce.get(userId);
+        const user = await this.userService.get(userId);
         const query = this.useTenantContext(this.getOptions(this.modelType.query()));
         query.where(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id);
 

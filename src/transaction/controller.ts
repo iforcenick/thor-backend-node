@@ -23,6 +23,7 @@ import {Job} from '../job/models';
 import moment from 'moment';
 import * as context from '../context';
 import {Config} from '../config';
+import {FundingSourceService} from '../foundingSource/services';
 
 const validate = require('uuid-validate');
 
@@ -34,10 +35,12 @@ export class TransactionController extends BaseController {
     private userService: UserService;
     private jobService: JobService;
     private userContext: context.UserContext;
+    private fundingService: FundingSourceService;
 
     constructor(@Inject service: TransactionService,
                 @Inject userService: UserService,
                 @Inject jobService: JobService,
+                @Inject fundingService: FundingSourceService,
                 @Inject userContext: context.UserContext,
                 @Inject logger: Logger, @Inject config: Config) {
         super(logger, config);
@@ -45,6 +48,7 @@ export class TransactionController extends BaseController {
         this.userService = userService;
         this.jobService = jobService;
         this.userContext = userContext;
+        this.fundingService = fundingService;
     }
 
     @GET
@@ -100,18 +104,19 @@ export class TransactionController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async createTransaction(data: models.TransactionRequest): Promise<models.TransactionResponse> {
         const parsedData: models.TransactionRequest = await this.validate(data, models.transactionRequestSchema);
-
         const user = await this.userService.get(parsedData.userId);
         if (!user) {
             throw new Errors.NotFoundError('User not found');
         }
 
-        try {
-            user.checkTransactionAbility();
-        } catch (e) {
-            throw new Errors.NotAcceptableError(e);
+        if (user.isContractor()) {
+            throw new Errors.NotAcceptableError('User is not a contractor');
         }
 
+        const defaultFunding = await this.fundingService.getDefault(user.id);
+        if (!defaultFunding) {
+            throw new Errors.NotAcceptableError('User does not have a bank account');
+        }
 
         try {
             const transactionFromDb: models.Transaction = await transaction(models.Transaction.knex(), async trx => {

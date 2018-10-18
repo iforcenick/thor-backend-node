@@ -55,29 +55,9 @@ export class User extends db.Model {
         return this.tenantProfile.hasRole(role);
     }
 
-    hasBankAccount(): boolean {
-        if (!this.tenantProfile) {
-            return false;
-        }
-        return !!this.tenantProfile.dwollaSourceUri;
+    isContractor() {
+        return this.hasRole(role.models.Types.contractor);
     }
-
-    checkTransactionAbility() {
-        if (!this.hasRole(role.models.Types.contractor)) {
-            throw new Errors.BadRequestError('User is not a contractor');
-        }
-        if (!this.hasBankAccount()) {
-            throw new Errors.NotAcceptableError('User does not have a bank account');
-        }
-    }
-}
-
-export class FundingSourceBaseInfo extends Mapper {
-    routingNumber: string = mapper.FIELD_STR;
-    accountNumber: string = mapper.FIELD_STR;
-}
-
-export class FundingSourceRequest extends FundingSourceBaseInfo {
 }
 
 export class UserBaseInfo extends Mapper {

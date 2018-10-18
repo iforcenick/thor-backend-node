@@ -9,16 +9,26 @@ import {AutoWired, Inject} from 'typescript-ioc';
 import _ from 'lodash';
 import {CUSTOMER_STATUS} from './customer';
 import {ValidationError} from '../errors';
+import {Errors} from 'typescript-rest';
 
 const FormData = require('form-data');
 
 export class DwollaRequestError extends Error {
-    toValidationError(prefix?: string) {
-        const errors: any = JSON.parse(this.message)._embedded.errors;
+    toValidationError(prefix?: string, mapping?: any) {
+        const message: any = JSON.parse(this.message);
+        if (!message._embedded) {
+            return new Errors.ConflictError(`${message.message}`);
+        }
+
+        const errors: any = message._embedded.errors;
         const parsedErrors = [];
 
         for (const err of errors) {
-            const field = err.path.slice(1);
+            let field = err.path.slice(1);
+            if (mapping && mapping[field]) {
+                field = mapping[field];
+            }
+
             const path = prefix ? [prefix] : [];
             path.push(field);
 
