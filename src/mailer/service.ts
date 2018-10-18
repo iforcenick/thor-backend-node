@@ -98,7 +98,7 @@ export class MailerService {
     async sendInvitation(email: string, params: any) {
         const template = new templates.Template();
         template
-            .setSubject('sendCustomerVerificationSuspended')
+            .setSubject('You have been invited to join Gothor')
             .setHtml(templates.TemplatesFiles.INVITATION_HTML)
             .setText(templates.TemplatesFiles.INVITATION_TEXT)
             .setParams(params);
