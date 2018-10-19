@@ -60,7 +60,8 @@ export class FundingSourceService extends db.ModelService<FundingSource> {
         const user = await this.userService.get(userId);
         const query = this.useTenantContext(this.getOptions(this.modelType.query()));
         query.where(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id);
+        const result = await query;
 
-        return await query;
+        return result;
     }
 }

@@ -4,6 +4,8 @@ import * as profile from '../profile/models';
 import {Mapper} from '../mapper';
 import * as mapper from '../mapper';
 import Joi = require('joi');
+import * as role from '../user/role';
+import {ProfileResponse} from '../profile/models';
 
 
 export const enum Relations {
@@ -64,3 +66,4 @@ export const fundingSourceRequestSchema = Joi.object().keys({
     account: Joi.string().required(),
     name: Joi.string().allow(null, '').default('default'),
 });
+

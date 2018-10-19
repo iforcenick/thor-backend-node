@@ -24,6 +24,7 @@ import {Logger} from '../logger';
 import {Config} from '../config';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {User} from '../user/models';
+import * as models from '../transaction/models';
 
 export abstract class FundingSourceBaseController extends BaseController {
     protected dwollaClient: dwolla.Client;
@@ -180,6 +181,14 @@ export abstract class FundingSourceBaseController extends BaseController {
         //     throw new Errors.InternalServerError(err.message);
         // }
     }
+    protected async _getFundingSources(user: User) {
+        const fundingSources = await this.fundingSourceService.getAllFundingSource(user.id);
+
+        return fundingSources.map(fundingSource => {
+            return this.map(FundingSourceResponse, fundingSource);
+        });
+    }
+
 }
 
 @AutoWired
@@ -228,6 +237,13 @@ export class UserFundingSourceController extends FundingSourceBaseController {
         const user = await this.userService.get(userId);
         return await this._deleteUserFundingSource(user, id);
     }
+
+    @GET
+    @Path('')
+    async getFundingSources(@PathParam('id') userId: string) {
+        const user = await this.userService.get(userId);
+        return await super._getFundingSources(user);
+    }
 }
 
 @AutoWired
@@ -248,6 +264,14 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
                 @Inject fundingSourceService: FundingSourceService,
                 @Inject mailer: MailerService) {
         super(dwollaClient, service, profileService, transactionService, userContext, tenantContext, logger, config, dwollaNotifier, fundingSourceService, mailer);
+    }
+
+
+    @GET
+    @Path('')
+    async getFundingSources() {
+        const user = await this.userService.get(this.userContext.get().id);
+        return await super._getFundingSources(user);
     }
 
     @GET
