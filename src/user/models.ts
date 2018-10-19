@@ -113,6 +113,7 @@ export interface PaginatedRankingJobs extends PaginatedResponse {
 }
 
 export const userRequestSchema = Joi.object().keys({
+    password: Joi.string().allow('', null),
     profile: profile.profileRequestSchema.required(),
 });
 

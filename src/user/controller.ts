@@ -165,20 +165,24 @@ export class UserController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async createUser(data: models.UserRequest): Promise<models.UserResponse> {
-        const parsedData = await this.validate(data, models.userRequestSchema);
-        ProfileService.validateAge(parsedData['profile']);
+        const parsedData: models.UserRequest = await this.validate(data, models.userRequestSchema);
+        ProfileService.validateAge(parsedData.profile);
 
         let user = models.User.factory({});
-        const profile = Profile.factory(parsedData['profile']);
+        const profile = Profile.factory(parsedData.profile);
 
         try {
             await this.dwollaClient.authorize();
-            const customerData = dwolla.customer.factory(parsedData['profile']);
+            const customerData = dwolla.customer.factory(parsedData.profile);
             customerData.type = dwolla.customer.TYPE.Personal;
             const customer = new dwolla.customer.Customer(customerData);
             profile.dwollaUri = await this.dwollaClient.createCustomer(customer);
             const dwollaCustomer = await this.dwollaClient.getCustomer(profile.dwollaUri);
             profile.dwollaStatus = dwollaCustomer.status;
+
+            if (parsedData.password) {
+                user.password = await this.service.hashPassword(parsedData.password);
+            }
 
             user = await this.service.createWithProfile(user, profile);
             user = await this.service.get(user.id);
