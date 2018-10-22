@@ -156,31 +156,38 @@ export abstract class FundingSourceBaseController extends BaseController {
         if (!user) {
             throw new Errors.NotFoundError();
         }
+        const profile = user.tenantProfile;
 
-        // TODO: implement
-        throw new Errors.NotImplementedError();
-        // const profile = user.tenantProfile;
-        //
-        // try {
-        //     const sourceInfo = {
-        //         sourceUri: profile.dwollaSourceUri,
-        //         routing: profile.dwollaRouting,
-        //         account: profile.dwollaAccount,
-        //     };
-        //
-        //     await this.dwollaClient.authorize();
-        //     await this.dwollaClient.deleteFundingSource(profile.dwollaSourceUri);
-        //
-        //     try {
-        //         await this.mailer.sendFundingSourceRemoved(user, sourceInfo);
-        //     } catch (e) {
-        //         this.logger.error(e);
-        //     }
-        // } catch (err) {
-        //     this.logger.error(err);
-        //     throw new Errors.InternalServerError(err.message);
-        // }
+        try {
+            const sourceInfo = {
+                sourceUri: profile.dwollaUri,
+                routing: profile.dwollaRouting,
+                account: profile.dwollaAccount,
+            };
+
+            const fundingSource = await this.fundingSourceService.get(id);
+            if (!fundingSource) {
+                throw new Errors.NotFoundError(`Could not find funding source by id ${id}`);
+            }
+
+            if (fundingSource.profileId != profile.id) {
+                throw new Errors.ConflictError('Funding source can only be delete by its owner.');
+            }
+
+            await this.dwollaClient.authorize();
+            await this.dwollaClient.deleteFundingSource(fundingSource.dwollaUri);
+
+            try {
+                await this.mailer.sendFundingSourceRemoved(user, sourceInfo);
+            } catch (e) {
+                this.logger.error(e);
+            }
+        } catch (err) {
+            this.logger.error(err);
+            throw new Errors.InternalServerError(err.message);
+        }
     }
+
     protected async _getFundingSources(user: User) {
         const fundingSources = await this.fundingSourceService.getAllFundingSource(user.id);
 
@@ -193,7 +200,7 @@ export abstract class FundingSourceBaseController extends BaseController {
 
 @AutoWired
 @Security('api_key')
-@Path('/users/:id/fundingSources')
+@Path('/users/:userId/fundingSources')
 @Tags('users', 'fundingSources')
 @Preprocessor(BaseController.requireAdmin)
 export class UserFundingSourceController extends FundingSourceBaseController {
@@ -213,34 +220,34 @@ export class UserFundingSourceController extends FundingSourceBaseController {
 
     @GET
     @Path('default')
-    async getDefaultFundingSource(@PathParam('id') userId: string) {
+    async getDefaultFundingSource(@PathParam('userId') userId: string) {
         const user = await this.userService.get(userId);
         return await super._getDefaultFundingSource(user);
     }
 
     @POST
     @Path(':fundingId/default')
-    async setDefaultFundingSource(@PathParam('id') userId: string, @PathParam('fundingId') id: string) {
-        return await super._setDefaultFundingSource(id, userId);
+    async setDefaultFundingSource(@PathParam('userId') userId: string, @PathParam('fundingId') fundingId: string) {
+        return await super._setDefaultFundingSource(fundingId, userId);
     }
 
     @POST
     @Path('')
-    async createUserFundingSource(@PathParam('id') userId: string, data: FundingSourceRequest): Promise<FundingSourceResponse> {
+    async createUserFundingSource(@PathParam('userId') userId: string, data: FundingSourceRequest): Promise<FundingSourceResponse> {
         const user = await this.userService.get(userId);
         return await this._createUserFundingSource(user, data);
     }
 
     @DELETE
     @Path(':fundingId')
-    async deleteUserFundingSource(@PathParam('id') userId: string, @PathParam('fundingId') id: string) {
+    async deleteUserFundingSource(@PathParam('userId') userId: string, @PathParam('fundingId') fundingId: string) {
         const user = await this.userService.get(userId);
-        return await this._deleteUserFundingSource(user, id);
+        return await this._deleteUserFundingSource(user, fundingId);
     }
 
     @GET
     @Path('')
-    async getFundingSources(@PathParam('id') userId: string) {
+    async getFundingSources(@PathParam('userId') userId: string) {
         const user = await this.userService.get(userId);
         return await super._getFundingSources(user);
     }

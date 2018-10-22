@@ -159,7 +159,7 @@ export class Client {
     }
 
     public async deleteFundingSource(localization: string): Promise<string> {
-        const response = await this.post(`${localization}`, {
+        const response = await this.post(localization, {
             removed: true,
         });
         return response;
