@@ -99,9 +99,9 @@ export class UserRequest extends UserBaseInfo {
     profile: profile.ProfileRequest = new profile.ProfileRequest();
 }
 
-export class BusinessVerifiedRequest extends UserBaseInfo {
-    @mapper.object(profile.ProfileRequest)
-    profile: profile.ProfileRequest = new profile.BusinessVerifiedRequest();
+export class UserBusinessVerifiedRequest extends Mapper {
+    @mapper.object(profile.BusinessVerifiedRequest)
+    profile: profile.BusinessVerifiedRequest = new profile.BusinessVerifiedRequest();
 }
 
 export interface PaginatedUserResponse extends PaginatedResponse {

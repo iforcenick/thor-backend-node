@@ -12,6 +12,7 @@ import {Config} from '../config';
 @Path('/tenants')
 export class TenantController extends BaseController {
     private service: TenantService;
+
     constructor(@Inject service: TenantService,
                 @Inject logger: Logger, @Inject config: Config) {
         super(logger, config);
@@ -28,7 +29,55 @@ export class TenantController extends BaseController {
             throw new Errors.NotFoundError();
         }
 
-        return this.map(models.TenantResponse, tenant);
+        const mock = {
+            id: '7bc0447a-ea99-4ba2-93bb-c84f5b325c50',
+            company: {
+                firstName: 'Super',
+                lastName: 'Admin',
+                email: 'business_20181022_2@test.com',
+                country: 'US',
+                city: 'SF',
+                state: 'CA',
+                postalCode: '55100',
+                phone: '1112223334',
+                address1: 'string',
+                address2: 'string',
+                type: 'business',
+                status: 'verified',
+                businessName: 'TestCorporation 2018-10-22',
+                doingBusinessAs: 'TestCorporation 2018-10-22',
+                website: '',
+            }
+        };
+
+        return this.map(models.TenantResponse, mock);
+    }
+
+    @GET
+    @Path(':id/owner')
+    @Tags('tenants')
+    @Preprocessor(BaseController.requireAdmin)
+    async getTenantOwner(@PathParam('id') id: string): Promise<models.TenantOwnerResponse> {
+        const tenant = await this.service.get(id);
+        if (!tenant) {
+            throw new Errors.NotFoundError();
+        }
+
+        const mock = {
+            firstName: 'string',
+            lastName: 'string',
+            title: 'string',
+            address: {
+                address1: 'string',
+                address2: 'string',
+                city: 'SF',
+                stateProvinceRegion: 'CA',
+                postalCode: '55555',
+                country: 'US'
+            }
+        };
+
+        return this.map(models.TenantOwnerResponse, mock);
     }
 
     @POST

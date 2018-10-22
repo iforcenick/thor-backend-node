@@ -124,6 +124,6 @@ const listBusinessClassification = async () => {
 // getFundingSource('9256ce01-21f4-4b4f-b9b5-6562518c0713').then();
 // cancelTransfer('932ac2ec-58c2-e811-8110-d08b405a9c82').then();
 // listBusinessClassification().then();
-// getCustomer('af839255-d253-41db-ae2c-3db2f579b6a1').then();
+getCustomer('d2ed9740-2150-4e2d-8022-e8605ae00d37').then();
 // createBusinessVerifiedBeneficialOwner('af839255-d253-41db-ae2c-3db2f579b6a1').then();
-listBusinessVerifiedBeneficialOwners('af839255-d253-41db-ae2c-3db2f579b6a1').then();
+// listBusinessVerifiedBeneficialOwners('af839255-d253-41db-ae2c-3db2f579b6a1').then();

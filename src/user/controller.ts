@@ -126,7 +126,7 @@ export class UserController extends BaseController {
     @POST
     @Path('business')
     @Preprocessor(BaseController.requireAdmin)
-    async createBusinessVerified(data: models.BusinessVerifiedRequest): Promise<models.UserResponse> {
+    async createBusinessVerified(data: models.UserBusinessVerifiedRequest): Promise<models.UserResponse> {
         let user;
         const parsedData = await this.validate(data, models.businessVerifiedSchema);
         ProfileService.validateAge(parsedData['profile']);

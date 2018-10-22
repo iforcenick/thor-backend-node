@@ -197,7 +197,19 @@ export class BusinessVerifiedController extends Mapper {
     address: BusinessVerifiedControllerAddress = new BusinessVerifiedControllerAddress();
 }
 
-export class BusinessVerifiedRequest extends ProfileRequest {
+export class BusinessVerifiedRequest extends Mapper {
+    firstName: string = mapper.FIELD_STR;
+    lastName: string = mapper.FIELD_STR;
+    phone: string = mapper.FIELD_STR;
+    email: string = mapper.FIELD_STR;
+    country: string = mapper.FIELD_STR;
+    state: string = mapper.FIELD_STR;
+    city: string = mapper.FIELD_STR;
+    postalCode: string = mapper.FIELD_STR;
+    address1: string = mapper.FIELD_STR;
+    address2: string = mapper.FIELD_STR;
+    dateOfBirth: string = mapper.FIELD_STR;
+    ssn: string = mapper.FIELD_STR;
     businessName: string = mapper.FIELD_STR;
     doingBusinessAs: string = mapper.FIELD_STR;
     businessType: string = mapper.FIELD_STR;
