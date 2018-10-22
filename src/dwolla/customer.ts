@@ -1,4 +1,5 @@
 import {IItem} from './base';
+import * as _ from 'lodash';
 
 export interface ICustomer extends IItem {
     firstName: string;
@@ -23,6 +24,8 @@ export interface ICustomer extends IItem {
     ein: string;
     website: string;
     controller: Owner;
+
+    updateableFields();
 }
 
 export class Owner implements IItem {
@@ -129,6 +132,18 @@ export class Customer implements ICustomer {
     public setLocalization(url): ICustomer {
         this.localization = url;
         return this;
+    }
+
+    public updateableFields() {
+        if (this.type == TYPE.Business) {
+            const obj = _.pick(this, [
+                'email', 'ipAddress', 'city', 'state', 'address1', 'address2', 'postalCode', 'doingBusinessAs'
+            ]);
+
+            return obj;
+        } else {
+            return this;
+        }
     }
 }
 

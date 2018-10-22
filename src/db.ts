@@ -100,10 +100,6 @@ export abstract class ModelService<T extends any> {
         return query;
     }
 
-    embed(query, embed) {
-        return query;
-    }
-
     paginationLimit(limit?: number) {
         if (!limit) {
             return this.config.get('pagination.limit');

@@ -99,11 +99,6 @@ export class UserRequest extends UserBaseInfo {
     profile: profile.ProfileRequest = new profile.ProfileRequest();
 }
 
-export class UserBusinessVerifiedRequest extends Mapper {
-    @mapper.object(profile.BusinessVerifiedRequest)
-    profile: profile.BusinessVerifiedRequest = new profile.BusinessVerifiedRequest();
-}
-
 export interface PaginatedUserResponse extends PaginatedResponse {
     items: Array<UserResponse>;
 }
@@ -129,10 +124,6 @@ export const fundingSourceRequestSchema = Joi.object().keys({
 export const rankingRequestSchema = Joi.object().keys({
     startDate: Joi.date().required(),
     endDate: Joi.date().required(),
-});
-
-export const businessVerifiedSchema = Joi.object().keys({
-    profile: profile.businessVerifiedRequestSchema.required(),
 });
 
 export class UserStatisticsResponse extends Mapper {

@@ -15,7 +15,14 @@ const FormData = require('form-data');
 
 export class DwollaRequestError extends Error {
     toValidationError(prefix?: string, mapping?: any) {
-        const message: any = JSON.parse(this.message);
+        let message: any;
+
+        try {
+            message = JSON.parse(this.message);
+        } catch (e) {
+            return new Error(this.message);
+        }
+
         if (!message._embedded) {
             return new Errors.ConflictError(`${message.message}`);
         }
@@ -108,19 +115,8 @@ export class Client {
         return response.headers.get('location');
     }
 
-    static pickFieldsToUpdate(profile: any) {
-        switch (profile.dwollaStatus) {
-            case CUSTOMER_STATUS.Verified:
-                return _.pick(profile, ['email', 'address1', 'address2', 'city', 'state', 'postalCode', 'phone']);
-            case CUSTOMER_STATUS.Unverified:
-                return _.pick(profile, ['firstName', 'lastName', 'email', 'businessName']);
-
-        }
-    }
-
-    public async updateCustomer(_customer: any) { // TODO: refactor
-        const payload = Client.pickFieldsToUpdate(_customer);
-        return await this.post(_customer.dwollaUri, payload);
+    public async updateCustomer(uri: string, _customer: any) {
+        return await this.post(uri, customer.factory(_customer));
     }
 
     public async getCustomer(localization: string): Promise<customer.ICustomer> {
