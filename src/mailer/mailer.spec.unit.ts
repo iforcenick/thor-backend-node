@@ -5,15 +5,16 @@ import * as mailer from './index';
 import * as client from './client';
 import * as users from '../user/models';
 import * as profiles from '../profile/models';
-import * as tenants from '../tenant/models';
 import 'mocha';
 import {sandbox} from '../test-setup.spec.unit';
+import {Logger} from "../logger";
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
-
+//
 const service: mailer.MailerService = Container.get(mailer.MailerService);
 const mailgunClient: mailer.Mailgun = Container.get(mailer.Mailgun);
+console.log(Container.get(Logger));
 
 describe('Mailer service', () => {
     describe('creation', () => {

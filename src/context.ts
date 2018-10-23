@@ -1,4 +1,4 @@
-import {AutoWired} from 'typescript-ioc';
+import {AutoWired, Provides} from 'typescript-ioc';
 
 const getNamespace = require('continuation-local-storage').getNamespace;
 
