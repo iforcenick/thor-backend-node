@@ -19,26 +19,36 @@ export const array = (mapper) => {
     };
 };
 
+export const fromName = (name) => {
+    return (target: any, propertyKey: string | symbol) => {
+        Reflect.defineMetadata('fromName', name, target, propertyKey);
+    };
+};
+
 export class Mapper {
     map(data) {
         for (const key of Object.keys(this)) {
-            if (data[key]) {
+            let fromName = Reflect.getMetadata('fromName', this, key);
+            if (!fromName) {
+                fromName = key;
+            }
+            if (data[fromName]) {
                 if (_.isObject(this[key])) {
                     const mapper = Reflect.getMetadata('mapper', this, key);
                     if (mapper) {
                         if (Reflect.getMetadata('arrayMapped', this, key)) {
                             const mappedObjects = [];
-                            for (const obj of data[key]) {
+                            for (const obj of data[fromName]) {
                                 mappedObjects.push(new mapper().map(obj));
                             }
 
                             this[key] = mappedObjects;
                         } else {
-                            this[key] = new mapper().map(data[key]);
+                            this[key] = new mapper().map(data[fromName]);
                         }
                     }
                 } else {
-                    this[key] = data[key];
+                    this[key] = data[fromName];
                 }
             } else {
                 this[key] = null;

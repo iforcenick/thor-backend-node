@@ -195,7 +195,6 @@ export abstract class FundingSourceBaseController extends BaseController {
             return this.map(FundingSourceResponse, fundingSource);
         });
     }
-
 }
 
 @AutoWired

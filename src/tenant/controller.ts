@@ -12,6 +12,10 @@ import * as context from '../context';
 import {DwollaNotifier} from '../dwolla/notifier';
 import {UserService} from '../user/service';
 
+import {
+    BusinessClassificationsResponse,
+} from './models';
+
 @Security('api_key')
 @Path('/tenants')
 @Tags('tenants')
@@ -181,5 +185,16 @@ export class TenantController extends BaseController {
         }
 
         return this.map(models.TenantCompanyResponse, tenant.company);
+    }
+
+    @GET
+    @Path('/company/businessCategories')
+    @Tags('TenantCompany')
+    async getBusinessCategories() {
+        let businessCategories;
+        await this.dwollaClient.authorize();
+
+        businessCategories = await this.dwollaClient.listBusinessClassification();
+        return this.map(BusinessClassificationsResponse, businessCategories);
     }
 }

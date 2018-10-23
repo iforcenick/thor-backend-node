@@ -300,6 +300,6 @@ export class Client {
     }
 
     public async listBusinessClassification(): Promise<any> {
-        return (await this.get(`business-classifications`)).body._embedded['business-classifications'];
+        return (await this.get(`business-classifications`)).body._embedded;
     }
 }

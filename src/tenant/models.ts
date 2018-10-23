@@ -226,3 +226,32 @@ export const tenantCompanyPatchRequestSchema = Joi.object().keys({
     doingBusinessAs: Joi.string().allow('', null),
     website: Joi.string().allow('', null),
 });
+
+export class BusinessClassificationItem extends Mapper {
+    id: string = mapper.FIELD_STR;
+    name: string = mapper.FIELD_STR;
+}
+
+export class BusinessClassification extends Mapper {
+    @mapper.array(BusinessClassificationItem)
+    @mapper.fromName('industry-classifications')
+    industryClassifications: Array<BusinessClassificationItem> = mapper.FIELD_ARR;
+}
+
+export class BusinessClassificationsCategory extends Mapper {
+    @mapper.object(BusinessClassification)
+    @mapper.fromName('_embedded')
+    category: BusinessClassification = new BusinessClassification();
+
+    id: string = mapper.FIELD_STR;
+    name: string = mapper.FIELD_STR;
+}
+
+export class BusinessClassificationsResponse extends Mapper {
+    @mapper.array(BusinessClassificationsCategory)
+    @mapper.fromName('business-classifications')
+    businessClassifications: Array<BusinessClassificationsCategory> = mapper.FIELD_ARR;
+}
+
+
+

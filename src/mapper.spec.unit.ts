@@ -46,6 +46,12 @@ class WrapperWithArray extends Mapper {
     wrapped: Array<WrappedArray> = [];
 }
 
+
+class DifferentName extends Mapper {
+    @mapper.fromName('test1')
+    test: string = mapper.FIELD_STR;
+}
+
 const map = (mapper, data) => {
     return new mapper().map(data);
 };
@@ -115,6 +121,17 @@ describe('Mapper', () => {
             input.wrapped[0]['wrapped'][0]['field2'] = 'test2';
 
             const output = map(WrapperWithArray, input);
+            expect(output).to.deep.equal(expected);
+        });
+        it('should map with different property name', async () => {
+            const expected = {
+                test: 'test',
+            };
+            const input = {
+                test1: 'test'
+            };
+
+            const output = map(DifferentName, input);
             expect(output).to.deep.equal(expected);
         });
     });
