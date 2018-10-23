@@ -75,7 +75,7 @@ export class TenantBaseInfo extends Mapper {
     name: string = mapper.FIELD_STR;
 }
 
-export class TenantCompany extends Mapper {
+export class TenantCompanyResponse extends Mapper {
     firstName: string = mapper.FIELD_STR;
     lastName: string = mapper.FIELD_STR;
     phone: string = mapper.FIELD_STR;
@@ -93,8 +93,6 @@ export class TenantCompany extends Mapper {
 
 export class TenantResponse extends TenantBaseInfo {
     id: string = mapper.FIELD_STR;
-    @mapper.object(TenantCompany)
-    company: TenantCompany = new TenantCompany();
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
 }
@@ -133,7 +131,7 @@ export class TenantOwnerRequest extends Mapper {
     address: TenantOwnerAddressRequest = new TenantOwnerAddressRequest();
 }
 
-export class TenantCompanyRequest extends Mapper {
+export class TenantCompanyPostRequest extends Mapper {
     firstName: string = mapper.FIELD_STR;
     lastName: string = mapper.FIELD_STR;
     phone: string = mapper.FIELD_STR;
@@ -156,7 +154,16 @@ export class TenantCompanyRequest extends Mapper {
 }
 
 export class TenantCompanyPatchRequest extends Mapper {
-    company: TenantCompanyRequest = new TenantCompanyRequest();
+    phone: string = mapper.FIELD_STR;
+    email: string = mapper.FIELD_STR;
+    country: string = mapper.FIELD_STR;
+    state: string = mapper.FIELD_STR;
+    city: string = mapper.FIELD_STR;
+    postalCode: string = mapper.FIELD_STR;
+    address1: string = mapper.FIELD_STR;
+    address2: string = mapper.FIELD_STR;
+    doingBusinessAs: string = mapper.FIELD_STR;
+    website: string = mapper.FIELD_STR;
 }
 
 export class TenantRequest extends TenantBaseInfo {
@@ -185,7 +192,7 @@ export const tenantOwnerSchema = Joi.object().keys({
     address: tenantOwnerAddressSchema.required(),
 });
 
-export const companyRequestSchema = Joi.object().keys({
+export const tenantCompanyPostRequestSchema = Joi.object().keys({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
     phone: Joi.string().required(),
@@ -207,6 +214,15 @@ export const companyRequestSchema = Joi.object().keys({
     controller: tenantOwnerSchema,
 });
 
-export const tenantCompanyRequestSchema = Joi.object().keys({
-    company: companyRequestSchema,
+export const tenantCompanyPatchRequestSchema = Joi.object().keys({
+    phone: Joi.string().required(),
+    email: Joi.string().required().email(),
+    country: Joi.string().required(),
+    state: Joi.string().required().uppercase().length(2),
+    city: Joi.string().required().regex(/[a-zA-Z]+/),
+    postalCode: Joi.string().required(),
+    address1: Joi.string().required().max(50),
+    address2: Joi.string().allow('', null).max(50),
+    doingBusinessAs: Joi.string().allow('', null),
+    website: Joi.string().allow('', null),
 });

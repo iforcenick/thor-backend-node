@@ -137,7 +137,7 @@ export class Customer implements ICustomer {
     public updateableFields() {
         if (this.type == TYPE.Business) {
             const obj = _.pick(this, [
-                'email', 'ipAddress', 'city', 'state', 'address1', 'address2', 'postalCode', 'doingBusinessAs'
+                'email', 'phone', 'ipAddress', 'country', 'city', 'state', 'address1', 'address2', 'postalCode', 'doingBusinessAs', 'website',
             ]);
 
             return obj;
