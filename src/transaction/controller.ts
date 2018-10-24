@@ -109,7 +109,7 @@ export class TransactionController extends BaseController {
             throw new Errors.NotFoundError('User not found');
         }
 
-        if (user.isContractor()) {
+        if (!user.isContractor()) {
             throw new Errors.NotAcceptableError('User is not a contractor');
         }
 
