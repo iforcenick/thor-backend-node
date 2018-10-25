@@ -46,6 +46,8 @@ export class Mapper {
                         } else {
                             this[key] = new mapper().map(data[fromName]);
                         }
+                    } else {
+                        this[key] = data[key];
                     }
                 } else {
                     this[key] = data[fromName];

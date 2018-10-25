@@ -52,6 +52,10 @@ class DifferentName extends Mapper {
     test: string = mapper.FIELD_STR;
 }
 
+class PrimitiveArray extends Mapper {
+    test: Array<string> = mapper.FIELD_ARR;
+}
+
 const map = (mapper, data) => {
     return new mapper().map(data);
 };
@@ -123,6 +127,7 @@ describe('Mapper', () => {
             const output = map(WrapperWithArray, input);
             expect(output).to.deep.equal(expected);
         });
+
         it('should map with different property name', async () => {
             const expected = {
                 test: 'test',
@@ -132,6 +137,18 @@ describe('Mapper', () => {
             };
 
             const output = map(DifferentName, input);
+            expect(output).to.deep.equal(expected);
+        });
+
+        it('should map array of primitives', async () => {
+            const expected = {
+                test: ['test', 'test1', 'test2'],
+            };
+            const input = {
+                test: ['test', 'test1', 'test2'],
+            };
+
+            const output = map(PrimitiveArray, input);
             expect(output).to.deep.equal(expected);
         });
     });
