@@ -27,6 +27,26 @@ spec:
           ports:
             - containerPort: 8081
           env:
+            - name: dwolla_key
+              valueFrom:
+                secretKeyRef:
+                  name: credentials
+                  key: dwolla_key
+            - name: dwolla_secret
+              valueFrom:
+                secretKeyRef:
+                  name: credentials
+                  key: dwolla_secret
+            - name: mailer_mailgun_domain
+              valueFrom:
+                secretKeyRef:
+                  name: credentials
+                  key: mailgun_domain
+            - name: mailer_mailgun_key
+              valueFrom:
+                secretKeyRef:
+                  name: credentials
+                  key: mailgun_key
             - name: NODE_ENV
               value: {{ .Values.app.nodeEnv }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}

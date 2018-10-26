@@ -4,3 +4,4 @@ dist
 data/logs.log
 *-secrets.yaml
 /.vscode
+/temp

@@ -10,7 +10,7 @@
 * build
 * npm run build:docker
 * npm run start:docker-dev
-* if run for the first time check ```doker logs thor_api``` and if there are any connection errors run ```docker stop thor_api```
+* if run for the first time check ```docker logs thor_api``` and if there are any connection errors run ```docker stop thor_api```
 and ```npm run db``` followed by ```npm run start:docker-dev```
 
 ### Configuring PostgreSQL
@@ -25,3 +25,30 @@ and ```npm run db``` followed by ```npm run start:docker-dev```
 
 ### OpenAPI
 * http://localhost:8081/api-docs/
+
+### Secrets
+* Install and initialize the gcloud command line tool along with the kubectl command line tool
+* Select the desired active project ```gcloud set project [PROJECT_ID]```
+* Get the credentials for the desired cluster ```gcloud container clusters get-credentials [CLUSTER_NAME]```
+* Create a secret from a yaml file
+  ```sh
+  kubectl create -f [FILE_NAME].yaml
+  ```
+
+  Here is an example yaml file:
+  ```yaml
+  apiVersion: v1
+  kind: Secret
+  metadata:
+    name: credentials
+    namespace: [CLUSTER_NAME]
+  data:
+    dwolla_key: XXXXXXXXXXX
+    dwolla_secret: XXXXXXXXXXX
+    dwolla_webhookSecret: XXXXXXXXXXX
+    mailer_mailgun_domain: XXXXXXXXXXX
+    mailer_mailgun_key: XXXXXXXXXXX
+  ```
+  Where the data field is a map. Its keys must consist of alphanumeric characters, ‘-’, ‘_’ or ‘.’. The values are arbitrary data, encoded using base64.
+
+ 
