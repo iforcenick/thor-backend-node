@@ -5,7 +5,7 @@ import * as _ from 'lodash';
 export class ValidationError extends Errors.ConflictError {
     entity: any;
 
-    constructor(entity?: string | Joi.ValidationError) {
+    constructor(entity?: any) {
         let message;
         if (entity instanceof String || typeof (entity) === 'string') {
             message = <string>entity;
@@ -18,7 +18,7 @@ export class ValidationError extends Errors.ConflictError {
         Object.setPrototypeOf(this, ValidationError.prototype);
     }
 
-    private static buildValidationErrorString(err: Joi.ValidationError) {
+    private static buildValidationErrorString(err: any) {
         const fields = {};
 
         err.details.forEach(e => {

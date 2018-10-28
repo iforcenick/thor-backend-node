@@ -4,6 +4,7 @@ import * as db from '../db';
 import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import Joi = require('joi');
 import {Profile} from '../profile/models';
+import * as dwolla from '../dwolla';
 
 export const enum Relations {
     profiles = 'profiles',
@@ -127,6 +128,8 @@ export class TenantOwnerRequest extends Mapper {
     firstName: string = mapper.FIELD_STR;
     lastName: string = mapper.FIELD_STR;
     title: string = mapper.FIELD_STR;
+    dateOfBirth: string = mapper.FIELD_STR;
+    ssn: string = mapper.FIELD_STR;
     @mapper.object(TenantOwnerAddressRequest)
     address: TenantOwnerAddressRequest = new TenantOwnerAddressRequest();
 }
@@ -211,7 +214,11 @@ export const tenantCompanyPostRequestSchema = Joi.object().keys({
     businessClassification: Joi.string().required(),
     ein: Joi.string().allow('', null),
     website: Joi.string().allow('', null),
-    controller: tenantOwnerSchema,
+    controller: tenantOwnerSchema.when('businessType', {
+        is: Joi.equal(dwolla.customer.BUSINESS_TYPE.Sole),
+        then: Joi.forbidden(),
+        otherwise: Joi.required()
+    }),
 });
 
 export const tenantCompanyPatchRequestSchema = Joi.object().keys({

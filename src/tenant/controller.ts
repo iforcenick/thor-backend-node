@@ -130,11 +130,6 @@ export class TenantController extends BaseController {
             await this.dwollaClient.authorize();
             const customer = dwolla.customer.factory(parsedData);
             customer.type = dwolla.customer.TYPE.Business;
-
-            if (customer.businessType == dwolla.customer.BUSINESS_TYPE.Sole) {
-                customer.controller = undefined;
-            }
-
             tenant.dwollaUri = await this.dwollaClient.createCustomer(customer);
             const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.dwollaUri);
             tenant.dwollaStatus = dwollaCustomer.status;
