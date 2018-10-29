@@ -139,7 +139,7 @@ export class TenantController extends BaseController {
             await this.service.update(tenant);
         } catch (err) {
             if (err instanceof dwolla.DwollaRequestError) {
-                throw err.toValidationError('company');
+                throw err.toValidationError();
             }
             throw new Errors.InternalServerError(err.message);
         }
