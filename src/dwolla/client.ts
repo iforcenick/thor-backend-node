@@ -14,6 +14,21 @@ import {Errors} from 'typescript-rest';
 const FormData = require('form-data');
 
 export class DwollaRequestError extends Error {
+    private buildPath(path: string, prefix?: string, mapping?: any) {
+        const res = prefix ? [prefix] : [];
+        const fields = path.slice(1).split('/');
+
+        for (let field of fields) {
+            if (mapping && mapping[field]) {
+                field = mapping[field];
+            }
+
+            res.push(field);
+        }
+
+        return res;
+    }
+
     toValidationError(prefix?: string, mapping?: any) {
         let message: any;
 
@@ -31,13 +46,8 @@ export class DwollaRequestError extends Error {
         const parsedErrors = [];
 
         for (const err of errors) {
-            let field = err.path.slice(1);
-            if (mapping && mapping[field]) {
-                field = mapping[field];
-            }
-
-            const path = prefix ? [prefix] : [];
-            path.push(field);
+            const path = this.buildPath(err.path, prefix, mapping);
+            const field = path.slice(-1)[0];
 
             parsedErrors.push({
                 message: `"${field}" ${err.message.slice(0, -1)}`,

@@ -22,6 +22,7 @@ export class ValidationError extends Errors.ConflictError {
         const fields = {};
 
         err.details.forEach(e => {
+            console.log(e);
             let pointer = fields;
             const last = e.path.slice(-1)[0];
 
