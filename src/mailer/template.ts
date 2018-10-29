@@ -55,15 +55,15 @@ export class Template implements ITemplate {
     }
 
     async getText(): Promise<string> {
-        return await Twig.twig({data: this.text}).render(this.params);
+        return await Twig.twig({ data: this.text }).render(this.params);
     }
 
     async getHtml(): Promise<string> {
-        return await Twig.twig({data: this.html}).render(this.params);
+        return await Twig.twig({ data: this.html }).render(this.params);
     }
 
     async getSubject(): Promise<string> {
-        return await Twig.twig({data: this.subject}).render(this.params);
+        return await Twig.twig({ data: this.subject }).render(this.params);
     }
 
     getParams(): any {
@@ -91,4 +91,69 @@ export enum TemplatesFiles {
     FUNDING_SOURCE_REMOVED_HTML = 'funding_source_removed_html.twig',
     INVITATION_TEXT = 'invitation_text.twig',
     INVITATION_HTML = 'invitation_html.twig',
+    CUSTOMER_TRANSFER_CREATED_SENDER_TEXT = 'text/customer_transfer_created_sender.twig',
+    CUSTOMER_TRANSFER_CREATED_SENDER_HTML = 'html/customer_transfer_created_sender.twig',
+    CUSTOMER_TRANSFER_CREATED_RECEIVER_TEXT = 'text/customer_transfer_created_receiver.twig',
+    CUSTOMER_TRANSFER_CREATED_RECEIVER_HTML = 'html/customer_transfer_created_receiver.twig',
+    RECURRING_PAYMENT_SCHEDULED_TEXT = 'text/customer_recurring_payment_scheduled.twig',
+    RECURRING_PAYMENT_SCHEDULED_HTML = 'html/customer_recurring_payment_scheduled.twig',
+    RECURRING_PAYMENT_CANCELLED_TEXT = 'text/customer_recurring_payment_cancelled.twig',
+    RECURRING_PAYMENT_CANCELLED_HTML = 'html/customer_recurring_payment_cancelled.twig',
+    CUSTOMER_TRANSFER_CANCELLED_SENDER_TEXT = 'text/customer_transfer_cancelled_sender.twig',
+    CUSTOMER_TRANSFER_CANCELLED_SENDER_HTML = 'html/customer_transfer_cancelled_sender.twig',
+    CUSTOMER_TRANSFER_CANCELLED_RECEIVER_TEXT = 'text/customer_transfer_cancelled_receiver.twig',
+    CUSTOMER_TRANSFER_CANCELLED_RECEIVER_HTML = 'html/customer_transfer_cancelled_receiver.twig',
+    CUSTOMER_TRANSFER_FAILED_SENDER_TEXT = 'text/customer_transfer_failed_sender.twig',
+    CUSTOMER_TRANSFER_FAILED_SENDER_HTML = 'html/customer_transfer_failed_sender.twig',
+    CUSTOMER_TRANSFER_FAILED_RECEIVER_TEXT = 'text/customer_transfer_failed_receiver.twig',
+    CUSTOMER_TRANSFER_FAILED_RECEIVER_HTML = 'html/customer_transfer_failed_receiver.twig',
+    CUSTOMER_TRANSFER_COMPLETED_SENDER_TEXT = 'text/customer_transfer_completed_sender.twig',
+    CUSTOMER_TRANSFER_COMPLETED_SENDER_HTML = 'html/customer_transfer_completed_sender.twig',
+    CUSTOMER_TRANSFER_COMPLETED_RECEIVER_TEXT = 'text/customer_transfer_completed_receiver.twig',
+    CUSTOMER_TRANSFER_COMPLETED_RECEIVER_HTML = 'html/customer_transfer_completed_receiver.twig',
+    CUSTOMER_BANK_TRANSFER_CREATED_SENDER_TEXT = 'text/customer_bank_transfer_created_sender.twig',
+    CUSTOMER_BANK_TRANSFER_CREATED_SENDER_HTML = 'html/customer_bank_transfer_created_sender.twig',
+    CUSTOMER_BANK_TRANSFER_CREATED_RECEIVER_TEXT = 'text/customer_bank_transfer_created_receiver.twig',
+    CUSTOMER_BANK_TRANSFER_CREATED_RECEIVER_HTML = 'html/customer_bank_transfer_created_receiver.twig',
+    CUSTOMER_BANK_TRANSFER_CANCELLED_SENDER_TEXT = 'text/customer_bank_transfer_cancelled_sender.twig',
+    CUSTOMER_BANK_TRANSFER_CANCELLED_SENDER_HTML = 'html/customer_bank_transfer_cancelled_sender.twig',
+    CUSTOMER_BANK_TRANSFER_CANCELLED_RECEIVER_TEXT = 'text/customer_bank_transfer_cancelled_receiver.twig',
+    CUSTOMER_BANK_TRANSFER_CANCELLED_RECEIVER_HTML = 'html/customer_bank_transfer_cancelled_receiver.twig',
+    CUSTOMER_BANK_TRANSFER_FAILED_SENDER_TEXT = 'text/customer_bank_transfer_failed_sender.twig',
+    CUSTOMER_BANK_TRANSFER_FAILED_SENDER_HTML = 'html/customer_bank_transfer_failed_sender.twig',
+    CUSTOMER_BANK_TRANSFER_FAILED_RECEIVER_TEXT = 'text/customer_bank_transfer_failed_receiver.twig',
+    CUSTOMER_BANK_TRANSFER_FAILED_RECEIVER_HTML = 'html/customer_bank_transfer_failed_receiver.twig',
+    CUSTOMER_BANK_TRANSFER_COMPLETED_SENDER_TEXT = 'text/customer_bank_transfer_completed_sender.twig',
+    CUSTOMER_BANK_TRANSFER_COMPLETED_SENDER_HTML = 'html/customer_bank_transfer_completed_sender.twig',
+    CUSTOMER_BANK_TRANSFER_COMPLETED_RECEIVER_TEXT = 'text/customer_bank_transfer_completed_receiver.twig',
+    CUSTOMER_BANK_TRANSFER_COMPLETED_RECEIVER_HTML = 'html/customer_bank_transfer_completed_receiver.twig',
+    CUSTOMER_FUNDING_SOURCE_ADDED_TEXT = 'text/customer_funding_source_added.twig',
+    CUSTOMER_FUNDING_SOURCE_ADDED_HTML = 'html/customer_funding_source_added.twig',
+    CUSTOMER_FUNDING_SOURCE_REMOVED_TEXT = 'text/customer_funding_source_removed.twig',
+    CUSTOMER_FUNDING_SOURCE_REMOVED_HTML = 'html/customer_funding_source_removed.twig',
+    CUSTOMER_FUNDING_SOURCE_VERIFIED_TEXT = 'text/customer_funding_source_verified.twig',
+    CUSTOMER_FUNDING_SOURCE_VERIFIED_HTML = 'html/customer_funding_source_verified.twig',
+    CUSTOMER_MICRODEPOSITS_INITIATED_TEXT = 'text/customer_microdeposits_initiated.twig',
+    CUSTOMER_MICRODEPOSITS_INITIATED_HTML = 'html/customer_microdeposits_initiated.twig',
+    CUSTOMER_MICRODEPOSITS_COMPLETED_TEXT = 'text/customer_microdeposits_completed.twig',
+    CUSTOMER_MICRODEPOSITS_COMPLETED_HTML = 'html/customer_microdeposits_completed.twig',
+    CUSTOMER_MICRODEPOSITS_FAILED_TEXT = 'text/customer_microdeposits_failed.twig',
+    CUSTOMER_MICRODEPOSITS_FAILED_HTML = 'html/customer_microdeposits_failed.twig',
+    CUSTOMER_CREATED_TEXT = 'text/customer_created.twig',
+    CUSTOMER_CREATED_HTML = 'html/customer_created.twig',
+    CUSTOMER_VERIFIED_TEXT = 'text/customer_verified.twig',
+    CUSTOMER_VERIFIED_HTML = 'html/customer_verified.twig',
+    CUSTOMER_SUSPENDED_TEXT = 'text/customer_suspended.twig',
+    CUSTOMER_SUSPENDED_HTML = 'html/customer_suspended.twig',
+    CUSTOMER_VERIFICATION_DOCUMENT_NEEDED_TEXT = 'text/customer_verification_document_needed.twig',
+    CUSTOMER_VERIFICATION_DOCUMENT_NEEDED_HTML = 'html/customer_verification_document_needed.twig',
+    CUSTOMER_VERIFICATION_DOCUMENT_UPLOADED_TEXT = 'text/customer_verification_document_uploaded.twig',
+    CUSTOMER_VERIFICATION_DOCUMENT_UPLOADED_HTML = 'html/customer_verification_document_uploaded.twig',
+    CUSTOMER_VERIFICATION_DOCUMENT_APPROVED_TEXT = 'text/customer_verification_document_approved.twig',
+    CUSTOMER_VERIFICATION_DOCUMENT_APPROVED_HTML = 'html/customer_verification_document_approved.twig',
+    CUSTOMER_VERIFICATION_DOCUMENT_FAILED_TEXT = 'text/customer_verification_document_failed.twig',
+    CUSTOMER_VERIFICATION_DOCUMENT_FAILED_HTML = 'html/customer_verification_document_failed.twig',
+
+    MISSING_DOCUMENTS_TEXT = 'text/missing_documents.twig',
+    MISSING_DOCUMENTS_HTML = 'html/missing_documents.twig',
 }

@@ -38,8 +38,8 @@ swagger:
 mailer:
   mailgun:
     url: https://api.mailgun.net/v3
-    domain: sandbox7e50403f173d47b992113f3287848322.mailgun.org
-    key: 3fff9219ccbdd5706631dacb1d5fdb29-0e6e8cad-f2585442
+    domain: gothor.com
+    key: 7a6bfca3ea51a176c6915860175de72b-c1fe131e-16d8cc08
     user: api
 build:
   version: 0.0.5
