@@ -17,6 +17,7 @@ import {DwollaController} from './dwolla/controller';
 import {InvitationController, InvitationCheckController} from './invitation/controller';
 import {ContractorController} from './contractor/controller';
 import {ContractorFundingSourceController, UserFundingSourceController} from './foundingSource/controller';
+import {BeneficialOwnerController} from './beneficialOwner/controller';
 
 const knex = require('knex');
 const path = require('path');
@@ -137,7 +138,8 @@ export class ApiServer {
             InvitationCheckController,
             ContractorController,
             ContractorFundingSourceController,
-            UserFundingSourceController
+            UserFundingSourceController,
+            BeneficialOwnerController
         );
     }
 
