@@ -41,7 +41,7 @@ const listBusinessVerifiedBeneficialOwners = async (id) => {
 const createBusinessVerifiedBeneficialOwner = async (id) => {
     await client.authorize();
     try {
-        let owner = dwolla.customer.ownerFactory({
+        let owner = dwolla.customer.beneficialOwnerFactory({
             firstName: 'firstName',
             lastName: 'lastName',
             title: 'chief',

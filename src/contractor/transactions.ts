@@ -1,13 +1,40 @@
 import {AddBeneficialOwnerRequest, AddBeneficialOwnerResponse, BeneficialOwnerAddress} from '../beneficialOwner/models';
 import * as dwolla from '../dwolla';
-import {AutoWired} from 'typescript-ioc';
+import {AutoWired, Inject} from 'typescript-ioc';
+import {BeneficialOwner} from '../dwolla/customer';
+import {TenantContext} from '../context';
+import {TenantService} from '../tenant/service';
 
 @AutoWired
 export class AddBeneficialOwnerTransaction {
-
     private dwollaClient: dwolla.Client;
+    private tenantService: TenantService;
 
-    async Execute(request: AddBeneficialOwnerRequest): Promise<AddBeneficialOwnerResponse> {
-       return new AddBeneficialOwnerResponse();
+    constructor(@Inject dwollaClinet: dwolla.Client, @Inject tenantService: TenantService) {
+        this.dwollaClient = dwollaClinet;
+        this.tenantService = tenantService;
+    }
+
+    async execute(request: AddBeneficialOwnerRequest, tenantId: string): Promise<BeneficialOwner> {
+        try {
+            const tenant = await this.tenantService.get(tenantId);
+            if (!tenant.dwollaUri) {
+                throw new AddBeneficialOwnerError('Could not add beneficial owner for, tenant uri resource is invalid.');
+            }
+
+            const beneficialOwner = new BeneficialOwner(request);
+            await this.dwollaClient.authorize();
+            const response = await this.dwollaClient.createBusinessVerifiedBeneficialOwner(
+                tenant.dwollaUri, beneficialOwner);
+            return await this.dwollaClient.getBusinessVerifiedBeneficialOwner(response);
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+
+export class AddBeneficialOwnerError extends Error {
+    constructor(message: string) {
+        super(message);
     }
 }

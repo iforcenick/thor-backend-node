@@ -134,12 +134,13 @@ export class Client {
         return customer.factory(response.body).setLocalization(localization);
     }
 
-    public async getBusinessVerifiedBeneficialOwner(localization: string): Promise<customer.Owner> {
+    public async getBusinessVerifiedBeneficialOwner(localization: string): Promise<customer.BeneficialOwner> {
         const response = await this.get(localization);
         return customer.ownerFactory(response.body).setLocalization(localization);
     }
 
-    public async createBusinessVerifiedBeneficialOwner(localization: string, owner: customer.Owner) {
+    public async createBusinessVerifiedBeneficialOwner(localization: string, owner: customer.BeneficialOwner) {
+        console.log(this);
         const response = await this.post(`${localization}/beneficial-owners`, owner);
         return response.headers.get('location');
     }
@@ -148,7 +149,7 @@ export class Client {
         const response = await this.get(`${localization}/beneficial-owners`);
         const owners = [];
         for (const owner of response.body._embedded['beneficial-owners']) {
-            owners.push(customer.ownerFactory(owner));
+            owners.push(customer.beneficialOwnerFactory(owner));
         }
 
         return owners;

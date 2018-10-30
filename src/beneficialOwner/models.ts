@@ -15,18 +15,15 @@ export class BeneficialOwnerAddress extends Mapper {
 export class BeneficialOwnerBaseModel extends Mapper {
     firstName: string = mapper.FIELD_STR;
     lastName: string = mapper.FIELD_STR;
-    dateOfBirth: string = mapper.FIELD_STR;
-    ssn: string = mapper.FIELD_STR;
     @mapper.object(BeneficialOwnerAddress)
     address: BeneficialOwnerAddress = new BeneficialOwnerAddress();
 }
 
-
-
-
 export class AddBeneficialOwnerResponse extends BeneficialOwnerBaseModel {
+    id: string = mapper.FIELD_STR;
 }
 
-
 export class AddBeneficialOwnerRequest extends BeneficialOwnerBaseModel {
+    dateOfBirth: string = mapper.FIELD_STR;
+    ssn: string = mapper.FIELD_STR;
 }

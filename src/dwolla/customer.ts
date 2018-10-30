@@ -75,6 +75,33 @@ export class OwnerAddress {
     }
 }
 
+
+export class BeneficialOwner implements IItem {
+    id: string;
+    localization: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    ssn: string;
+    address: OwnerAddress;
+
+    constructor(data) {
+        this.id = data.id;
+        this.firstName = data.firstName;
+        this.lastName = data.lastName;
+        this.dateOfBirth = data.dateOfBirth;
+        this.ssn = data.ssn;
+        if (data.address) {
+            this.address = new OwnerAddress(data.address);
+        }
+    }
+
+    public setLocalization(url): BeneficialOwner {
+        this.localization = url;
+        return this;
+    }
+}
+
 export class Customer implements ICustomer {
     public created: string;
     public id: string;
@@ -156,6 +183,13 @@ export const CUSTOMER_STATUS = {
     Deactivated: 'deactivated',
 };
 
+export const BENEFICIAL_OWNER_STATUS = {
+    Verified: 'Verified',
+    Document: 'Document',
+    Incomplete: 'Incomplete'
+};
+
+
 export const TYPE = {
     Personal: 'personal',
     Business: 'business'
@@ -174,4 +208,8 @@ export const factory = (data): ICustomer => {
 
 export const ownerFactory = (data): Owner => {
     return new Owner(data);
+};
+
+export const beneficialOwnerFactory = (data): BeneficialOwner => {
+    return new BeneficialOwner(data);
 };
