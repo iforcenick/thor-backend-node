@@ -140,7 +140,6 @@ export class Client {
     }
 
     public async createBusinessVerifiedBeneficialOwner(localization: string, owner: customer.BeneficialOwner) {
-        console.log(this);
         const response = await this.post(`${localization}/beneficial-owners`, owner);
         return response.headers.get('location');
     }

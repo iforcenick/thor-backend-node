@@ -32,6 +32,26 @@ export class AddBeneficialOwnerTransaction {
         }
     }
 }
+@AutoWired
+export class GetBeneficialOwnerTransaction {
+    private dwollaClient: dwolla.Client;
+    private tenantService: TenantService;
+
+    constructor(@Inject dwollaClinet: dwolla.Client, @Inject tenantService: TenantService) {
+        this.dwollaClient = dwollaClinet;
+        this.tenantService = tenantService;
+    }
+
+    async execute(tenantId: string): Promise<Array<BeneficialOwner>> {
+        const tenant = await this.tenantService.get(tenantId);
+        await this.dwollaClient.authorize();
+
+        const beneficialOwners = await this.dwollaClient.listBusinessVerifiedBeneficialOwners(tenant.dwollaUri);
+
+        return beneficialOwners;
+    }
+
+}
 
 export class AddBeneficialOwnerError extends Error {
     constructor(message: string) {
