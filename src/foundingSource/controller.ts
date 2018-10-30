@@ -1,5 +1,5 @@
 import {BaseController} from '../api';
-import {DELETE, GET, Path, PathParam, POST, Preprocessor} from 'typescript-rest';
+import {DELETE, GET, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
 import * as Errors from 'typescript-rest/dist/server-errors';
 import {Profile} from '../profile/models';
 import {
@@ -25,6 +25,7 @@ import {Config} from '../config';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {User} from '../user/models';
 import * as models from '../transaction/models';
+import {Paginated, Pagination} from '../db';
 
 export abstract class FundingSourceBaseController extends BaseController {
     protected dwollaClient: dwolla.Client;
@@ -188,12 +189,12 @@ export abstract class FundingSourceBaseController extends BaseController {
         }
     }
 
-    protected async _getFundingSources(user: User) {
+    protected async _getFundingSources(user: User, page: number = 1, limit: number = this.config.get('pagination.limit')) {
         const fundingSources = await this.fundingSourceService.getAllFundingSource(user.id);
 
-        return fundingSources.map(fundingSource => {
+        return this.paginate(new Pagination(page, limit, fundingSources.length), fundingSources.map(fundingSource => {
             return this.map(FundingSourceResponse, fundingSource);
-        });
+        }));
     }
 }
 
@@ -246,9 +247,10 @@ export class UserFundingSourceController extends FundingSourceBaseController {
 
     @GET
     @Path('')
-    async getFundingSources(@PathParam('userId') userId: string) {
+    async getFundingSources(@PathParam('userId') userId: string, @QueryParam('page') page?: number,
+                            @QueryParam('limit') limit?: number) {
         const user = await this.userService.get(userId);
-        return await super._getFundingSources(user);
+        return await super._getFundingSources(user, page, limit);
     }
 }
 
@@ -275,9 +277,10 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
 
     @GET
     @Path('')
-    async getFundingSources() {
+    async getFundingSources(@QueryParam('page') page?: number,
+                            @QueryParam('limit') limit?: number) {
         const user = await this.userService.get(this.userContext.get().id);
-        return await super._getFundingSources(user);
+        return await super._getFundingSources(user, page, limit);
     }
 
     @GET
