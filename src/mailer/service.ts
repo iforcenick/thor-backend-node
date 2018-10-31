@@ -94,8 +94,16 @@ export class MailerService {
             .setParams(params);
         return await this.sendTemplate(user, template);
     }
-
-    async sendInvitation(email: string, params: any) {
+    /**
+     * Company sending invite to new contractor
+     * @param companyName name of company sending transaction
+     * @param link link to the invitation
+     */
+    async sendInvitation(email: string, { companyName, link }) {
+        const params = {
+            companyName,
+            link,
+        };
         const template = new templates.Template();
         template
             .setSubject('You have been invited to join Gothor')
@@ -105,34 +113,50 @@ export class MailerService {
         return await this.send(email, this.from, await template.getSubject(), await template.getHtml(), await template.getText());
     }
 
+    /**
+     * Company sending ACH to user
+     * @param name name of company sending transaction
+     * @param recipientName name of user receiving transaction
+     * @param fundingSource where the payment is being sent
+     * @param amount amount of money being transferred
+     * @param date date the transaction was created
+     */
     async sendCustomerTransferCreatedSender(recipient: users.User, { admin, user, transaction }) {
         const params = {
-            name: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`,
+            name: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`, // TODO: change to company name
             recipientName: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-            fundingSource: transaction.transfer.sourceUri.split('/').pop(),
+            fundingSource: transaction.transfer.sourceUri.split('/').pop(), // TODO: change to bank name / account number
             amount: transaction.transfer.value,
             date: transaction.transfer.createdAt
         };
         const template = new templates.Template();
         template
-            .setSubject('Customer Transfer Created')
+            .setSubject('You sent a payment')
             .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_CREATED_SENDER_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_CREATED_SENDER_TEXT)
             .setParams(params);
         return await this.sendTemplate(recipient, template);
     }
 
+    /**
+     * Customer receiving ACH from company
+     * @param name name of person receiving transaction
+     * @param senderName name of company sending transaction
+     * @param fundingSource where the payment is being sent
+     * @param amount amount of money being transferred
+     * @param date date the transaction was created
+     */
     async sendCustomerTransferCreatedReceiver(recipient: users.User, { admin, user, transaction }) {
         const params = {
             name: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-            senderName: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`,
-            fundingSource: transaction.transfer.destinationUri.split('/').pop(),
+            senderName: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`, // TODO: change to company name
+            fundingSource: transaction.transfer.destinationUri.split('/').pop(), // TODO: change to bank name / account number
             amount: transaction.transfer.value,
             date: transaction.transfer.createdAt
         };
         const template = new templates.Template();
         template
-            .setSubject('Customer Transfer Created')
+            .setSubject('You are receiving a payment')
             .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_CREATED_RECEIVER_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_CREATED_RECEIVER_TEXT)
             .setParams(params);
@@ -196,11 +220,19 @@ export class MailerService {
         return await this.sendTemplate(recipient, template);
     }
 
+    /**
+     * Customer receiving ACH from company
+     * @param name name of person receiving transaction
+     * @param senderName name of company sending transaction
+     * @param fundingSource where the payment is being sent
+     * @param amount amount of money being transferred
+     * @param date date the transaction was created
+     */
     async sendCustomerTransferFailedReceiver(recipient: users.User, { admin, user, transaction }) {
         const params = {
             name: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-            senderName: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`,
-            fundingSource: transaction.transfer.destinationUri.split('/').pop(),
+            senderName: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`, // TODO: change to company name
+            fundingSource: transaction.transfer.destinationUri.split('/').pop(), // TODO: change to bank name / account number
             amount: transaction.transfer.value,
             date: transaction.transfer.createdAt
         };
@@ -213,11 +245,19 @@ export class MailerService {
         return await this.sendTemplate(recipient, template);
     }
 
+    /**
+     * Company sending ACH to user
+     * @param name name of company sending transaction
+     * @param recipientName name of user receiving transaction
+     * @param fundingSource where the payment is being sent
+     * @param amount amount of money being transferred
+     * @param date date the transaction was created
+     */
     async sendCustomerTransferCompletedSender(recipient: users.User, { admin, user, transaction }) {
         const params = {
-            name: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`,
+            name: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`, // TODO: change to company name
             recipientName: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-            fundingSource: transaction.transfer.sourceUri.split('/').pop(),
+            fundingSource: transaction.transfer.sourceUri.split('/').pop(), // TODO: change to bank name / account number
             amount: transaction.transfer.value,
             date: transaction.transfer.createdAt
         };
@@ -230,11 +270,19 @@ export class MailerService {
         return await this.sendTemplate(recipient, template);
     }
 
+    /**
+     * Customer receiving ACH from company
+     * @param name name of person receiving transaction
+     * @param senderName name of company sending transaction
+     * @param fundingSource where the payment is being sent
+     * @param amount amount of money being transferred
+     * @param date date the transaction was created
+     */
     async sendCustomerTransferCompletedReceiver(recipient: users.User, { admin, user, transaction }) {
         const params = {
             name: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-            senderName: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`,
-            fundingSource: transaction.transfer.destinationUri.split('/').pop(),
+            senderName: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`, // TODO: change to company name
+            fundingSource: transaction.transfer.destinationUri.split('/').pop(), // TODO: change to bank name / account number
             amount: transaction.transfer.value,
             date: transaction.transfer.createdAt
         };

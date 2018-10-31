@@ -156,11 +156,26 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         // don't abort transaction if email was not send
         try {
             const user = await this.userService.get(_transaction.userId);
-
-            if (status == models.Statuses.failed) {
-                await this.mailer.sendTransferFailed(user, _transaction);
-            } else if (status == models.Statuses.processed) {
-                await this.mailer.sendTransferProcessed(user, _transaction);
+            const admin = await this.userService.get(_transaction.adminId);
+            switch (status) {
+                case models.Statuses.failed:
+                    await Promise.all([
+                        this.mailer.sendCustomerTransferFailedSender(admin, { user, admin, transaction: _transaction }),
+                        this.mailer.sendCustomerTransferFailedReceiver(user, { admin, user, transaction: _transaction })
+                    ]);
+                    break;
+                case models.Statuses.processed:
+                    await Promise.all([
+                        this.mailer.sendCustomerTransferCompletedSender(admin, { admin, user, transaction: _transaction }),
+                        this.mailer.sendCustomerTransferCompletedReceiver(user, { admin, user, transaction: _transaction })
+                    ]);
+                    break;
+                case models.Statuses.new:
+                    await Promise.all([
+                        this.mailer.sendCustomerTransferCreatedSender(admin, { admin, user, transaction: _transaction }),
+                        this.mailer.sendCustomerTransferCreatedReceiver(user, { admin, user, transaction: _transaction })
+                    ]);
+                    break;
             }
         } catch (e) {
             this.logger.error(e);

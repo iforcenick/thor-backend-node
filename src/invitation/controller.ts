@@ -64,6 +64,7 @@ export class InvitationController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async createInvitation(data: models.InvitationRequest): Promise<models.InvitationResponse> {
         const parsedData = await this.validate(data, models.requestSchema);
+        const user = await this.userContext.get();
         let invitation = models.Invitation.factory(parsedData);
         invitation.status = models.Status.pending;
 
@@ -84,7 +85,7 @@ export class InvitationController extends BaseController {
 
         try {
             await this.mailer.sendInvitation(invitation.email, {
-                link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`
+                link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`, companyName: user.tenantProfile.companyName
             });
         } catch (e) {
             this.logger.error(e);
