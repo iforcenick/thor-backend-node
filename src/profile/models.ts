@@ -8,6 +8,7 @@ import * as user from '../user/models';
 import * as role from '../user/role';
 import * as _ from 'lodash';
 import {FundingSource} from '../foundingSource/models';
+import * as regex from '../validation/regex';
 
 export const enum Relations {
     user = 'user',
@@ -160,11 +161,7 @@ export class ProfileRequest extends ProfileBaseInfo {
     ssn: string = mapper.FIELD_STR;
 }
 
-const poBox = /^ *((#\d+)|((box|bin)[-. \/\\]?\d+)|(.*p[ \.]? ?(o|0)[-. \/\\]? *-?((box|bin)|b|(#|num)?\d+))|(p(ost)? *(o(ff(ice)?)?)? *((box|bin)|b)? *\d+)|(p *-?\/?(o)? *-?box)|post office box|((box|bin)|b) *(number|num|#)? *\d+|(num|number|#) *\d+)/i;
-const stateRegex = /^(?:(A[KLRZ]|C[AOT]|D[CE]|FL|GA|HI|I[ADLN]|K[SY]|LA|M[ADEINOST]|N[CDEHJMVY]|O[HKR]|P[AR]|RI|S[CD]|T[NX]|UT|V[AIT]|W[AIVY]))$/;
-const dateRegex = /^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$/;
-const phoneRegex = /^\d{10}$/;
-const postalCodeRegex = /^[0-9]{5}(?:-[0-9]{4})?$/;
+
 
 export const profileRequestSchema = Joi.object().keys({
     firstName: Joi.string().required(),
@@ -184,14 +181,14 @@ export const profileRequestSchema = Joi.object().keys({
 export const profilePatchSchema = Joi.object().keys({
     firstName: Joi.string(),
     lastName: Joi.string(),
-    phone: Joi.string().regex(phoneRegex),
+    phone: Joi.string().regex(regex.phoneRegex),
     email: Joi.string().email(),
-    dateOfBirth: Joi.string().regex(dateRegex, {name: 'Format'}),
+    dateOfBirth: Joi.string().regex(regex.dateRegex, {name: 'Format'}),
     ssn: Joi.forbidden(),
     country: Joi.string(),
-    state: Joi.string().regex(stateRegex),
+    state: Joi.string().regex(regex.stateRegex),
     city: Joi.string().regex(/[a-zA-Z]+/),
-    postalCode: Joi.string().regex(postalCodeRegex),
-    address1: Joi.string().max(50).regex(poBox, {invert: true, name: 'PO box'}).trim(),
-    address2: Joi.string().max(50).regex(poBox, {invert: true, name: 'PO box'}).trim().allow('').strict(),
+    postalCode: Joi.string().regex(regex.postalCodeRegex),
+    address1: Joi.string().max(50).regex(regex.poBox, {invert: true, name: 'PO box'}).trim(),
+    address2: Joi.string().max(50).regex(regex.poBox, {invert: true, name: 'PO box'}).trim().allow('').strict(),
 });

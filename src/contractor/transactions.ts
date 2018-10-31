@@ -18,8 +18,11 @@ export class AddBeneficialOwnerTransaction {
     async execute(request: AddBeneficialOwnerRequest, tenantId: string): Promise<BeneficialOwner> {
         try {
             const tenant = await this.tenantService.get(tenantId);
+            if (!tenant) {
+                throw new BeneficialOwnerError('Could not find tenant.');
+            }
             if (!tenant.dwollaUri) {
-                throw new AddBeneficialOwnerError('Could not add beneficial owner for, tenant uri resource is invalid.');
+                throw new BeneficialOwnerError('Could not add beneficial owner for, tenant uri resource is invalid.');
             }
 
             const beneficialOwner = new BeneficialOwner(request);
@@ -32,6 +35,7 @@ export class AddBeneficialOwnerTransaction {
         }
     }
 }
+
 @AutoWired
 export class GetBeneficialOwnerTransaction {
     private dwollaClient: dwolla.Client;
@@ -44,6 +48,9 @@ export class GetBeneficialOwnerTransaction {
 
     async execute(tenantId: string): Promise<Array<BeneficialOwner>> {
         const tenant = await this.tenantService.get(tenantId);
+        if (!tenant) {
+            throw new BeneficialOwnerError('Could not find tenant.');
+        }
         await this.dwollaClient.authorize();
 
         const beneficialOwners = await this.dwollaClient.listBusinessVerifiedBeneficialOwners(tenant.dwollaUri);
@@ -53,7 +60,7 @@ export class GetBeneficialOwnerTransaction {
 
 }
 
-export class AddBeneficialOwnerError extends Error {
+export class BeneficialOwnerError extends Error {
     constructor(message: string) {
         super(message);
     }

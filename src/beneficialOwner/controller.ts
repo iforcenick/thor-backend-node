@@ -2,13 +2,15 @@ import {BaseController} from '../api';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {GET, Path, POST, Preprocessor, QueryParam} from 'typescript-rest';
-import {AddBeneficialOwnerRequest, AddBeneficialOwnerResponse} from './models';
+import {AddBeneficialOwnerRequest, addBeneficialOwnerRequestSchema, AddBeneficialOwnerResponse} from './models';
 import {AddBeneficialOwnerTransaction, GetBeneficialOwnerTransaction} from '../contractor/transactions';
 import {Logger} from '../logger';
 import {Config} from '../config';
 import {TenantContext} from '../context';
 import * as models from '../job/models';
 import {Paginated, Pagination} from '../db';
+import * as dwolla from '../dwolla';
+import * as Errors from 'typescript-rest/dist/server-errors';
 
 
 @AutoWired
@@ -36,12 +38,15 @@ export abstract class BeneficialOwnerController extends BaseController {
     @POST
     @Path('beneficialOwners')
     async addBeneficialOwner(request: AddBeneficialOwnerRequest): Promise<AddBeneficialOwnerResponse> {
-
+        const validateResult: AddBeneficialOwnerRequest = await this.validate(request, addBeneficialOwnerRequestSchema);
         try {
-            const beneficialOwner = await this.addBeneficialOwnerTransaction.execute(request, this.tenantContext.get());
+            const beneficialOwner = await this.addBeneficialOwnerTransaction.execute(validateResult, this.tenantContext.get());
             return this.map(AddBeneficialOwnerResponse, beneficialOwner);
-        } catch (e) {
-            throw e;
+        } catch (err) {
+            if (err instanceof dwolla.DwollaRequestError) {
+                throw err.toValidationError(null, null);
+            }
+            throw new Errors.InternalServerError(err.message);
         }
     }
 
@@ -54,8 +59,11 @@ export abstract class BeneficialOwnerController extends BaseController {
             const pagination = new Pagination(page, limit, beneficialOwners.length);
 
             return this.paginate(pagination, beneficialOwners);
-        } catch (e) {
-            throw e;
+        } catch (err) {
+            if (err instanceof dwolla.DwollaRequestError) {
+                throw err.toValidationError(null, null);
+            }
+            throw new Errors.InternalServerError(err.message);
         }
     }
 
