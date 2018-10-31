@@ -41,7 +41,7 @@ and ```npm run db``` followed by ```npm run start:docker-dev```
   kind: Secret
   metadata:
     name: credentials
-    namespace: [CLUSTER_NAME]
+    namespace: thor-api
   data:
     dwolla_key: XXXXXXXXXXX
     dwolla_secret: XXXXXXXXXXX
@@ -50,5 +50,13 @@ and ```npm run db``` followed by ```npm run start:docker-dev```
     mailer_mailgun_key: XXXXXXXXXXX
   ```
   Where the data field is a map. Its keys must consist of alphanumeric characters, ‘-’, ‘_’ or ‘.’. The values are arbitrary data, encoded using base64.
+* Updating a secret
+  ```sh
+  kubectl apply -f [FILE_NAME].yaml
+  ```
+* Retrieving a secret
+  ```sh
+  kubectl get secret [SECRET_NAME] -o yaml --namespace=[NAMESPACE]
+  ```
 
  

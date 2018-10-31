@@ -41,12 +41,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: credentials
-                  key: mailgun_domain
+                  key: mailer_mailgun_domain
             - name: mailer_mailgun_key
               valueFrom:
                 secretKeyRef:
                   name: credentials
-                  key: mailgun_key
+                  key: mailer_mailgun_key
             - name: NODE_ENV
               value: {{ .Values.app.nodeEnv }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}

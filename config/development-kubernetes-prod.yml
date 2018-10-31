@@ -1,13 +1,17 @@
 ---
 application:
-  frontUri: https://odin-dev.firebaseapp.com
+  frontUri: https://odin-prod.firebaseapp.com
 db:
   connection:
     host: 35.233.154.25
     password: bzm1tdHrM7C9hNdj
     database: development
 dwolla:
+  webhookUri: https://odin-api.prod.gothor.com/dwolla/events
   environment: production
+swagger:
+  host: odin-api.prod.gothor.com
+  schema: https
 mailer:
   mailgun:
     url: https://api.mailgun.net/v3
