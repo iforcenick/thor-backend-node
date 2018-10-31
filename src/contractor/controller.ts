@@ -117,6 +117,7 @@ export class ContractorController extends BaseController {
         const parsedData = await this.validate(data, passwordRequestSchema);
         const oldPassword = parsedData['oldPassword'];
         const newPassword = parsedData['newPassword'];
+        const meow = "mmmmmmmmmm"
         const confirmPassword = parsedData['confirmPassword'];
         const user = await this.service.get(this.userContext.get().id);
 
