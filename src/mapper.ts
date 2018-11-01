@@ -42,7 +42,7 @@ export class Mapper {
         } else if (this[key] === FIELD_BOOLEAN) {
             return !!value;
         } else if (this[key] === FIELD_DATE) {
-            return String(value);
+            return value;
         } else {
             return value;
         }
