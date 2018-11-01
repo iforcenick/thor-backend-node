@@ -181,7 +181,7 @@ export class ProfilePatchRequest extends ProfileBaseInfo {
 export const profileRequestSchema = Joi.object().keys({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
-    phone: Joi.string().required().regex(regex.phoneRegex),
+    phone: Joi.string().allow('', null).regex(regex.phoneRegex),
     email: Joi.string().required().email(),
     dateOfBirth: Joi.string().required(),
     ssn: Joi.string().required(),

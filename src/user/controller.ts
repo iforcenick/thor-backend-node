@@ -30,7 +30,6 @@ import * as _ from 'lodash';
 import * as context from '../context';
 import {Config} from '../config';
 import {DwollaNotifier} from '../dwolla/notifier';
-import {UserPatchRequest} from "./models";
 
 @Security('api_key')
 @Path('/users')

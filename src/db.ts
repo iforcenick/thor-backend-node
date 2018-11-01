@@ -192,6 +192,14 @@ export abstract class ModelService<T extends any> {
             .first();
     }
 
+    async delete(entity: Model, trx?: transaction<any>): Promise<any> {
+        return await entity
+            .$query(this.transaction(trx))
+            .delete()
+            .debug()
+            .where(`${this.modelType.tableName}.id`, entity.id);
+    }
+
     getTenantId(): string {
         return this.tenant;
     }

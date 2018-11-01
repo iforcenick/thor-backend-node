@@ -2,6 +2,7 @@ import {BaseController} from '../api';
 import {DELETE, GET, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
 import * as Errors from 'typescript-rest/dist/server-errors';
 import {Profile} from '../profile/models';
+import * as profiles from '../profile/models';
 import {
     FundingSource,
     FundingSourceBaseInfo,
@@ -157,7 +158,7 @@ export abstract class FundingSourceBaseController extends BaseController {
         if (!user) {
             throw new Errors.NotFoundError();
         }
-        const profile = user.tenantProfile;
+        const profile: Profile = user.tenantProfile;
 
         try {
             const sourceInfo = {
@@ -166,7 +167,7 @@ export abstract class FundingSourceBaseController extends BaseController {
                 account: profile.dwollaAccount,
             };
 
-            const fundingSource = await this.fundingSourceService.get(id);
+            const fundingSource: FundingSource = await this.fundingSourceService.get(id);
             if (!fundingSource) {
                 throw new Errors.NotFoundError(`Could not find funding source by id ${id}`);
             }
@@ -181,8 +182,14 @@ export abstract class FundingSourceBaseController extends BaseController {
             try {
                 await this.mailer.sendFundingSourceRemoved(user, sourceInfo);
             } catch (e) {
-                this.logger.error(e);
+                this.logger.error(e.message);
             }
+
+            await transaction(this.profileService.transaction(), async trx => {
+                // TODO: move
+                await profile.$relatedQuery(profiles.Relations.fundingSources).unrelate().where(`${FundingSource.tableName}.id`, fundingSource.id);
+                await this.fundingSourceService.delete(fundingSource, trx);
+            });
         } catch (err) {
             this.logger.error(err);
             throw new Errors.InternalServerError(err.message);
