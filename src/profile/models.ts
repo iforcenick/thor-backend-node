@@ -9,6 +9,7 @@ import * as role from '../user/role';
 import * as _ from 'lodash';
 import {FundingSource} from '../foundingSource/models';
 import * as regex from '../validation/regex';
+import * as dwolla from '../dwolla';
 
 export const enum Relations {
     user = 'user',
@@ -129,6 +130,10 @@ export class Profile extends db.Model {
         this.dwollaStatus = null;
         this.deletedAt = new Date();
     }
+
+    dwollaUpdateAvailable() {
+        return [dwolla.customer.CUSTOMER_STATUS.Verified, dwolla.customer.CUSTOMER_STATUS.Unverified].includes(this.dwollaStatus);
+    }
 }
 
 export class ProfileBaseInfo extends Mapper {
@@ -161,7 +166,17 @@ export class ProfileRequest extends ProfileBaseInfo {
     ssn: string = mapper.FIELD_STR;
 }
 
-
+export class ProfilePatchRequest extends ProfileBaseInfo {
+    firstName: string = mapper.FIELD_STR;
+    lastName: string = mapper.FIELD_STR;
+    phone: string = mapper.FIELD_STR;
+    country: string = mapper.FIELD_STR;
+    state: string = mapper.FIELD_STR;
+    city: string = mapper.FIELD_STR;
+    postalCode: string = mapper.FIELD_STR;
+    address1: string = mapper.FIELD_STR;
+    address2: string = mapper.FIELD_STR;
+}
 
 export const profileRequestSchema = Joi.object().keys({
     firstName: Joi.string().required(),
@@ -182,9 +197,6 @@ export const profilePatchSchema = Joi.object().keys({
     firstName: Joi.string(),
     lastName: Joi.string(),
     phone: Joi.string().regex(regex.phoneRegex),
-    email: Joi.string().email(),
-    dateOfBirth: Joi.string().regex(regex.dateRegex, {name: 'Format'}),
-    ssn: Joi.forbidden(),
     country: Joi.string(),
     state: Joi.string().regex(regex.stateRegex),
     city: Joi.string().regex(/[a-zA-Z]+/),

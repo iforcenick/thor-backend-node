@@ -30,6 +30,7 @@ import * as _ from 'lodash';
 import * as context from '../context';
 import {Config} from '../config';
 import {DwollaNotifier} from '../dwolla/notifier';
+import {UserPatchRequest} from "./models";
 
 @Security('api_key')
 @Path('/users')
@@ -135,12 +136,12 @@ export class UserController extends BaseController {
 
         try {
             await this.dwollaClient.authorize();
-            const customerData = dwolla.customer.factory(parsedData.profile);
-            customerData.type = dwolla.customer.TYPE.Personal;
-            const customer = new dwolla.customer.Customer(customerData);
+            const customer = dwolla.customer.factory(parsedData.profile);
+            customer.type = dwolla.customer.TYPE.Personal;
             profile.dwollaUri = await this.dwollaClient.createCustomer(customer);
             const dwollaCustomer = await this.dwollaClient.getCustomer(profile.dwollaUri);
             profile.dwollaStatus = dwollaCustomer.status;
+            profile.dwollaType = dwollaCustomer.type;
 
             if (parsedData.password) {
                 user.password = await this.service.hashPassword(parsedData.password);
@@ -162,24 +163,34 @@ export class UserController extends BaseController {
     @PATCH
     @Path(':id/profile')
     @Preprocessor(BaseController.requireAdmin)
-    async patchAnyUser(@PathParam('id') id: string, data: models.UserRequest): Promise<ProfileResponse> {
+    async patchAnyUser(@PathParam('id') id: string, data: models.UserPatchRequest): Promise<ProfileResponse> {
         const parsedData = await this.validate(data, models.userPatchSchema);
         ProfileService.validateAge(parsedData['profile']);
+
         try {
             const user = await this.service.get(id);
             if (!user) {
                 throw new Errors.NotFoundError();
             }
+
             const profile = user.tenantProfile;
+            if (!profile.dwollaUpdateAvailable()) {
+                throw new Errors.NotAcceptableError('User not in a proper state for modification');
+            }
+
             profile.$set(parsedData['profile']);
             const updatedProfile = await this.service.profileService.updateWithDwolla(profile);
             updatedProfile.roles = profile.roles;
             return this.map(ProfileResponse, updatedProfile);
         } catch (e) {
-            this.logger.error(e);
             if (e instanceof HttpError) {
                 throw e;
             }
+
+            if (e instanceof dwolla.DwollaRequestError) {
+                throw e.toValidationError('profile');
+            }
+
             throw new Errors.InternalServerError(e);
         }
     }
@@ -190,7 +201,6 @@ export class UserController extends BaseController {
         try {
             await this.service.deleteFull(this.userContext.get().id);
         } catch (e) {
-            this.logger.error(e);
             throw new Errors.InternalServerError(e);
         }
     }
@@ -211,7 +221,6 @@ export class UserController extends BaseController {
         try {
             await this.service.delete(user);
         } catch (e) {
-            this.logger.error(e);
             throw new Errors.InternalServerError(e);
         }
     }
@@ -287,7 +296,6 @@ export class UserController extends BaseController {
             const doc = await this.dwollaClient.getDocument(location);
             return this.map(models.UserDocument, doc);
         } catch (e) {
-            this.logger.error(e.message);
             throw new Errors.InternalServerError(e);
         }
     }
@@ -308,7 +316,6 @@ export class UserController extends BaseController {
                 return this.map(models.UserDocument, doc);
             });
         } catch (e) {
-            this.logger.error(e.message);
             throw new Errors.InternalServerError(e);
         }
     }

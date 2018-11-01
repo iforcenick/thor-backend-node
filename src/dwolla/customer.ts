@@ -167,13 +167,18 @@ export class Customer implements ICustomer {
 
     public updateableFields() {
         if (this.type == TYPE.Business) {
-            const obj = _.pick(this, [
-                'email', 'phone', 'ipAddress', 'country', 'city', 'state', 'address1', 'address2', 'postalCode', 'doingBusinessAs', 'website',
+            return _.pick(this, [
+                'email', 'phone', 'ipAddress', 'country', 'city', 'state', 'address1', 'address2', 'postalCode',
+                'doingBusinessAs', 'website',
             ]);
-
-            return obj;
         } else {
-            return this;
+            if (this.status == CUSTOMER_STATUS.Verified) {
+                return _.omit(this, ['dateOfBirth', 'firstName', 'lastName']);
+            } else if (this.status == CUSTOMER_STATUS.Unverified) {
+                return _.pick(this, ['firstName', 'lastName', 'email', 'businessName']);
+            } else {
+                return this;
+            }
         }
     }
 }

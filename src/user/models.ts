@@ -99,6 +99,11 @@ export class UserRequest extends UserBaseInfo {
     profile: profile.ProfileRequest = new profile.ProfileRequest();
 }
 
+export class UserPatchRequest extends UserBaseInfo {
+    @mapper.object(profile.ProfilePatchRequest)
+    profile: profile.ProfilePatchRequest = new profile.ProfilePatchRequest();
+}
+
 export interface PaginatedUserResponse extends PaginatedResponse {
     items: Array<UserResponse>;
 }

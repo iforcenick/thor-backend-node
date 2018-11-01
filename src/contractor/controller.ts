@@ -75,12 +75,12 @@ export class ContractorController extends BaseController {
         const profile = Profile.factory(parsedData['profile']);
         try {
             await this.dwollaClient.authorize();
-            const customerData = dwolla.customer.factory(parsedData['profile']);
-            customerData.type = dwolla.customer.TYPE.Personal;
-            const customer = new dwolla.customer.Customer(customerData);
+            const customer = dwolla.customer.factory(parsedData['profile']);
+            customer.type = dwolla.customer.TYPE.Personal;
             profile.dwollaUri = await this.dwollaClient.createCustomer(customer);
             const dwollaCustomer = await this.dwollaClient.getCustomer(profile.dwollaUri);
             profile.dwollaStatus = dwollaCustomer.status;
+            profile.dwollaType = dwollaCustomer.type;
 
             this.service.setTenantId(data.tenant);
             user.password = await this.service.hashPassword(data.password);
@@ -117,7 +117,6 @@ export class ContractorController extends BaseController {
         const parsedData = await this.validate(data, passwordRequestSchema);
         const oldPassword = parsedData['oldPassword'];
         const newPassword = parsedData['newPassword'];
-        const meow = "mmmmmmmmmm"
         const confirmPassword = parsedData['confirmPassword'];
         const user = await this.service.get(this.userContext.get().id);
 
