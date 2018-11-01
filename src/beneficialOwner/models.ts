@@ -18,6 +18,7 @@ export class BeneficialOwnerBaseModel extends Mapper {
     lastName: string = mapper.FIELD_STR;
     @mapper.object(BeneficialOwnerAddress)
     address: BeneficialOwnerAddress = new BeneficialOwnerAddress();
+    verificationStatus: string = mapper.FIELD_STR;
 }
 
 export class AddBeneficialOwnerResponse extends BeneficialOwnerBaseModel {
@@ -29,7 +30,6 @@ export class AddBeneficialOwnerRequest extends BeneficialOwnerBaseModel {
     ssn: string = mapper.FIELD_STR;
 }
 
-
 export const beneficialOwnerAddressSchema = Joi.object().keys({
     country: Joi.string().required(),
     stateProvinceRegion: Joi.string().required().uppercase().length(2),
@@ -40,6 +40,25 @@ export const beneficialOwnerAddressSchema = Joi.object().keys({
 });
 
 export const addBeneficialOwnerRequestSchema = Joi.object().keys({
+    firstName: Joi.string().required(),
+    lastName: Joi.string().required(),
+    dateOfBirth: Joi.string().regex(regex.dateRegex, {name: 'Format'}),
+    ssn: Joi.string().required().invalid(['0000']).regex(regex.ssnRegex),
+    address: beneficialOwnerAddressSchema.required()
+});
+
+export class EditBeneficialOwnerRequest extends AddBeneficialOwnerRequest {
+    id: string = mapper.FIELD_STR;
+}
+
+export class EditBeneficialOwnerResponse extends BeneficialOwnerBaseModel {
+    dateOfBirth: string = mapper.FIELD_STR;
+    ssn: string = mapper.FIELD_STR;
+
+}
+
+export const editBeneficialOwnerRequestSchema = Joi.object().keys({
+    id: Joi.string().required(),
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
     dateOfBirth: Joi.string().regex(regex.dateRegex, {name: 'Format'}),

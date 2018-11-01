@@ -136,12 +136,22 @@ export class Client {
 
     public async getBusinessVerifiedBeneficialOwner(localization: string): Promise<customer.BeneficialOwner> {
         const response = await this.get(localization);
-        return customer.ownerFactory(response.body).setLocalization(localization);
+        return customer.beneficialOwnerFactory(response.body).setLocalization(localization);
     }
 
     public async createBusinessVerifiedBeneficialOwner(localization: string, owner: customer.BeneficialOwner) {
         const response = await this.post(`${localization}/beneficial-owners`, owner);
         return response.headers.get('location');
+    }
+
+    public async editBusinessVerifiedBeneficialOwner(id: string, owner: customer.BeneficialOwner) {
+        const response = await this.post(`/beneficial-owners/${id}`, owner);
+        return response.headers.get('location');
+    }
+
+    public async checkBeneficialOwnerVerificationStatus(id: string, owner: customer.BeneficialOwner) {
+        const response = await this.get(`/beneficial-owners/${id}`);
+        return response.headers.get('status');
     }
 
     public async listBusinessVerifiedBeneficialOwners(localization: string) {

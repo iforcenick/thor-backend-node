@@ -1,9 +1,14 @@
 import {BaseController} from '../api';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {Security, Tags} from 'typescript-rest-swagger';
-import {GET, Path, POST, Preprocessor, QueryParam} from 'typescript-rest';
-import {AddBeneficialOwnerRequest, addBeneficialOwnerRequestSchema, AddBeneficialOwnerResponse} from './models';
-import {AddBeneficialOwnerTransaction, GetBeneficialOwnerTransaction} from '../contractor/transactions';
+import {GET, PATCH, Path, POST, Preprocessor, PUT, QueryParam} from 'typescript-rest';
+import {
+    AddBeneficialOwnerRequest,
+    addBeneficialOwnerRequestSchema,
+    AddBeneficialOwnerResponse,
+    EditBeneficialOwnerRequest, editBeneficialOwnerRequestSchema, EditBeneficialOwnerResponse
+} from './models';
+import {AddBeneficialOwnerTransaction, GetBeneficialOwnerTransaction} from './transactions';
 import {Logger} from '../logger';
 import {Config} from '../config';
 import {TenantContext} from '../context';
@@ -42,6 +47,21 @@ export abstract class BeneficialOwnerController extends BaseController {
         try {
             const beneficialOwner = await this.addBeneficialOwnerTransaction.execute(validateResult, this.tenantContext.get());
             return this.map(AddBeneficialOwnerResponse, beneficialOwner);
+        } catch (err) {
+            if (err instanceof dwolla.DwollaRequestError) {
+                throw err.toValidationError(null, null);
+            }
+            throw new Errors.InternalServerError(err.message);
+        }
+    }
+
+    @PATCH
+    @Path('beneficialOwners')
+    async editBeneficialOwner(request: EditBeneficialOwnerRequest): Promise<EditBeneficialOwnerResponse> {
+        const validateResult: EditBeneficialOwnerRequest = await this.validate(request, editBeneficialOwnerRequestSchema);
+        try {
+            const beneficialOwner = await this.addBeneficialOwnerTransaction.execute(validateResult, this.tenantContext.get());
+            return this.map(EditBeneficialOwnerResponse, beneficialOwner);
         } catch (err) {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError(null, null);

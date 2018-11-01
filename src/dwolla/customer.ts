@@ -84,6 +84,7 @@ export class BeneficialOwner implements IItem {
     dateOfBirth: string;
     ssn: string;
     address: OwnerAddress;
+    verificationStatus: string;
 
     constructor(data) {
         this.id = data.id;
@@ -93,6 +94,9 @@ export class BeneficialOwner implements IItem {
         this.ssn = data.ssn;
         if (data.address) {
             this.address = new OwnerAddress(data.address);
+        }
+        if (data.verificationStatus) {
+            this.verificationStatus = data.verificationStatus;
         }
     }
 
