@@ -18,11 +18,11 @@ export class BeneficialOwnerBaseModel extends Mapper {
     lastName: string = mapper.FIELD_STR;
     @mapper.object(BeneficialOwnerAddress)
     address: BeneficialOwnerAddress = new BeneficialOwnerAddress();
-    verificationStatus: string = mapper.FIELD_STR;
 }
 
 export class BeneficialOwnerResponse extends BeneficialOwnerBaseModel {
     id: string = mapper.FIELD_STR;
+    verificationStatus: string = mapper.FIELD_STR;
 }
 
 export class AddBeneficialOwnerRequest extends BeneficialOwnerBaseModel {
@@ -47,7 +47,7 @@ export const addBeneficialOwnerRequestSchema = Joi.object().keys({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
     dateOfBirth: Joi.string().regex(regex.dateRegex, {name: 'Format'}),
-    ssn: Joi.string().required().invalid(['0000']).regex(regex.ssnRegex),
+    ssn: Joi.string().required(),
     address: beneficialOwnerAddressSchema.required()
 });
 

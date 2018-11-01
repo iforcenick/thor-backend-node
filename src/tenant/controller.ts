@@ -76,7 +76,7 @@ export class TenantController extends BaseController {
 
     @GET
     @Path(':id/company')
-    @Tags('TenantCompany')
+    @Tags('tenantCompany')
     async getTenantCompany(@PathParam('id') id: string): Promise<models.TenantCompanyResponse> {
         const tenant = await this.service.get(id);
         if (!tenant) {
@@ -92,7 +92,7 @@ export class TenantController extends BaseController {
 
     @GET
     @Path(':id/company/owner')
-    @Tags('TenantCompany')
+    @Tags('tenantCompany')
     async getTenantCompanyOwner(@PathParam('id') id: string): Promise<models.TenantOwnerResponse> {
         const tenant = await this.service.get(id);
         if (!tenant) {
@@ -113,7 +113,7 @@ export class TenantController extends BaseController {
 
     @POST
     @Path('/company')
-    @Tags('TenantCompany')
+    @Tags('tenantCompany')
     async createTenantCompany(data: models.TenantCompanyPostRequest): Promise<models.TenantCompanyResponse> {
         const tenant: models.Tenant = await this.service.get(this.tenantContext.get());
         const parsedData: models.TenantCompanyPostRequest = await this.validate(data, models.tenantCompanyPostRequestSchema);
@@ -149,7 +149,7 @@ export class TenantController extends BaseController {
 
     @PATCH
     @Path('/company')
-    @Tags('TenantCompany')
+    @Tags('tenantCompany')
     async updateTenantCompany(data: models.TenantCompanyPatchRequest): Promise<models.TenantCompanyResponse> {
         const tenant: models.Tenant = await this.service.get(this.tenantContext.get());
         const parsedData: models.TenantCompanyPatchRequest = await this.validate(data, models.tenantCompanyPatchRequestSchema);
@@ -184,7 +184,7 @@ export class TenantController extends BaseController {
 
     @GET
     @Path('/company/businessCategories')
-    @Tags('TenantCompany')
+    @Tags('tenantCompany')
     async getBusinessCategories() {
         let businessCategories;
         await this.dwollaClient.authorize();

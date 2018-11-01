@@ -92,11 +92,10 @@ export class BeneficialOwner implements IItem {
         this.lastName = data.lastName;
         this.dateOfBirth = data.dateOfBirth;
         this.ssn = data.ssn;
+        this.verificationStatus = data.verificationStatus;
+
         if (data.address) {
             this.address = new OwnerAddress(data.address);
-        }
-        if (data.verificationStatus) {
-            this.verificationStatus = data.verificationStatus;
         }
     }
 

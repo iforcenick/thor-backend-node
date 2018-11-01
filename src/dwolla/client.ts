@@ -144,6 +144,10 @@ export class Client {
         return response.headers.get('location');
     }
 
+    public async deleteBusinessVerifiedBeneficialOwner(id: string) {
+        return await this.delete(Client.beneficialOwnerUri(id));
+    }
+
     public async editBusinessVerifiedBeneficialOwner(id: string, owner: customer.BeneficialOwner) {
         const response = await this.post(Client.beneficialOwnerUri(id), owner);
         return response.headers.get('location');
