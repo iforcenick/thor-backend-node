@@ -45,9 +45,9 @@ export class TenantController extends BaseController {
     }
 
     @GET
-    @Path(':id')
-    async getTenant(@PathParam('id') id: string): Promise<models.TenantResponse> {
-        const tenant = await this.service.get(id);
+    @Path('')
+    async getTenant(): Promise<models.TenantResponse> {
+        const tenant = await this.service.get(this.tenantContext.get());
         if (!tenant) {
             throw new Errors.NotFoundError();
         }
@@ -75,10 +75,10 @@ export class TenantController extends BaseController {
     }
 
     @GET
-    @Path(':id/company')
+    @Path('/company')
     @Tags('tenantCompany')
-    async getTenantCompany(@PathParam('id') id: string): Promise<models.TenantCompanyResponse> {
-        const tenant = await this.service.get(id);
+    async getTenantCompany(): Promise<models.TenantCompanyResponse> {
+        const tenant = await this.service.get(this.tenantContext.get());
         if (!tenant) {
             throw new Errors.NotFoundError();
         }
@@ -91,10 +91,10 @@ export class TenantController extends BaseController {
     }
 
     @GET
-    @Path(':id/company/owner')
+    @Path('/company/owner')
     @Tags('tenantCompany')
-    async getTenantCompanyOwner(@PathParam('id') id: string): Promise<models.TenantOwnerResponse> {
-        const tenant = await this.service.get(id);
+    async getTenantCompanyOwner(): Promise<models.TenantOwnerResponse> {
+        const tenant = await this.service.get(this.tenantContext.get());
         if (!tenant) {
             throw new Errors.NotFoundError();
         }
