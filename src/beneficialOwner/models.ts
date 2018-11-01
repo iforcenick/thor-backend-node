@@ -1,5 +1,5 @@
 import {Mapper} from '../mapper';
-import {mapper} from '../api';
+import {mapper, PaginatedResponse} from '../api';
 import Joi = require('joi');
 import * as regex from '../validation/regex';
 
@@ -21,13 +21,17 @@ export class BeneficialOwnerBaseModel extends Mapper {
     verificationStatus: string = mapper.FIELD_STR;
 }
 
-export class AddBeneficialOwnerResponse extends BeneficialOwnerBaseModel {
+export class BeneficialOwnerResponse extends BeneficialOwnerBaseModel {
     id: string = mapper.FIELD_STR;
 }
 
 export class AddBeneficialOwnerRequest extends BeneficialOwnerBaseModel {
     dateOfBirth: string = mapper.FIELD_STR;
     ssn: string = mapper.FIELD_STR;
+}
+
+export interface PaginatedBeneficialOwnerResponse extends PaginatedResponse {
+    items: Array<BeneficialOwnerResponse>;
 }
 
 export const beneficialOwnerAddressSchema = Joi.object().keys({

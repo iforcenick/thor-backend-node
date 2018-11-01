@@ -145,12 +145,12 @@ export class Client {
     }
 
     public async editBusinessVerifiedBeneficialOwner(id: string, owner: customer.BeneficialOwner) {
-        const response = await this.post(`/beneficial-owners/${id}`, owner);
+        const response = await this.post(Client.beneficialOwnerUri(id), owner);
         return response.headers.get('location');
     }
 
     public async checkBeneficialOwnerVerificationStatus(id: string, owner: customer.BeneficialOwner) {
-        const response = await this.get(`/beneficial-owners/${id}`);
+        const response = await this.get(Client.beneficialOwnerUri(id));
         return response.headers.get('status');
     }
 
@@ -175,10 +175,9 @@ export class Client {
     }
 
     public async deleteFundingSource(localization: string): Promise<string> {
-        const response = await this.post(localization, {
+        return await this.post(localization, {
             removed: true,
         });
-        return response;
     }
 
     public async createPlaidFundingSource(localization, plaidToken, accountName: string): Promise<string> {
@@ -321,5 +320,9 @@ export class Client {
 
     public async listBusinessClassification(): Promise<any> {
         return (await this.get(`business-classifications`)).body._embedded;
+    }
+
+    public static beneficialOwnerUri(id) {
+        return `/beneficial-owners/${id}`;
     }
 }
