@@ -3,7 +3,6 @@ import * as dwolla from '../dwolla/index';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {BeneficialOwner} from '../dwolla/customer';
 import {TenantService} from '../tenant/service';
-import {Client} from "../dwolla/client";
 
 @AutoWired
 export class AddBeneficialOwnerLogic {
@@ -63,6 +62,20 @@ export class GetBeneficialOwnerLogic {
     async execute(id: string): Promise<BeneficialOwner> {
         await this.dwollaClient.authorize();
         return await this.dwollaClient.getBusinessVerifiedBeneficialOwner(dwolla.Client.beneficialOwnerUri(id));
+    }
+}
+
+@AutoWired
+export class DeleteBeneficialOwnerLogic {
+    private dwollaClient: dwolla.Client;
+
+    constructor(@Inject dwollaClient: dwolla.Client) {
+        this.dwollaClient = dwollaClient;
+    }
+
+    async execute(id: string): Promise<BeneficialOwner> {
+        await this.dwollaClient.authorize();
+        return await this.dwollaClient.deleteBusinessVerifiedBeneficialOwner(id);
     }
 }
 

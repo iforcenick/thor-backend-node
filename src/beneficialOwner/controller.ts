@@ -1,7 +1,7 @@
 import {BaseController} from '../api';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {Security, Tags} from 'typescript-rest-swagger';
-import {GET, PATCH, Path, PathParam, POST, Preprocessor, PUT, QueryParam} from 'typescript-rest';
+import {DELETE, GET, PATCH, Path, PathParam, POST, Preprocessor, PUT, QueryParam} from 'typescript-rest';
 import {
     AddBeneficialOwnerRequest,
     addBeneficialOwnerRequestSchema,
@@ -11,7 +11,7 @@ import {
 } from './models';
 import {
     AddBeneficialOwnerLogic, GetBeneficialOwnersLogic,
-    GetBeneficialOwnerLogic
+    GetBeneficialOwnerLogic, DeleteBeneficialOwnerLogic
 } from './logic';
 import {Logger} from '../logger';
 import {Config} from '../config';
@@ -27,22 +27,24 @@ import * as Errors from 'typescript-rest/dist/server-errors';
 @Tags('company', 'beneficialOwners', 'tenants')
 @Preprocessor(BaseController.requireAdmin)
 export abstract class BeneficialOwnerController extends BaseController {
-
     private tenantContext: TenantContext;
     private addBeneficialOwnerTransaction: AddBeneficialOwnerLogic;
-    private GetBeneficialOwnersLogic: GetBeneficialOwnersLogic;
-    private GetBeneficialOwnerLogic: GetBeneficialOwnerLogic;
+    private getBeneficialOwnersLogic: GetBeneficialOwnersLogic;
+    private getBeneficialOwnerLogic: GetBeneficialOwnerLogic;
+    private deleteBeneficialOwnerLogic: DeleteBeneficialOwnerLogic;
 
     constructor(@Inject logger: Logger,
                 @Inject config: Config,
                 @Inject addBeneficialOwnerTransaction: AddBeneficialOwnerLogic,
                 @Inject tenantContext: TenantContext,
-                @Inject GetBeneficialOwnerLogic: GetBeneficialOwnerLogic,
-                @Inject GetBeneficialOwnersLogic: GetBeneficialOwnersLogic) {
+                @Inject deleteBeneficialOwnerLogic: DeleteBeneficialOwnerLogic,
+                @Inject getBeneficialOwnerLogic: GetBeneficialOwnerLogic,
+                @Inject getBeneficialOwnersLogic: GetBeneficialOwnersLogic) {
         super(logger, config);
         this.addBeneficialOwnerTransaction = addBeneficialOwnerTransaction;
-        this.GetBeneficialOwnersLogic = GetBeneficialOwnersLogic;
-        this.GetBeneficialOwnerLogic = GetBeneficialOwnerLogic;
+        this.getBeneficialOwnersLogic = getBeneficialOwnersLogic;
+        this.getBeneficialOwnerLogic = getBeneficialOwnerLogic;
+        this.deleteBeneficialOwnerLogic = deleteBeneficialOwnerLogic;
         this.tenantContext = tenantContext;
     }
 
@@ -80,7 +82,7 @@ export abstract class BeneficialOwnerController extends BaseController {
     @Path('beneficialOwners')
     async getBeneficialOwners(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<PaginatedBeneficialOwnerResponse> {
         try {
-            const beneficialOwners = await this.GetBeneficialOwnersLogic.execute(this.tenantContext.get());
+            const beneficialOwners = await this.getBeneficialOwnersLogic.execute(this.tenantContext.get());
             const pagination = new Pagination(page, limit, beneficialOwners.length);
 
             return this.paginate(
@@ -90,23 +92,27 @@ export abstract class BeneficialOwnerController extends BaseController {
                 })
             );
         } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
-                throw err.toValidationError(null, null);
-            }
             throw new Errors.InternalServerError(err.message);
         }
     }
 
     @GET
     @Path('beneficialOwners/:id')
-    async getBeneficialOwner(@PathParam('id') id: string) {
+    async getBeneficialOwner(@PathParam('id') id: string): Promise<BeneficialOwnerResponse> {
         try {
-            const beneficialOwner = await this.GetBeneficialOwnerLogic.execute(id);
+            const beneficialOwner = await this.getBeneficialOwnerLogic.execute(id);
             return this.map(BeneficialOwnerResponse, beneficialOwner);
         } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
-                throw err.toValidationError(null, null);
-            }
+            throw new Errors.InternalServerError(err.message);
+        }
+    }
+
+    @DELETE
+    @Path('beneficialOwners/:id')
+    async deleteBeneficialOwner(@PathParam('id') id: string) {
+        try {
+            await this.deleteBeneficialOwnerLogic.execute(id);
+        } catch (err) {
             throw new Errors.InternalServerError(err.message);
         }
     }
