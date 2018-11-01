@@ -97,10 +97,7 @@ export class UserController extends BaseController {
             users.pagination,
             users.rows.map(user => {
                 user.transactionsIds = user.ids.split(',');
-                user.rank = parseInt(user.rank);
-                user.total = parseFloat(user.total);
-                user.jobs = user.transactions;
-                user.jobsCount = user.jobs.length;
+                user.jobsCount = user.transactions.length;
                 return this.map(models.RankingJobs, user);
             }),
         );

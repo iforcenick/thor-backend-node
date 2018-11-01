@@ -56,6 +56,20 @@ class PrimitiveArray extends Mapper {
     test: Array<string> = mapper.FIELD_ARR;
 }
 
+class TypeCastingNested extends Mapper {
+    tNumber: number = mapper.FIELD_NUM;
+    tString: string = mapper.FIELD_STR;
+    tBoolean: boolean = mapper.FIELD_BOOLEAN;
+    tBoolean2: boolean = mapper.FIELD_BOOLEAN;
+}
+
+class TypeCasting extends Mapper {
+    tNumber: number = mapper.FIELD_NUM;
+    tString: string = mapper.FIELD_STR;
+    @mapper.object(TypeCastingNested)
+    nested: TypeCastingNested = new TypeCastingNested();
+}
+
 const map = (mapper, data) => {
     return new mapper().map(data);
 };
@@ -150,6 +164,27 @@ describe('Mapper', () => {
 
             const output = map(PrimitiveArray, input);
             expect(output).to.deep.equal(expected);
+        });
+
+        it('should cast to proper types', async () => {
+            const input = {
+                tNumber: '1234',
+                tString: 1,
+                nested: {
+                    tNumber: '1234',
+                    tString: 1,
+                    tBoolean: 'true',
+                    tBoolean2: 1
+                }
+            };
+
+            const output = map(TypeCasting, input);
+            expect(_.isNumber(output.tNumber)).to.be.true;
+            expect(_.isString(output.tString)).to.be.true;
+            expect(_.isNumber(output.nested.tNumber)).to.be.true;
+            expect(_.isString(output.nested.tString)).to.be.true;
+            expect(_.isBoolean(output.nested.tBoolean)).to.be.true;
+            expect(_.isBoolean(output.nested.tBoolean2)).to.be.true;
         });
     });
 });

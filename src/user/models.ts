@@ -77,7 +77,7 @@ export class RankingJobs extends Mapper {
     total: number = mapper.FIELD_NUM;
     jobsCount: number = mapper.FIELD_NUM;
     transactionsIds: Array<string> = mapper.FIELD_ARR;
-    @mapper.array(RankingJobsEntry)
+    @mapper.array(RankingJobsEntry, 'transactions')
     jobs: Array<RankingJobsEntry> = mapper.FIELD_ARR;
 }
 
@@ -97,11 +97,6 @@ export class UserRequest extends UserBaseInfo {
     password: string = mapper.FIELD_STR;
     @mapper.object(profile.ProfileRequest)
     profile: profile.ProfileRequest = new profile.ProfileRequest();
-}
-
-export class UserPatchRequest extends UserBaseInfo {
-    @mapper.object(profile.ProfilePatchRequest)
-    profile: profile.ProfilePatchRequest = new profile.ProfilePatchRequest();
 }
 
 export interface PaginatedUserResponse extends PaginatedResponse {

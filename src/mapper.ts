@@ -6,16 +6,24 @@ export const FIELD_DATE = new Date();
 export const FIELD_ARR = [];
 export const FIELD_BOOLEAN = false;
 
-export const object = (mapper) => {
+export const object = (mapper, name?) => {
     return (target: any, propertyKey: string | symbol) => {
         Reflect.defineMetadata('mapper', mapper, target, propertyKey);
+
+        if (name) {
+            Reflect.defineMetadata('fromName', name, target, propertyKey);
+        }
     };
 };
 
-export const array = (mapper) => {
+export const array = (mapper, name?) => {
     return (target: any, propertyKey: string | symbol) => {
         Reflect.defineMetadata('mapper', mapper, target, propertyKey);
         Reflect.defineMetadata('arrayMapped', true, target, propertyKey);
+
+        if (name) {
+            Reflect.defineMetadata('fromName', name, target, propertyKey);
+        }
     };
 };
 
@@ -26,6 +34,20 @@ export const fromName = (name) => {
 };
 
 export class Mapper {
+    cast(value, key) {
+        if (this[key] === FIELD_NUM) {
+            return Number(value);
+        } else if (this[key] === FIELD_STR) {
+            return String(value);
+        } else if (this[key] === FIELD_BOOLEAN) {
+            return !!value;
+        } else if (this[key] === FIELD_DATE) {
+            return String(value);
+        } else {
+            return value;
+        }
+    }
+
     map(data) {
         for (const key of Object.keys(this)) {
             let fromName = Reflect.getMetadata('fromName', this, key);
@@ -47,10 +69,10 @@ export class Mapper {
                             this[key] = new mapper().map(data[fromName]);
                         }
                     } else {
-                        this[key] = data[key];
+                        this[key] = this.cast(data[key], key);
                     }
                 } else {
-                    this[key] = data[fromName];
+                    this[key] = this.cast(data[fromName], key);
                 }
             } else {
                 this[key] = null;
