@@ -47,7 +47,7 @@ export const addBeneficialOwnerRequestSchema = Joi.object().keys({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
     dateOfBirth: Joi.string().regex(regex.dateRegex, {name: 'Format'}),
-    ssn: Joi.string().required(),
+    ssn: Joi.string().required().invalid(['0000']),
     address: beneficialOwnerAddressSchema.required()
 });
 
@@ -66,7 +66,7 @@ export const editBeneficialOwnerRequestSchema = Joi.object().keys({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
     dateOfBirth: Joi.string().regex(regex.dateRegex, {name: 'Format'}),
-    ssn: Joi.string().required().invalid(['0000']).regex(regex.ssnRegex),
+    ssn: Joi.string().required().invalid(['0000']),
     address: beneficialOwnerAddressSchema.required()
 });
 
