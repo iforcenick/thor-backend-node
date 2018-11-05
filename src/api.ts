@@ -33,7 +33,7 @@ const validationOptions = {
 export class BaseController {
     @Inject protected logger: Logger;
     @Inject protected config: Config;
-    @Context private context: ServiceContext;
+    @Context protected context: ServiceContext; // needs to be injected manually if extending another instance
     private requestContext: context.RequestContext;
 
     static _requireRole(req: any, role: role.models.Types) {

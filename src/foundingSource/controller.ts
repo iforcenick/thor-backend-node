@@ -1,5 +1,8 @@
 import {BaseController} from '../api';
-import {DELETE, Errors, GET, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
+import {
+    Context, DELETE, Errors, GET, Path, PathParam, POST, Preprocessor, QueryParam,
+    ServiceContext
+} from 'typescript-rest';
 import {
     FundingSource,
     FundingSourceBaseInfo,
@@ -18,6 +21,7 @@ import {User} from '../user/models';
 import {Pagination} from '../db';
 import {CreateUserFundingSourceLogic, DeleteFundingSourceLogic, SetDefaultFundingSourceLogic} from './logic';
 
+@AutoWired
 export abstract class FundingSourceBaseController extends BaseController {
     @Inject protected dwollaClient: dwolla.Client;
     @Inject protected userService: UserService;
@@ -94,6 +98,8 @@ export abstract class FundingSourceBaseController extends BaseController {
 @Tags('users', 'fundingSources')
 @Preprocessor(BaseController.requireAdmin)
 export class UserFundingSourceController extends FundingSourceBaseController {
+    @Context protected context: ServiceContext;
+
     @GET
     @Path('default')
     async getDefaultFundingSource(@PathParam('userId') userId: string) {
@@ -140,6 +146,8 @@ export class UserFundingSourceController extends FundingSourceBaseController {
 @Tags('contractors', 'fundingSources')
 @Preprocessor(BaseController.requireContractor)
 export class ContractorFundingSourceController extends FundingSourceBaseController {
+    @Context protected context: ServiceContext;
+
     @GET
     @Path('')
     async getFundingSources(@QueryParam('page') page?: number,

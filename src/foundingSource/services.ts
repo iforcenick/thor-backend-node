@@ -4,11 +4,18 @@ import {transaction} from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {UserService} from '../user/service';
 import {ProfileService} from '../profile/service';
+import {RequestContext} from "../context";
 
 @AutoWired
 export class FundingSourceService extends db.ModelService<FundingSource> {
     @Inject private profileService: ProfileService;
     @Inject private userService: UserService;
+
+    setRequestContext(requestContext: RequestContext) {
+        this.requestContext = requestContext;
+        this.userService.setRequestContext(requestContext);
+        this.profileService.setRequestContext(requestContext);
+    }
 
     async insert(entity: FundingSource, trx?: transaction<any>): Promise<FundingSource> {
         entity.tenantId = this.getTenantId();
