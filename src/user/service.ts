@@ -9,6 +9,7 @@ import {raw, transaction} from 'objection';
 import * as _ from 'lodash';
 import {ApiServer} from '../server';
 import {JWTTokenProvider} from '../auth/encryption';
+import {RequestContext} from "../context";
 
 const bcrypt = require('bcrypt');
 
@@ -17,6 +18,11 @@ export class UserService extends db.ModelService<models.User> {
     @Inject protected rolesService: role.service.RoleService;
     @Inject public profileService: ProfileService;
     @Inject private jwtTokenProvider: JWTTokenProvider;
+
+    setRequestContext(requestContext: RequestContext) {
+        this.requestContext = requestContext;
+        this.profileService.setRequestContext(requestContext);
+    }
 
     protected setModelType() {
         this.modelType = models.User;
