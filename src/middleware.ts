@@ -11,11 +11,16 @@ export const tokenExtractor = (req, res, next): void => {
 };
 
 export const authExtractor = (req, res, next): void => {
-    req.tenantId = req.user.tenantProfile.tenantId;
+    if (req.user) {
+        req.tenantId = req.user.tenantProfile.tenantId;
+    }
+
+    next();
 };
 
 export const requestId = (req, res, next): void => {
     req.requestId = uuidv4();
+    next();
 };
 
 export const correlationId = (req, res, next): void => {
@@ -25,4 +30,5 @@ export const correlationId = (req, res, next): void => {
     }
 
     req.correlationId = correlation;
+    next();
 };
