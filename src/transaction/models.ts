@@ -113,7 +113,6 @@ export class Transaction extends db.Model {
 export class TransactionBaseInfo extends Mapper {
     quantity: number = mapper.FIELD_NUM;
     userId: string = mapper.FIELD_STR;
-    location: string = mapper.FIELD_STR;
 }
 
 export class TransactionResponse extends TransactionBaseInfo {
@@ -156,7 +155,6 @@ export const transactionRequestSchema = Joi.object().keys({
         .guid(),
     job: job.jobRequestSchema.required(),
     quantity: Joi.number().required().greater(0).integer().max(MAXINT),
-    location: Joi.string(),
 });
 
 export class InvalidTransferDataError extends Error {
