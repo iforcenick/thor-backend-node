@@ -16,6 +16,7 @@ authorization:
 pagination:
   limit: 10
 db:
+  autoMigrate: false
   client: postgresql
   connection:
     host: localhost
@@ -44,4 +45,3 @@ mailer:
 build:
   version: 0.0.5
 
-  

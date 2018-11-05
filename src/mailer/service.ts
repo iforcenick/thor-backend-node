@@ -1,7 +1,6 @@
 import { Inject, AutoWired } from 'typescript-ioc';
 import * as client from './client';
 import * as users from '../user/models';
-import * as tenants from '../tenant/models';
 import * as templates from './template';
 import { Logger } from '../logger';
 import { Config } from '../config';

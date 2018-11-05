@@ -1,16 +1,5 @@
-import {
-    DELETE,
-    Errors,
-    GET,
-    HttpError,
-    Path,
-    PathParam,
-    POST,
-    Preprocessor,
-    QueryParam,
-} from 'typescript-rest';
+import {DELETE, Errors, GET, HttpError, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
 import {BaseController} from '../api';
-import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
 import * as transfer from './transfer/models';
@@ -21,8 +10,6 @@ import {Security, Tags} from 'typescript-rest-swagger';
 import {transaction} from 'objection';
 import {Job} from '../job/models';
 import moment from 'moment';
-import * as context from '../context';
-import {Config} from '../config';
 import {FundingSourceService} from '../foundingSource/services';
 
 const validate = require('uuid-validate');
@@ -31,30 +18,17 @@ const validate = require('uuid-validate');
 @Path('/transactions')
 @Tags('transactions')
 export class TransactionController extends BaseController {
-    private service: TransactionService;
-    private userService: UserService;
-    private jobService: JobService;
-    private userContext: context.UserContext;
-    private fundingService: FundingSourceService;
-
-    constructor(@Inject service: TransactionService,
-                @Inject userService: UserService,
-                @Inject jobService: JobService,
-                @Inject fundingService: FundingSourceService,
-                @Inject userContext: context.UserContext,
-                @Inject logger: Logger, @Inject config: Config) {
-        super(logger, config);
-        this.service = service;
-        this.userService = userService;
-        this.jobService = jobService;
-        this.userContext = userContext;
-        this.fundingService = fundingService;
-    }
+    @Inject private service: TransactionService;
+    @Inject private userService: UserService;
+    @Inject private jobService: JobService;
+    @Inject private fundingService: FundingSourceService;
 
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
     async getTransaction(@PathParam('id') id: string): Promise<models.TransactionResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+
         const transaction = await this.service.get(id);
         if (!transaction) {
             throw new Errors.NotFoundError();
@@ -81,6 +55,8 @@ export class TransactionController extends BaseController {
                           @QueryParam('dateTill') dateTill?: Date,
                           @QueryParam('userId') userId?: string,
                           @QueryParam('status') status?: string): Promise<models.PaginatedTransactionResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+
         if (userId && !validate(userId)) {
             throw new Errors.BadRequestError('userId must be uuid');
         }
@@ -103,6 +79,11 @@ export class TransactionController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async createTransaction(data: models.TransactionRequest): Promise<models.TransactionResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+        this.jobService.setRequestContext(this.getRequestContext());
+        this.userService.setRequestContext(this.getRequestContext());
+        this.fundingService.setRequestContext(this.getRequestContext());
+
         const parsedData: models.TransactionRequest = await this.validate(data, models.transactionRequestSchema);
         const user = await this.userService.get(parsedData.userId);
         if (!user) {
@@ -133,7 +114,7 @@ export class TransactionController extends BaseController {
                 }
 
                 const transactionEntity = models.Transaction.factory(parsedData);
-                transactionEntity.adminId = this.userContext.get().id;
+                transactionEntity.adminId = this.getRequestContext().getUser().id;
                 transactionEntity.jobId = jobFromDb.id;
                 const transactionFromDb = await this.service.insert(transactionEntity, trx);
                 transactionFromDb.job = jobFromDb;
@@ -153,13 +134,16 @@ export class TransactionController extends BaseController {
     @Path(':id/transfers')
     @Preprocessor(BaseController.requireAdmin)
     async createTransactionTransfer(@PathParam('id') id: string): Promise<models.TransactionResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+        this.userService.setRequestContext(this.getRequestContext());
+
         const transaction = await this.service.get(id);
         if (!transaction) {
             throw new Errors.NotFoundError();
         }
 
         try {
-            const user = await this.userService.get(this.userContext.get().id);
+            const user = await this.userService.get(this.getRequestContext().getUser().id);
 
             if (!transaction.transferId) {
                 await this.service.prepareTransfer(transaction, user);
@@ -199,6 +183,7 @@ export class TransactionController extends BaseController {
                          @QueryParam('limit') limit?: number,
                          @QueryParam('page') page?: number,
                          @QueryParam('status') status?: string): Promise<models.PeriodsStatsResponse> {
+        this.service.setRequestContext(this.getRequestContext());
         const _startDate = new Date(startDate);
         const _endDate = new Date(endDate);
         const _prevEndDate = moment(_startDate).subtract(1, 'second').toDate();
@@ -219,13 +204,16 @@ export class TransactionController extends BaseController {
     @Path(':id/transfers')
     @Preprocessor(BaseController.requireAdmin)
     async cancelTransactionTransfer(@PathParam('id') id: string): Promise<models.TransactionResponse> {
+        this.userService.setRequestContext(this.getRequestContext());
+        this.service.setRequestContext(this.getRequestContext());
+
         const _transaction = await this.service.get(id);
         if (!_transaction) {
             throw new Errors.NotFoundError();
         }
 
         try {
-            const user = await this.userService.get(this.userContext.get().id);
+            const user = await this.userService.get(this.getRequestContext().getUser().id);
 
             if (!_transaction.transferId || _transaction.canBeCancelled()) {
                 throw new Errors.NotAcceptableError('Transfer cannot be cancelled');
@@ -237,7 +225,7 @@ export class TransactionController extends BaseController {
                 throw new Errors.NotAcceptableError(e.message);
             }
 
-            this.logger.error(e);
+            this.logger.error(e.message);
             throw new Errors.InternalServerError(e.message);
         }
 

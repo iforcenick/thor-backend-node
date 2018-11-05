@@ -14,7 +14,6 @@ import {
     ServiceContext,
 } from 'typescript-rest';
 import {BaseController} from '../api';
-import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import {UserService} from './service';
 import * as models from './models';
@@ -22,49 +21,29 @@ import {Profile, ProfileResponse} from '../profile/models';
 import {ProfileService} from '../profile/service';
 import {Security, Tags} from 'typescript-rest-swagger';
 import * as dwolla from '../dwolla';
-import {ValidationError} from '../errors';
 import * as transactions from '../transaction/models';
 import {TransactionService} from '../transaction/service';
 import {MailerService} from '../mailer';
 import * as _ from 'lodash';
-import * as context from '../context';
-import {Config} from '../config';
 import {DwollaNotifier} from '../dwolla/notifier';
 
 @Security('api_key')
 @Path('/users')
 @Tags('users')
 export class UserController extends BaseController {
-    private mailer: MailerService;
-    private dwollaClient: dwolla.Client;
-    private service: UserService;
-    private profileService: ProfileService;
-    private transactionService: TransactionService;
-    private userContext: context.UserContext;
-    private dwollaNotifier: DwollaNotifier;
-
-    constructor(@Inject mailer: MailerService,
-                @Inject dwollaClient: dwolla.Client,
-                @Inject service: UserService,
-                @Inject profileService: ProfileService,
-                @Inject transactionService: TransactionService,
-                @Inject userContext: context.UserContext,
-                @Inject tenantContext: context.TenantContext,
-                @Inject logger: Logger, @Inject config: Config, @Inject dwollaNotifier: DwollaNotifier) {
-        super(logger, config);
-        this.mailer = mailer;
-        this.dwollaClient = dwollaClient;
-        this.service = service;
-        this.profileService = profileService;
-        this.transactionService = transactionService;
-        this.userContext = userContext;
-        this.dwollaNotifier = dwollaNotifier;
-    }
+    @Inject private mailer: MailerService;
+    @Inject private dwollaClient: dwolla.Client;
+    @Inject private service: UserService;
+    @Inject private profileService: ProfileService;
+    @Inject private transactionService: TransactionService;
+    @Inject private dwollaNotifier: DwollaNotifier;
 
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
     async getUser(@PathParam('id') id: string): Promise<models.UserResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+
         const user = await this.service.get(id);
 
         if (!user) {
@@ -89,6 +68,8 @@ export class UserController extends BaseController {
                             @QueryParam('limit') limit?: number,
                             @QueryParam('page') page?: number,
                             @QueryParam('status') status?: string): Promise<models.PaginatedRankingJobs> {
+        this.service.setRequestContext(this.getRequestContext());
+
         const dates: any = await this.validate({startDate, endDate}, models.rankingRequestSchema);
         const users: any = await this.service.getJobsRanking(dates.startDate, dates.endDate, page, limit, status);
 
@@ -110,6 +91,8 @@ export class UserController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async getUsersList(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<models.PaginatedUserResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+
         const users = await this.service.list(page, limit);
 
         return this.paginate(
@@ -124,6 +107,8 @@ export class UserController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async createUser(data: models.UserRequest): Promise<models.UserResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+
         const parsedData: models.UserRequest = await this.validate(data, models.userRequestSchema);
         ProfileService.validateAge(parsedData.profile);
 
@@ -160,6 +145,9 @@ export class UserController extends BaseController {
     @Path(':id/profile')
     @Preprocessor(BaseController.requireAdmin)
     async patchAnyUser(@PathParam('id') id: string, data: models.UserPatchRequest): Promise<ProfileResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+        this.profileService.setRequestContext(this.getRequestContext());
+
         const parsedData = await this.validate(data, models.userPatchSchema);
         ProfileService.validateAge(parsedData['profile']);
 
@@ -175,7 +163,7 @@ export class UserController extends BaseController {
             }
 
             profile.$set(parsedData['profile']);
-            const updatedProfile = await this.service.profileService.updateWithDwolla(profile);
+            const updatedProfile = await this.profileService.updateWithDwolla(profile);
             updatedProfile.roles = profile.roles;
             return this.map(ProfileResponse, updatedProfile);
         } catch (e) {
@@ -194,8 +182,10 @@ export class UserController extends BaseController {
     @DELETE
     @Path('')
     async deleteSelf() {
+        this.service.setRequestContext(this.getRequestContext());
+
         try {
-            await this.service.deleteFull(this.userContext.get().id);
+            await this.service.deleteFull(this.getRequestContext().getUser().id);
         } catch (e) {
             throw new Errors.InternalServerError(e);
         }
@@ -204,6 +194,8 @@ export class UserController extends BaseController {
     @DELETE
     @Path(':id')
     async delete(@PathParam('id') id: string) {
+        this.service.setRequestContext(this.getRequestContext());
+
         const user = await this.service.get(id);
         if (!user) {
             throw new Errors.NotFoundError('User not found');
@@ -231,6 +223,8 @@ export class UserController extends BaseController {
                               @QueryParam('startDate') startDate?: Date,
                               @QueryParam('endDate') endDate?: Date,
                               @QueryParam('status') status?: string): Promise<transactions.PaginatedTransactionResponse> {
+        this.transactionService.setRequestContext(this.getRequestContext());
+
         const filter = builder => {
             transactions.Transaction.filter(builder, startDate, endDate, status, userId);
         };
@@ -254,6 +248,8 @@ export class UserController extends BaseController {
                   @QueryParam('currentEndDate') currentEndDate?: string,
                   @QueryParam('previousStartDate') previousStartDate?: string,
                   @QueryParam('previousEndDate') previousEndDate?: string): Promise<models.UserStatisticsResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+
         const statistics = await this.service.statsForUser({
             userId,
             currentStartDate,
@@ -269,6 +265,8 @@ export class UserController extends BaseController {
     async createUserDocument(@PathParam('id') userId: string,
                              @QueryParam('type') type: string,
                              @FileParam('file') file, @ContextRequest context: ServiceContext): Promise<models.UserDocument> {
+        this.service.setRequestContext(this.getRequestContext());
+
         if (!file) {
             throw new Errors.NotAcceptableError('File missing');
         }
@@ -299,6 +297,8 @@ export class UserController extends BaseController {
     @GET
     @Path(':id/documents')
     async getUserDocuments(@PathParam('id') userId: string): Promise<Array<models.UserDocument>> {
+        this.service.setRequestContext(this.getRequestContext());
+
         try {
             const user = await this.service.get(userId);
             if (!user) {

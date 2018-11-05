@@ -3,7 +3,8 @@ import {Config} from './config';
 import {Logger} from './logger';
 import {Errors} from '../node_modules/typescript-rest';
 import * as _ from 'lodash';
-import * as context from './context';
+import {RequestContext, RequestContextMissingError} from './context';
+import {Inject} from 'typescript-ioc';
 
 const validate = require('uuid-validate');
 const uuid = require('uuid');
@@ -78,17 +79,15 @@ export class Paginated<T> {
 
 // WARNING: @Inject only through constructor not field annotation to persist namespace context
 export abstract class ModelService<T extends any> {
-    protected config: Config;
-    protected logger: Logger;
+    @Inject protected config: Config;
+    @Inject protected logger: Logger;
     protected modelType: any;
     protected tenant: any;
+    protected requestContext: RequestContext;
 
     protected abstract setModelType();
 
-    protected constructor(config: Config, logger: Logger, tenantContext: context.TenantContext) {
-        this.tenant = tenantContext.get();
-        this.config = config;
-        this.logger = logger;
+    protected constructor() {
         this.setModelType();
     }
 
@@ -200,8 +199,24 @@ export abstract class ModelService<T extends any> {
             .where(`${this.modelType.tableName}.id`, entity.id);
     }
 
+    setRequestContext(requestContext: RequestContext) {
+        this.requestContext = requestContext;
+    }
+
+    getRequestContext() {
+        if (!this.requestContext) {
+            throw new RequestContextMissingError(`Request context not passed to service`);
+        }
+
+        return this.requestContext;
+    }
+
     getTenantId(): string {
-        return this.tenant;
+        if (this.tenant) {
+            return this.tenant;
+        }
+
+        return this.getRequestContext().getTenantId();
     }
 
     setTenantId(id: string) {

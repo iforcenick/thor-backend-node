@@ -1,41 +1,29 @@
 import {Errors, PATCH, Path, POST} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
-import {Logger} from '../logger';
 import {UserService} from '../user/service';
-import {Config} from '../config';
 import * as models from './models';
 import {User} from '../user/models';
 import {Security, Tags} from 'typescript-rest-swagger';
 import * as dwolla from '../dwolla';
-import * as context from '../context';
 
 @Path('/auth')
 export class AuthController extends BaseController {
-    private dwollaClient: dwolla.Client;
-    private service: UserService;
-    private userContext: context.UserContext;
-
-    constructor(@Inject dwollaClient: dwolla.Client,
-                @Inject service: UserService,
-                @Inject userContext: context.UserContext,
-                @Inject logger: Logger, @Inject config: Config) {
-        super(logger, config);
-        this.dwollaClient = dwollaClient;
-        this.service = service;
-        this.userContext = userContext;
-    }
+    @Inject private dwollaClient: dwolla.Client;
+    @Inject private service: UserService;
 
     @Security('api_key')
     @PATCH
     @Path('/password')
     @Tags('auth')
     async changePassword(data: models.PasswordRequest) {
+        this.service.setRequestContext(this.getRequestContext());
+
         const parsedData = await this.validate(data, models.passwordRequestSchema);
         const oldPassword = parsedData['oldPassword'];
         const newPassword = parsedData['newPassword'];
         const confirmPassword = parsedData['confirmPassword'];
-        const user = await this.service.get(this.userContext.get().id);
+        const user = await this.service.get(this.getRequestContext().getUser().id);
 
         if (newPassword !== confirmPassword) {
             throw new Errors.ConflictError('Passwords do not match');
@@ -54,6 +42,8 @@ export class AuthController extends BaseController {
     @Path('/login')
     @Tags('auth')
     async login(data: models.LoginRequest): Promise<models.AuthUserResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+
         await this.validate(data, models.loginRequestSchema);
         let user;
 

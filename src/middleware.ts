@@ -1,7 +1,3 @@
-import * as context from './context';
-const createNamespace = require('continuation-local-storage').createNamespace;
-const authContext = createNamespace(context.Type.auth);
-const requestContext = createNamespace(context.Type.request);
 const uuidv4 = require('uuid/v4');
 
 export const tokenExtractor = (req, res, next): void => {
@@ -15,44 +11,18 @@ export const tokenExtractor = (req, res, next): void => {
 };
 
 export const authExtractor = (req, res, next): void => {
-    authContext.bindEmitter(req);
-    authContext.bindEmitter(res);
-
-    authContext.run(() => {
-        if (req.user) {
-            authContext.set('tenant', req.user.tenantProfile.tenantId);
-            authContext.set('user', req.user);
-        }
-
-        next();
-    });
+    req.tenantId = req.user.tenantProfile.tenantId;
 };
 
 export const requestId = (req, res, next): void => {
-    requestContext.bindEmitter(req);
-    requestContext.bindEmitter(res);
-
-    requestContext.run(() => {
-        const requestId = uuidv4();
-        requestContext.set('requestId', requestId);
-        req.requestId = requestId;
-
-        next();
-    });
+    req.requestId = uuidv4();
 };
 
 export const correlationId = (req, res, next): void => {
-    requestContext.bindEmitter(req);
-    requestContext.bindEmitter(res);
+    let correlation = req.get('X-Correlation-ID');
+    if (!correlation) {
+        correlation = uuidv4();
+    }
 
-    requestContext.run(() => {
-        let correlation = req.get('X-Correlation-ID');
-        if (!correlation) {
-            correlation = uuidv4();
-        }
-
-        requestContext.set('correlationId', correlation);
-
-        next();
-    });
+    req.correlationId = correlation;
 };

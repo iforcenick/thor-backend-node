@@ -6,23 +6,12 @@ import {RoleService} from '../user/role/service';
 import * as dwolla from '../dwolla';
 import moment from 'moment';
 import {ValidationError} from '../errors';
-import {Logger} from '../logger';
-import {Config} from '../config';
-import * as context from '../context';
 import {FundingSource} from '../foundingSource/models';
 
 @AutoWired
 export class ProfileService extends db.ModelService<models.Profile> {
-    protected roleService: RoleService;
-    protected dwollaClient: dwolla.Client;
-
-    constructor(@Inject roleService: RoleService, @Inject dwollaClient: dwolla.Client,
-                @Inject config: Config, @Inject logger: Logger,
-                @Inject tenantContext: context.TenantContext) {
-        super(config, logger, tenantContext);
-        this.roleService = roleService;
-        this.dwollaClient = dwollaClient;
-    }
+    @Inject protected roleService: RoleService;
+    @Inject protected dwollaClient: dwolla.Client;
 
     protected setModelType() {
         this.modelType = models.Profile;

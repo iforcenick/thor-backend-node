@@ -1,30 +1,23 @@
 import {Errors, Path, POST} from 'typescript-rest';
 import {BaseController} from '../api';
-import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import * as dwolla from '../dwolla';
 import {event} from './index';
 import {IEvent} from './event';
 import {Tags} from 'typescript-rest-swagger';
 import {TransactionService} from '../transaction/service';
-import {Config} from '../config';
 
 @Tags('dwolla')
 @Path('/dwolla/events')
 export class DwollaController extends BaseController {
-    private dwollaClient: dwolla.Client;
-    private transactionService: TransactionService;
-
-    constructor(@Inject dwollaClient: dwolla.Client, @Inject transactionService: TransactionService,
-                @Inject logger: Logger, @Inject config: Config) {
-        super(logger, config);
-        this.dwollaClient = dwollaClient;
-        this.transactionService = transactionService;
-    }
+    @Inject private dwollaClient: dwolla.Client;
+    @Inject private transactionService: TransactionService;
 
     @POST
     @Path('')
     async events(data: IEvent) {
+        this.transactionService.setRequestContext(this.getRequestContext());
+
         try {
             const _event = event.factory(data);
             console.log('Dwolla event:\n', JSON.stringify(_event, null, 2));

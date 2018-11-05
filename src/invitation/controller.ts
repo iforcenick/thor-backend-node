@@ -1,39 +1,21 @@
 import {Errors, GET, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
 import {BaseController} from '../api';
-import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
 import {InvitationService} from './service';
 import {Security, Tags} from 'typescript-rest-swagger';
-import * as context from '../context';
-import {Config} from '../config';
 import {MailerService} from '../mailer';
 import {UserService} from '../user/service';
+import {TenantService} from '../tenant/service';
 
 @Security('api_key')
 @Path('/contractors/invitations')
 @Tags('contractorsInvitations')
 export class InvitationController extends BaseController {
-    private service: InvitationService;
-    private userContext: context.UserContext;
-    private tenantContext: context.TenantContext;
-    private userService: UserService;
-    private mailer: MailerService;
-
-    constructor(@Inject service: InvitationService,
-                @Inject userContext: context.UserContext,
-                @Inject logger: Logger,
-                @Inject config: Config,
-                @Inject mailer: MailerService,
-                @Inject userService: UserService,
-                @Inject tenantContext: context.TenantContext) {
-        super(logger, config);
-        this.service = service;
-        this.userContext = userContext;
-        this.mailer = mailer;
-        this.userService = userService;
-        this.tenantContext = tenantContext;
-    }
+    @Inject private service: InvitationService;
+    @Inject private userService: UserService;
+    @Inject private tenantService: TenantService;
+    @Inject private mailer: MailerService;
 
     @GET
     @Path('')
@@ -41,6 +23,8 @@ export class InvitationController extends BaseController {
     async getInvitations(@QueryParam('page') page?: number,
                          @QueryParam('limit') limit?: number,
                          @QueryParam('status') status?: string): Promise<models.InvitationPaginatedResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+
         const filter = builder => {
             models.Invitation.filter(builder, status);
         };
@@ -63,8 +47,11 @@ export class InvitationController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async createInvitation(data: models.InvitationRequest): Promise<models.InvitationResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+        this.userService.setRequestContext(this.getRequestContext());
+
         const parsedData = await this.validate(data, models.requestSchema);
-        const user = await this.userContext.get();
+        const user = await this.getRequestContext().getUser();
         let invitation = models.Invitation.factory(parsedData);
         invitation.status = models.Status.pending;
 
@@ -72,7 +59,7 @@ export class InvitationController extends BaseController {
             throw new Errors.ConflictError('Email already invited');
         }
 
-        if (await this.userService.findByEmailAndTenant(invitation.email, this.tenantContext.get())) {
+        if (await this.userService.findByEmailAndTenant(invitation.email, this.getRequestContext().getTenantId())) {
             throw  new Errors.ConflictError('Email already used');
         }
 
@@ -84,11 +71,13 @@ export class InvitationController extends BaseController {
         }
 
         try {
+            const tenant = await this.tenantService.get(this.getRequestContext().getTenantId());
             await this.mailer.sendInvitation(invitation.email, {
-                link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`, companyName: user.tenantProfile.companyName
+                link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`,
+                companyName: tenant.businessName
             });
         } catch (e) {
-            this.logger.error(e);
+            this.logger.error(e.message);
         }
 
         return this.map(models.InvitationResponse, invitation);
@@ -98,20 +87,13 @@ export class InvitationController extends BaseController {
 @Path('/contractorsInvitations')
 @Tags('contractorsInvitations')
 export class InvitationCheckController extends BaseController {
-    private service: InvitationService;
-    private userContext: context.UserContext;
-
-    constructor(@Inject service: InvitationService,
-                @Inject userContext: context.UserContext,
-                @Inject logger: Logger, @Inject config: Config) {
-        super(logger, config);
-        this.service = service;
-        this.userContext = userContext;
-    }
+    @Inject private service: InvitationService;
 
     @GET
     @Path(':id')
     async getInvitation(@PathParam('id') id: string): Promise<models.InvitationResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+
         const invitation = await this.service.getForAllTenants(id);
         if (!invitation) {
             throw new Errors.NotFoundError();
@@ -127,6 +109,8 @@ export class InvitationCheckController extends BaseController {
     @POST
     @Path(':id')
     async useInvitationToken(@PathParam('id') id: string) {
+        this.service.setRequestContext(this.getRequestContext());
+
         const invitation = await this.service.getForAllTenants(id);
         if (!invitation) {
             throw new Errors.NotFoundError();

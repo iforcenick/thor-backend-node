@@ -1,4 +1,4 @@
-import {Errors} from 'typescript-rest';
+import {Context, Errors, ServiceContext} from 'typescript-rest';
 import Joi = require('joi');
 import {ValidationError} from './errors';
 import * as mapper from './mapper';
@@ -9,6 +9,7 @@ import * as context from './context';
 import {Inject} from 'typescript-ioc';
 import {Logger} from './logger';
 import {Config} from './config';
+import {RequestContext} from './context';
 
 export {mapper};
 
@@ -30,13 +31,10 @@ const validationOptions = {
 };
 
 export class BaseController {
-    protected logger: Logger;
-    protected config: Config;
-
-    constructor(logger: Logger, config: Config) {
-        this.logger = logger;
-        this.config = config;
-    }
+    @Inject protected logger: Logger;
+    @Inject protected config: Config;
+    @Context private context: ServiceContext;
+    private requestContext: context.RequestContext;
 
     static _requireRole(req: any, role: role.models.Types) {
         const user: user.User = req.user;
@@ -53,6 +51,18 @@ export class BaseController {
 
     static requireContractor(req: any) {
         return BaseController._requireRole(req, role.models.Types.contractor);
+    }
+
+    getRequestContext(): RequestContext {
+        if (!this.context) {
+            throw new ContextMissingError('Controller context not available yet');
+        }
+
+        if (!this.requestContext) {
+            this.requestContext = new context.RequestContext(this.context);
+        }
+
+        return this.requestContext;
     }
 
     validate(data, schema): Promise<any> {
@@ -82,4 +92,7 @@ export class BaseController {
             },
         };
     }
+}
+
+export class ContextMissingError extends Error {
 }

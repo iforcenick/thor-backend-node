@@ -8,31 +8,18 @@ import {ProfileService} from '../profile/service';
 import {raw, transaction} from 'objection';
 import * as _ from 'lodash';
 import {ApiServer} from '../server';
-import {Logger} from '../logger';
-import {Config} from '../config';
-import * as context from '../context';
 import {JWTTokenProvider} from '../auth/encryption';
 
 const bcrypt = require('bcrypt');
 
 @AutoWired
 export class UserService extends db.ModelService<models.User> {
-    protected rolesService: role.service.RoleService;
-    public profileService: ProfileService;
-    private jwtTokenProvider: JWTTokenProvider;
+    @Inject protected rolesService: role.service.RoleService;
+    @Inject public profileService: ProfileService;
+    @Inject private jwtTokenProvider: JWTTokenProvider;
 
     protected setModelType() {
         this.modelType = models.User;
-    }
-
-    constructor(@Inject rolesService: role.service.RoleService,
-                @Inject profileService: ProfileService,
-                @Inject config: Config, @Inject logger: Logger,
-                @Inject tenantContext: context.TenantContext, @Inject jwtTokenProvider: JWTTokenProvider) {
-        super(config, logger, tenantContext);
-        this.rolesService = rolesService;
-        this.profileService = profileService;
-        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     getMinOptions(query) {

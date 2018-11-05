@@ -5,37 +5,24 @@ import * as users from '../user/models';
 import * as transfers from './transfer/models';
 import {TransferService} from './transfer/service';
 import * as dwolla from '../dwolla';
+import {event} from '../dwolla';
 import {TenantService} from '../tenant/service';
 import {UserService} from '../user/service';
 import {raw, transaction} from 'objection';
-import {event} from '../dwolla';
 import {MailerService} from '../mailer';
-import {Logger} from '../logger';
-import * as context from '../context';
-import {Config} from '../config';
+import {RequestContext} from '../context';
 
 @AutoWired
 export class TransactionService extends db.ModelService<models.Transaction> {
-    protected dwollaClient: dwolla.Client;
-    protected mailer: MailerService;
-    public transferService: TransferService;
-    protected tenantService: TenantService;
-    protected userService: UserService;
+    @Inject protected dwollaClient: dwolla.Client;
+    @Inject protected mailer: MailerService;
+    @Inject public transferService: TransferService;
+    @Inject protected tenantService: TenantService;
+    @Inject protected userService: UserService;
 
-    constructor(@Inject transferService: TransferService,
-                @Inject tenantService: TenantService,
-                @Inject userService: UserService,
-                @Inject dwollaClient: dwolla.Client,
-                @Inject mailer: MailerService,
-                @Inject config: Config,
-                @Inject logger: Logger,
-                @Inject tenantContext: context.TenantContext) {
-        super(config, logger, tenantContext);
-        this.dwollaClient = dwollaClient;
-        this.mailer = mailer;
-        this.transferService = transferService;
-        this.userService = userService;
-        this.tenantService = tenantService;
+    setRequestContext(requestContext: RequestContext) {
+        this.requestContext = requestContext;
+        this.transferService.setRequestContext(requestContext);
     }
 
     useTenantContext(query) {
@@ -160,20 +147,28 @@ export class TransactionService extends db.ModelService<models.Transaction> {
             switch (status) {
                 case models.Statuses.failed:
                     await Promise.all([
-                        this.mailer.sendCustomerTransferFailedSender(admin, { user, admin, transaction: _transaction }),
-                        this.mailer.sendCustomerTransferFailedReceiver(user, { admin, user, transaction: _transaction })
+                        this.mailer.sendCustomerTransferFailedSender(admin, {user, admin, transaction: _transaction}),
+                        this.mailer.sendCustomerTransferFailedReceiver(user, {admin, user, transaction: _transaction})
                     ]);
                     break;
                 case models.Statuses.processed:
                     await Promise.all([
-                        this.mailer.sendCustomerTransferCompletedSender(admin, { admin, user, transaction: _transaction }),
-                        this.mailer.sendCustomerTransferCompletedReceiver(user, { admin, user, transaction: _transaction })
+                        this.mailer.sendCustomerTransferCompletedSender(admin, {
+                            admin,
+                            user,
+                            transaction: _transaction
+                        }),
+                        this.mailer.sendCustomerTransferCompletedReceiver(user, {
+                            admin,
+                            user,
+                            transaction: _transaction
+                        })
                     ]);
                     break;
                 case models.Statuses.new:
                     await Promise.all([
-                        this.mailer.sendCustomerTransferCreatedSender(admin, { admin, user, transaction: _transaction }),
-                        this.mailer.sendCustomerTransferCreatedReceiver(user, { admin, user, transaction: _transaction })
+                        this.mailer.sendCustomerTransferCreatedSender(admin, {admin, user, transaction: _transaction}),
+                        this.mailer.sendCustomerTransferCreatedReceiver(user, {admin, user, transaction: _transaction})
                     ]);
                     break;
             }

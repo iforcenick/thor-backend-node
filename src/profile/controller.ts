@@ -1,29 +1,22 @@
 import {Errors, GET, Path, PathParam, POST, Preprocessor} from 'typescript-rest';
 import {BaseController} from '../api';
-import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
 import {transaction} from 'objection';
 import {ProfileService} from './service';
 import {Security, Tags} from 'typescript-rest-swagger';
-import {Config} from '../config';
 
 @Security('api_key')
 @Path('/profiles')
 @Tags('profiles')
 export class ProfileController extends BaseController {
-    private service: ProfileService;
-
-    constructor(@Inject service: ProfileService,
-                @Inject logger: Logger, @Inject config: Config) {
-        super(logger, config);
-        this.service = service;
-    }
+    @Inject private service: ProfileService;
 
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
     async getProfile(@PathParam('id') id: string): Promise<models.ProfileResponse> {
+        this.service.setRequestContext(this.getRequestContext());
         const profile = await this.service.get(id);
         if (!profile) {
             throw new Errors.NotFoundError;
@@ -36,6 +29,7 @@ export class ProfileController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async createProfile(data: models.ProfileRequest): Promise<models.ProfileResponse> {
+        this.service.setRequestContext(this.getRequestContext());
         const parsedData = await this.validate(data, models.profileRequestSchema);
         let profile = models.Profile.factory(parsedData);
         try {

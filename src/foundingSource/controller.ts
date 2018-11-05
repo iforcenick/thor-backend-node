@@ -1,8 +1,5 @@
 import {BaseController} from '../api';
-import {DELETE, GET, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
-import * as Errors from 'typescript-rest/dist/server-errors';
-import {Profile} from '../profile/models';
-import * as profiles from '../profile/models';
+import {DELETE, Errors, GET, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
 import {
     FundingSource,
     FundingSourceBaseInfo,
@@ -10,77 +7,33 @@ import {
     fundingSourceRequestSchema,
     FundingSourceResponse
 } from './models';
-import {transaction} from 'objection';
 import {MailerService} from '../mailer';
 import * as dwolla from '../dwolla';
 import {UserService} from '../user/service';
 import {ProfileService} from '../profile/service';
-import {TransactionService} from '../transaction/service';
-import * as context from '../context';
-import {DwollaNotifier} from '../dwolla/notifier';
 import {FundingSourceService} from './services';
-import {InvitationService} from '../invitation/service';
 import {AutoWired, Inject} from 'typescript-ioc';
-import {Logger} from '../logger';
-import {Config} from '../config';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {User} from '../user/models';
-import * as models from '../transaction/models';
-import {Paginated, Pagination} from '../db';
+import {Pagination} from '../db';
+import {CreateUserFundingSourceLogic, DeleteFundingSourceLogic, SetDefaultFundingSourceLogic} from './logic';
 
 export abstract class FundingSourceBaseController extends BaseController {
-    protected dwollaClient: dwolla.Client;
-    protected userService: UserService;
-    protected profileService: ProfileService;
-    protected transactionService: TransactionService;
-    protected userContext: context.UserContext;
-    protected dwollaNotifier: DwollaNotifier;
-    protected fundingSourceService: FundingSourceService;
-    protected mailer: MailerService;
-
-    protected constructor(@Inject dwollaClient: dwolla.Client,
-                          @Inject service: UserService,
-                          @Inject profileService: ProfileService,
-                          @Inject transactionService: TransactionService,
-                          @Inject userContext: context.UserContext,
-                          @Inject tenantContext: context.TenantContext,
-                          @Inject logger: Logger, @Inject config: Config,
-                          @Inject dwollaNotifier: DwollaNotifier,
-                          @Inject fundingSourceService: FundingSourceService,
-                          @Inject mailer: MailerService) {
-        super(logger, config);
-        this.dwollaClient = dwollaClient;
-        this.userService = service;
-        this.profileService = profileService;
-        this.transactionService = transactionService;
-        this.userContext = userContext;
-        this.dwollaNotifier = dwollaNotifier;
-        this.fundingSourceService = fundingSourceService;
-        this.mailer = mailer;
-    }
+    @Inject protected dwollaClient: dwolla.Client;
+    @Inject protected userService: UserService;
+    @Inject protected profileService: ProfileService;
+    @Inject protected fundingSourceService: FundingSourceService;
+    @Inject protected mailer: MailerService;
 
     protected async _setDefaultFundingSource(fundingId: string, userId: string) {
-        try {
-            const fundingSource = await this.fundingSourceService.get(fundingId);
-            if (!fundingSource) {
-                throw new Errors.NotFoundError(`Could not find funding source for id ${fundingId}`);
-            }
+        const logic = new SetDefaultFundingSourceLogic(this.getRequestContext());
+        const fundingSource = await logic.execute(fundingId, userId);
 
-            const profile = await this.profileService.get(fundingSource.profileId);
-            if (profile.userId != userId) {
-                throw new Errors.InternalServerError('Funding source can only be edited by its owner.');
-            }
-
-            await this.fundingSourceService.setDefault(fundingSource);
-
-            return this.map(FundingSourceResponse, fundingSource);
-        } catch (e) {
-            this.logger.error(e);
-            throw e;
-        }
+        return this.map(FundingSourceResponse, fundingSource);
     }
 
     protected async _getDefaultFundingSource(user: User): Promise<FundingSource> {
+        this.fundingSourceService.setRequestContext(this.getRequestContext());
         const fundingSource = await this.fundingSourceService.getDefault(user.id);
         if (!fundingSource) {
             throw new Errors.NotFoundError();
@@ -94,54 +47,11 @@ export abstract class FundingSourceBaseController extends BaseController {
             throw new Errors.NotFoundError();
         }
 
-        const profile: Profile = user.tenantProfile;
         try {
+            const logic = new CreateUserFundingSourceLogic(this.getRequestContext());
+            const fundingSource = await logic.execute(parsedData, user);
 
-            await this.dwollaClient.authorize();
-            const sourceUri = await this.dwollaClient.createFundingSource(
-                profile.dwollaUri,
-                parsedData.routing,
-                parsedData.account,
-                'checking',
-                parsedData.name,
-            );
-
-            const fundingSource: FundingSource = FundingSource.factory({
-                routing: parsedData.routing,
-                account: parsedData.account,
-                type: 'checking',
-                name: parsedData.name,
-                profileId: profile.id,
-                tenantId: profile.tenantId,
-                isDefault: false,
-                dwollaUri: sourceUri
-            });
-
-            const sourceInfo = {
-                sourceUri: profile.dwollaSourceUri,
-                routing: profile.dwollaRouting,
-                account: profile.dwollaAccount,
-            };
-
-            const fundingSources = await this.fundingSourceService.getAllFundingSource(user.id);
-            if (!fundingSources || fundingSources.length == 0) {
-                fundingSource.isDefault = true;
-            }
-
-            try {
-                await this.mailer.sendFundingSourceCreated(user, sourceInfo);
-            } catch (e) {
-                this.logger.error(e.message);
-            }
-
-            let fundingSourceResult;
-
-            await transaction(this.profileService.transaction(), async trx => {
-                fundingSourceResult = await this.fundingSourceService.insert(fundingSource, trx);
-                await this.profileService.addFundingSource(profile, fundingSource, trx);
-            });
-
-            return this.map(FundingSourceResponse, fundingSourceResult);
+            return this.map(FundingSourceResponse, fundingSource);
         } catch (err) {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError(null, {
@@ -158,45 +68,18 @@ export abstract class FundingSourceBaseController extends BaseController {
         if (!user) {
             throw new Errors.NotFoundError();
         }
-        const profile: Profile = user.tenantProfile;
 
         try {
-            const sourceInfo = {
-                sourceUri: profile.dwollaUri,
-                routing: profile.dwollaRouting,
-                account: profile.dwollaAccount,
-            };
-
-            const fundingSource: FundingSource = await this.fundingSourceService.get(id);
-            if (!fundingSource) {
-                throw new Errors.NotFoundError(`Could not find funding source by id ${id}`);
-            }
-
-            if (fundingSource.profileId != profile.id) {
-                throw new Errors.ConflictError('Funding source can only be delete by its owner.');
-            }
-
-            await this.dwollaClient.authorize();
-            await this.dwollaClient.deleteFundingSource(fundingSource.dwollaUri);
-
-            try {
-                await this.mailer.sendFundingSourceRemoved(user, sourceInfo);
-            } catch (e) {
-                this.logger.error(e.message);
-            }
-
-            await transaction(this.profileService.transaction(), async trx => {
-                // TODO: move
-                await profile.$relatedQuery(profiles.Relations.fundingSources).unrelate().where(`${FundingSource.tableName}.id`, fundingSource.id);
-                await this.fundingSourceService.delete(fundingSource, trx);
-            });
+            const logic = new DeleteFundingSourceLogic(this.getRequestContext());
+            await logic.execute(id, user);
         } catch (err) {
-            this.logger.error(err);
+            this.logger.error(err.message);
             throw new Errors.InternalServerError(err.message);
         }
     }
 
     protected async _getFundingSources(user: User, page: number = 1, limit: number = this.config.get('pagination.limit')) {
+        this.fundingSourceService.setRequestContext(this.getRequestContext());
         const fundingSources = await this.fundingSourceService.getAllFundingSource(user.id);
 
         return this.paginate(new Pagination(page, limit, fundingSources.length), fundingSources.map(fundingSource => {
@@ -211,23 +94,10 @@ export abstract class FundingSourceBaseController extends BaseController {
 @Tags('users', 'fundingSources')
 @Preprocessor(BaseController.requireAdmin)
 export class UserFundingSourceController extends FundingSourceBaseController {
-    constructor(@Inject dwollaClient: dwolla.Client,
-                @Inject service: UserService,
-                @Inject profileService: ProfileService,
-                @Inject transactionService: TransactionService,
-                @Inject userContext: context.UserContext,
-                @Inject tenantContext: context.TenantContext,
-                @Inject logger: Logger,
-                @Inject config: Config,
-                @Inject dwollaNotifier: DwollaNotifier,
-                @Inject fundingSourceService: FundingSourceService,
-                @Inject mailer: MailerService) {
-        super(dwollaClient, service, profileService, transactionService, userContext, tenantContext, logger, config, dwollaNotifier, fundingSourceService, mailer);
-    }
-
     @GET
     @Path('default')
     async getDefaultFundingSource(@PathParam('userId') userId: string) {
+        this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
         return await super._getDefaultFundingSource(user);
     }
@@ -241,6 +111,7 @@ export class UserFundingSourceController extends FundingSourceBaseController {
     @POST
     @Path('')
     async createUserFundingSource(@PathParam('userId') userId: string, data: FundingSourceRequest): Promise<FundingSourceResponse> {
+        this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
         return await this._createUserFundingSource(user, data);
     }
@@ -248,6 +119,7 @@ export class UserFundingSourceController extends FundingSourceBaseController {
     @DELETE
     @Path(':fundingId')
     async deleteUserFundingSource(@PathParam('userId') userId: string, @PathParam('fundingId') fundingId: string) {
+        this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
         return await this._deleteUserFundingSource(user, fundingId);
     }
@@ -256,6 +128,7 @@ export class UserFundingSourceController extends FundingSourceBaseController {
     @Path('')
     async getFundingSources(@PathParam('userId') userId: string, @QueryParam('page') page?: number,
                             @QueryParam('limit') limit?: number) {
+        this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
         return await super._getFundingSources(user, page, limit);
     }
@@ -267,53 +140,42 @@ export class UserFundingSourceController extends FundingSourceBaseController {
 @Tags('contractors', 'fundingSources')
 @Preprocessor(BaseController.requireContractor)
 export class ContractorFundingSourceController extends FundingSourceBaseController {
-    constructor(@Inject dwollaClient: dwolla.Client,
-                @Inject service: UserService,
-                @Inject profileService: ProfileService,
-                @Inject transactionService: TransactionService,
-                @Inject userContext: context.UserContext,
-                @Inject tenantContext: context.TenantContext,
-                @Inject logger: Logger,
-                @Inject config: Config,
-                @Inject dwollaNotifier: DwollaNotifier,
-                @Inject fundingSourceService: FundingSourceService,
-                @Inject mailer: MailerService) {
-        super(dwollaClient, service, profileService, transactionService, userContext, tenantContext, logger, config, dwollaNotifier, fundingSourceService, mailer);
-    }
-
-
     @GET
     @Path('')
     async getFundingSources(@QueryParam('page') page?: number,
                             @QueryParam('limit') limit?: number) {
-        const user = await this.userService.get(this.userContext.get().id);
+        this.userService.setRequestContext(this.getRequestContext());
+        const user = await this.userService.get(this.getRequestContext().getUser().id);
         return await super._getFundingSources(user, page, limit);
     }
 
     @GET
     @Path('default')
     async getDefaultFundingSource() {
-        const user = await this.userService.get(this.userContext.get().id);
+        this.userService.setRequestContext(this.getRequestContext());
+        const user = await this.userService.get(this.getRequestContext().getUser().id);
         return await super._getDefaultFundingSource(user);
     }
 
     @POST
     @Path(':id/default')
     async setDefaultFundingSource(@PathParam('id') id: string) {
-        return await super._setDefaultFundingSource(id, this.userContext.get().id);
+        return await super._setDefaultFundingSource(id, this.getRequestContext().getUser().id);
     }
 
     @POST
     @Path('')
     async createUserFundingSource(data: FundingSourceRequest): Promise<FundingSourceResponse> {
-        const user = await this.userService.get(this.userContext.get().id);
+        this.userService.setRequestContext(this.getRequestContext());
+        const user = await this.userService.get(this.getRequestContext().getUser().id);
         return await this._createUserFundingSource(user, data);
     }
 
     @DELETE
     @Path(':id')
     async deleteUserFundingSource(@PathParam('id') id: string) {
-        const user = await this.userService.get(this.userContext.get().id);
+        this.userService.setRequestContext(this.getRequestContext());
+        const user = await this.userService.get(this.getRequestContext().getUser().id);
         return await this._deleteUserFundingSource(user, id);
     }
 }

@@ -1,53 +1,28 @@
-import {Errors, GET, PATCH, Path, PathParam, POST, Preprocessor} from 'typescript-rest';
+import {Errors, GET, PATCH, Path, POST, Preprocessor} from 'typescript-rest';
 import {BaseController} from '../api';
-import {Logger} from '../logger';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
-import {transaction} from 'objection';
+import {BusinessClassificationsResponse} from './models';
 import {TenantService} from './service';
 import {Security, Tags} from 'typescript-rest-swagger';
-import {Config} from '../config';
 import * as dwolla from '../dwolla';
-import * as context from '../context';
 import {DwollaNotifier} from '../dwolla/notifier';
 import {UserService} from '../user/service';
-
-import {
-    BusinessClassificationsResponse,
-} from './models';
 
 @Security('api_key')
 @Path('/tenants')
 @Tags('tenants')
 @Preprocessor(BaseController.requireAdmin)
 export class TenantController extends BaseController {
-    private service: TenantService;
-    private dwollaClient: dwolla.Client;
-    private userContext: context.UserContext;
-    private tenantContext: context.TenantContext;
-    private dwollaNotifier: DwollaNotifier;
-    private userService: UserService;
-
-    constructor(@Inject service: TenantService,
-                @Inject logger: Logger, @Inject config: Config,
-                @Inject userContext: context.UserContext,
-                @Inject tenantContext: context.TenantContext,
-                @Inject userService: UserService,
-                @Inject dwollaClient: dwolla.Client,
-                @Inject dwollaNotifier: DwollaNotifier) {
-        super(logger, config);
-        this.service = service;
-        this.userContext = userContext;
-        this.tenantContext = tenantContext;
-        this.dwollaClient = dwollaClient;
-        this.dwollaNotifier = dwollaNotifier;
-        this.userService = userService;
-    }
+    @Inject private service: TenantService;
+    @Inject private dwollaClient: dwolla.Client;
+    @Inject private dwollaNotifier: DwollaNotifier;
+    @Inject private userService: UserService;
 
     @GET
     @Path('')
     async getTenant(): Promise<models.TenantResponse> {
-        const tenant = await this.service.get(this.tenantContext.get());
+        const tenant = await this.service.get(this.getRequestContext().getTenantId());
         if (!tenant) {
             throw new Errors.NotFoundError();
         }
@@ -59,26 +34,26 @@ export class TenantController extends BaseController {
     @Path('')
     async createTenant(data: models.TenantRequest): Promise<models.TenantResponse> {
         throw new Errors.NotImplementedError();
-        const parsedData = await this.validate(data, models.tenantRequestSchema);
-        let tenant = models.Tenant.factory(parsedData);
-        try {
-            await transaction(models.Tenant.knex(), async trx => {
-                tenant = await this.service.insert(tenant, trx);
-            });
-            tenant = await this.service.get(tenant.id);
-        } catch (err) {
-            this.logger.error(err);
-            throw new Errors.InternalServerError(err.message);
-        }
-
-        return this.map(models.TenantResponse, tenant);
+        // const parsedData = await this.validate(data, models.tenantRequestSchema);
+        // let tenant = models.Tenant.factory(parsedData);
+        // try {
+        //     await transaction(models.Tenant.knex(), async trx => {
+        //         tenant = await this.service.insert(tenant, trx);
+        //     });
+        //     tenant = await this.service.get(tenant.id);
+        // } catch (err) {
+        //     this.logger.error(err);
+        //     throw new Errors.InternalServerError(err.message);
+        // }
+        //
+        // return this.map(models.TenantResponse, tenant);
     }
 
     @GET
     @Path('/company')
     @Tags('tenantCompany')
     async getTenantCompany(): Promise<models.TenantCompanyResponse> {
-        const tenant = await this.service.get(this.tenantContext.get());
+        const tenant = await this.service.get(this.getRequestContext().getTenantId());
         if (!tenant) {
             throw new Errors.NotFoundError();
         }
@@ -94,7 +69,7 @@ export class TenantController extends BaseController {
     @Path('/company/owner')
     @Tags('tenantCompany')
     async getTenantCompanyOwner(): Promise<models.TenantOwnerResponse> {
-        const tenant = await this.service.get(this.tenantContext.get());
+        const tenant = await this.service.get(this.getRequestContext().getTenantId());
         if (!tenant) {
             throw new Errors.NotFoundError();
         }
@@ -115,7 +90,7 @@ export class TenantController extends BaseController {
     @Path('/company')
     @Tags('tenantCompany')
     async createTenantCompany(data: models.TenantCompanyPostRequest): Promise<models.TenantCompanyResponse> {
-        const tenant: models.Tenant = await this.service.get(this.tenantContext.get());
+        const tenant: models.Tenant = await this.service.get(this.getRequestContext().getTenantId());
         const parsedData: models.TenantCompanyPostRequest = await this.validate(data, models.tenantCompanyPostRequestSchema);
 
         if (!tenant) {
@@ -151,7 +126,7 @@ export class TenantController extends BaseController {
     @Path('/company')
     @Tags('tenantCompany')
     async updateTenantCompany(data: models.TenantCompanyPatchRequest): Promise<models.TenantCompanyResponse> {
-        const tenant: models.Tenant = await this.service.get(this.tenantContext.get());
+        const tenant: models.Tenant = await this.service.get(this.getRequestContext().getTenantId());
         const parsedData: models.TenantCompanyPatchRequest = await this.validate(data, models.tenantCompanyPatchRequestSchema);
 
         if (!tenant) {

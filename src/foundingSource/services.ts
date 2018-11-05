@@ -2,24 +2,13 @@ import * as db from '../db';
 import {FundingSource} from './models';
 import {transaction} from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
-import {Config} from '../config';
-import {Logger} from '../logger';
-import * as context from '../context';
-import * as Errors from 'typescript-rest/dist/server-errors';
 import {UserService} from '../user/service';
 import {ProfileService} from '../profile/service';
 
 @AutoWired
 export class FundingSourceService extends db.ModelService<FundingSource> {
-    private profileService: ProfileService;
-    private userService: UserService;
-    constructor(@Inject config: Config, @Inject logger: Logger,
-                @Inject tenantContext: context.TenantContext, @Inject profileService: ProfileService, @Inject userSerivce: UserService) {
-        super(config, logger, tenantContext);
-
-        this.profileService = profileService;
-        this.userService = userSerivce;
-    }
+    @Inject private profileService: ProfileService;
+    @Inject private userService: UserService;
 
     async insert(entity: FundingSource, trx?: transaction<any>): Promise<FundingSource> {
         entity.tenantId = this.getTenantId();

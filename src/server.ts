@@ -108,7 +108,10 @@ export class ApiServer {
 
     private setupDB() {
         this.knex = knex(this.config.get('db'));
-        this.knex.migrate.latest();
+        if (this.config.get('db.autoMigrate')) {
+            this.knex.migrate.latest();
+        }
+
         ApiServer.db = this.knex;
         Model.knex(this.knex);
     }

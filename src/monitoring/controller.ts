@@ -1,9 +1,6 @@
 import {GET, Path} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Tags} from 'typescript-rest-swagger';
-import {Inject} from 'typescript-ioc';
-import {Logger} from '../logger';
-import {Config} from '../config';
 import * as os from 'os';
 
 const getRepoInfo = require('git-repo-info');
@@ -13,10 +10,6 @@ const osUtils = require('os-utils');
 @Tags('monitoring')
 @Path('/')
 export class MonitoringController extends BaseController {
-    constructor(@Inject logger: Logger, @Inject config: Config) {
-        super(logger, config);
-    }
-
     @GET
     @Path('')
     async health() {

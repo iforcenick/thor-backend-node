@@ -1,9 +1,8 @@
 import * as Winston from 'winston';
 import * as expressWinston from 'express-winston';
-import {AutoWired, Inject, Singleton} from 'typescript-ioc';
+import {AutoWired, Inject} from 'typescript-ioc';
 import {inspect} from 'util';
 import {Config} from './config';
-import * as context from './context';
 
 const MESSAGE = Symbol.for('message');
 
@@ -76,9 +75,9 @@ export class Logger {
     protected correlationId: string;
     protected requestId: string;
 
-    constructor(@Inject requestId: context.RequestIdContext, @Inject correlationId: context.CorrelationIdContext) {
-        this.requestId = requestId.get();
-        this.correlationId = correlationId.get();
+    constructor() {
+        this.requestId = 'N/I';
+        this.correlationId = 'N/I';
         this.winston = this.instantiateLogger();
     }
 
