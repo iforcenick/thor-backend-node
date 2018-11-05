@@ -123,7 +123,7 @@ export class TransactionResponse extends TransactionBaseInfo {
     updatedAt: Date = mapper.FIELD_DATE;
     @mapper.object(job.JobResponse)
     job: job.JobResponse = new job.JobResponse();
-    value: string = mapper.FIELD_STR;
+    value: number = mapper.FIELD_NUM;
 }
 
 export class PeriodStatsResponse extends Mapper {
