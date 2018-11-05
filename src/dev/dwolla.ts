@@ -118,12 +118,33 @@ const listBusinessClassification = async () => {
     }
 };
 
+const createTransfer = async (from, to, amount) => {
+    await client.authorize();
+
+    try {
+        const transfer = dwolla.transfer.factory({});
+        transfer.setSource(from);
+        transfer.setDestination(to);
+        transfer.setAmount(amount);
+        transfer.setCurrency('USD');
+        const result = await client.createTransfer(transfer);
+        console.log(result);
+    } catch (e) {
+        console.log(e);
+    }
+};
+
 // listDocuments(customerId).then();
 // listFundingSources(customerId).then();
 // getBalanceSource(customerId).then();
 // getFundingSource('9256ce01-21f4-4b4f-b9b5-6562518c0713').then();
 // cancelTransfer('932ac2ec-58c2-e811-8110-d08b405a9c82').then();
 // listBusinessClassification().then();
-getCustomer('d2ed9740-2150-4e2d-8022-e8605ae00d37').then();
+// getCustomer('d2ed9740-2150-4e2d-8022-e8605ae00d37').then();
 // createBusinessVerifiedBeneficialOwner('af839255-d253-41db-ae2c-3db2f579b6a1').then();
 // listBusinessVerifiedBeneficialOwners('af839255-d253-41db-ae2c-3db2f579b6a1').then();
+createTransfer(
+    'https://api-sandbox.dwolla.com/funding-sources/24a53f09-99ae-420d-8adc-2793845714b6',
+    'https://api-sandbox.dwolla.com/funding-sources/0f4c28f3-1700-4ce3-81e0-017ffdf5acf2',
+    1
+).then();

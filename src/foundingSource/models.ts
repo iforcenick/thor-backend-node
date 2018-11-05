@@ -1,11 +1,8 @@
 import * as db from '../db';
 import * as tenant from '../tenant/models';
-import * as profile from '../profile/models';
-import {Mapper} from '../mapper';
 import * as mapper from '../mapper';
+import {Mapper} from '../mapper';
 import Joi = require('joi');
-import * as role from '../user/role';
-import {ProfileResponse} from '../profile/models';
 
 
 export const enum Relations {

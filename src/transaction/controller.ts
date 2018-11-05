@@ -2,15 +2,14 @@ import {DELETE, Errors, GET, HttpError, Path, PathParam, POST, Preprocessor, Que
 import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
-import * as transfer from './transfer/models';
 import {TransactionService} from './service';
 import {UserService} from '../user/service';
 import {JobService} from '../job/service';
 import {Security, Tags} from 'typescript-rest-swagger';
-import {transaction} from 'objection';
-import {Job} from '../job/models';
 import moment from 'moment';
 import {FundingSourceService} from '../foundingSource/services';
+import {CancelTransactionLogic, CreateTransactionLogic, CreateTransactionTransferLogic} from './logic';
+import * as dwolla from '../dwolla';
 
 const validate = require('uuid-validate');
 
@@ -85,47 +84,20 @@ export class TransactionController extends BaseController {
         this.fundingService.setRequestContext(this.getRequestContext());
 
         const parsedData: models.TransactionRequest = await this.validate(data, models.transactionRequestSchema);
-        const user = await this.userService.get(parsedData.userId);
-        if (!user) {
-            throw new Errors.NotFoundError('User not found');
-        }
-
-        if (!user.isContractor()) {
-            throw new Errors.NotAcceptableError('User is not a contractor');
-        }
-
-        const defaultFunding = await this.fundingService.getDefault(user.id);
-        if (!defaultFunding) {
-            throw new Errors.NotAcceptableError('User does not have a bank account');
-        }
 
         try {
-            const transactionFromDb: models.Transaction = await transaction(models.Transaction.knex(), async trx => {
-                const {job: jobRequest} = parsedData;
-                let jobFromDb;
-                if (!jobRequest.id) {
-                    const jobEntity = Job.factory(jobRequest);
-                    jobFromDb = await this.jobService.insert(jobEntity, trx);
-                } else {
-                    jobFromDb = await this.jobService.get(jobRequest.id);
-                }
-                if (!jobFromDb) {
-                    throw new Errors.NotFoundError('Job not found');
-                }
-
-                const transactionEntity = models.Transaction.factory(parsedData);
-                transactionEntity.adminId = this.getRequestContext().getUser().id;
-                transactionEntity.jobId = jobFromDb.id;
-                const transactionFromDb = await this.service.insert(transactionEntity, trx);
-                transactionFromDb.job = jobFromDb;
-                return transactionFromDb;
-            });
-            return this.map(models.TransactionResponse, transactionFromDb);
+            const logic = new CreateTransactionLogic(this.getRequestContext());
+            const transaction = await logic.execute(parsedData);
+            return this.map(models.TransactionResponse, transaction);
         } catch (err) {
-            this.logger.error(err);
             if (err instanceof HttpError) {
                 throw err;
             }
+
+            if (err instanceof dwolla.DwollaRequestError) {
+                throw err.toValidationError();
+            }
+
             throw new Errors.InternalServerError(err.message);
         }
     }
@@ -134,36 +106,8 @@ export class TransactionController extends BaseController {
     @Path(':id/transfers')
     @Preprocessor(BaseController.requireAdmin)
     async createTransactionTransfer(@PathParam('id') id: string): Promise<models.TransactionResponse> {
-        this.service.setRequestContext(this.getRequestContext());
-        this.userService.setRequestContext(this.getRequestContext());
-
-        const transaction = await this.service.get(id);
-        if (!transaction) {
-            throw new Errors.NotFoundError();
-        }
-
-        try {
-            const user = await this.userService.get(this.getRequestContext().getUser().id);
-
-            if (!transaction.transferId) {
-                await this.service.prepareTransfer(transaction, user);
-            } else {
-                transaction.transfer = await this.service.transferService.get(transaction.transferId);
-            }
-
-            if (transaction.transfer.status !== transfer.Statuses.new) {
-                throw new Errors.NotAcceptableError('Transfer already pending');
-            }
-
-            await this.service.createExternalTransfer(transaction);
-        } catch (e) {
-            if (e instanceof models.InvalidTransferDataError || e instanceof Errors.NotAcceptableError) {
-                throw new Errors.NotAcceptableError(e.message);
-            }
-
-            this.logger.error(e);
-            throw new Errors.InternalServerError(e.message);
-        }
+        const logic = new CreateTransactionTransferLogic(this.getRequestContext());
+        const transaction = await logic.execute(id);
 
         return this.map(models.TransactionResponse, transaction);
     }
@@ -219,7 +163,8 @@ export class TransactionController extends BaseController {
                 throw new Errors.NotAcceptableError('Transfer cannot be cancelled');
             }
 
-            await this.service.cancelTransaction(_transaction);
+            const cancelLogic = new CancelTransactionLogic(this.getRequestContext());
+            await cancelLogic.execute(_transaction);
         } catch (e) {
             if (e instanceof Errors.NotAcceptableError) {
                 throw new Errors.NotAcceptableError(e.message);

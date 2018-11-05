@@ -6,6 +6,7 @@ import {event} from './index';
 import {IEvent} from './event';
 import {Tags} from 'typescript-rest-swagger';
 import {TransactionService} from '../transaction/service';
+import {UpdateTransactionStatusLogic} from "../transaction/logic";
 
 @Tags('dwolla')
 @Path('/dwolla/events')
@@ -44,7 +45,8 @@ export class DwollaController extends BaseController {
                         throw new Errors.NotFoundError('Transaction not found');
                     }
 
-                    await this.transactionService.updateTransactionStatus(transaction, _event.topic);
+                    const updateStatusLogic = new UpdateTransactionStatusLogic(this.getRequestContext());
+                    await updateStatusLogic.execute(transaction, _event.topic);
                     break;
                 }
                 default:

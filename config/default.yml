@@ -33,6 +33,7 @@ dwolla:
     environment: sandbox
     webhookSecret: someSecretSecret
     webhookUri: https://odin-api.gothor.com/dwolla/events
+    masterFunding: https://api-sandbox.dwolla.com/funding-sources/24a53f09-99ae-420d-8adc-2793845714b6
 swagger:
   host: odin-api.gothor.com
   schema: https

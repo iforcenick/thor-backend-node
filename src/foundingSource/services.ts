@@ -4,7 +4,7 @@ import {transaction} from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {UserService} from '../user/service';
 import {ProfileService} from '../profile/service';
-import {RequestContext} from "../context";
+import {RequestContext} from '../context';
 
 @AutoWired
 export class FundingSourceService extends db.ModelService<FundingSource> {
