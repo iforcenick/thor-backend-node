@@ -8,7 +8,12 @@ import {JobService} from '../job/service';
 import {Security, Tags} from 'typescript-rest-swagger';
 import moment from 'moment';
 import {FundingSourceService} from '../foundingSource/services';
-import {CancelTransactionLogic, CreateTransactionLogic, CreateTransactionTransferLogic} from './logic';
+import {
+    CancelTransactionLogic,
+    CreateTransactionLogic,
+    CreateTransactionsTransferLogic,
+    CreateTransactionTransferLogic
+} from './logic';
 import * as dwolla from '../dwolla';
 
 const validate = require('uuid-validate');
@@ -110,6 +115,16 @@ export class TransactionController extends BaseController {
         const transaction = await logic.execute(id);
 
         return this.map(models.TransactionResponse, transaction);
+    }
+
+    @POST
+    @Path('transfers/user/:id')
+    @Preprocessor(BaseController.requireAdmin)
+    async createTransactionsTransfer(@PathParam('id') id: string, data: models.TransactionsTransferRequest): Promise<models.TransferResponse> {
+        const logic = new CreateTransactionsTransferLogic(this.getRequestContext());
+        const transfer = await logic.execute(id, data['transactionsIds']);
+
+        return this.map(models.TransferResponse, transfer);
     }
 
     /**

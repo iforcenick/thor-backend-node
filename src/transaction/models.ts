@@ -7,6 +7,7 @@ import * as tenant from '../tenant/models';
 import * as user from '../user/models';
 import * as job from '../job/models';
 import * as transfer from './transfer/models';
+import {number} from "joi";
 
 export const enum Relations {
     user = 'user',
@@ -125,6 +126,15 @@ export class TransactionResponse extends TransactionBaseInfo {
     value: number = mapper.FIELD_NUM;
 }
 
+export class TransferResponse extends Mapper {
+    id: string = mapper.FIELD_STR;
+    adminId: string = mapper.FIELD_STR;
+    status: string = mapper.FIELD_STR;
+    createdAt: Date = mapper.FIELD_DATE;
+    updatedAt: Date = mapper.FIELD_DATE;
+    value: number = mapper.FIELD_NUM;
+}
+
 export class PeriodStatsResponse extends Mapper {
     users: number = mapper.FIELD_NUM;
     total: number = mapper.FIELD_NUM;
@@ -142,6 +152,10 @@ export class PeriodsStatsResponse extends Mapper {
 export class TransactionRequest extends TransactionBaseInfo {
     @mapper.object(job.JobRequest)
     job: job.JobRequest = new job.JobRequest();
+}
+
+export class TransactionsTransferRequest extends Mapper {
+    transactionsIds: Array<string> = Array<string>();
 }
 
 export interface PaginatedTransactionResponse extends PaginatedResponse {

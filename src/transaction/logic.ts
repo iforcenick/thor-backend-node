@@ -1,6 +1,7 @@
 import {Logic} from '../logic';
 import * as transfer from './transfer/models';
-import {Errors, HttpError} from 'typescript-rest';
+import {Transfer} from './transfer/models';
+import {Errors} from 'typescript-rest';
 import {Inject} from 'typescript-ioc';
 import {FundingSourceService} from '../foundingSource/services';
 import {TransactionService} from './service';
@@ -9,17 +10,16 @@ import {TransferService} from './transfer/service';
 import * as users from '../user/models';
 import {transaction} from 'objection';
 import * as dwolla from '../dwolla';
-import {Transfer} from './transfer/models';
+import {event} from '../dwolla';
+import * as models from './models';
 import {Statuses, Transaction, TransactionRequest} from './models';
-import {TenantService} from '../tenant/service';
 import {MailerService} from '../mailer';
 import {Logger} from '../logger';
-import * as models from './models';
-import {event} from '../dwolla';
 import {FundingSource} from '../foundingSource/models';
 import {Config} from '../config';
-import {JobService} from "../job/service";
-import {Job} from "../job/models";
+import {JobService} from '../job/service';
+import {Job} from '../job/models';
+import * as _ from 'lodash';
 
 export class UpdateTransactionStatusLogic extends Logic {
     @Inject private transactionService: TransactionService;
@@ -109,10 +109,52 @@ export class CancelTransactionLogic extends Logic {
     }
 }
 
+export class PrepareTransferLogic extends Logic {
+    @Inject private fundingService: FundingSourceService;
+    @Inject private transactionService: TransactionService;
+    @Inject private transferService: TransferService;
+    @Inject private userService: UserService;
+    @Inject private config: Config;
+
+    async execute(transactions: Array<models.Transaction>, user, admin: users.User): Promise<any> {
+        this.transactionService.setRequestContext(this.context);
+        this.userService.setRequestContext(this.context);
+        this.transferService.setRequestContext(this.context);
+        this.fundingService.setRequestContext(this.context);
+
+        const defaultFunding: FundingSource = await this.fundingService.getDefault(user.id);
+        if (!defaultFunding) {
+            throw new models.InvalidTransferDataError('Bank account not configured for recipient');
+        }
+
+        let value = 0;
+        for (const trans of transactions) {
+            trans.status = models.Statuses.processing;
+            value += Number(trans.value);
+        }
+
+        let transfer = new Transfer();
+        transfer.adminId = admin.id;
+        transfer.status = Statuses.new;
+        transfer.destinationUri = defaultFunding.dwollaUri;
+        transfer.sourceUri = this.config.get('dwolla.masterFunding');
+        transfer.value = value;
+
+        await transaction(this.transactionService.transaction(), async trx => {
+            transfer = await this.transferService.createTransfer(transfer, trx);
+            for (const trans of transactions) {
+                trans.transferId = transfer.id;
+                await this.transactionService.update(trans, trx);
+            }
+        });
+
+        return transfer;
+    }
+}
+
 export class CreateTransactionTransferLogic extends Logic {
     @Inject private transactionService: TransactionService;
     @Inject private userService: UserService;
-    @Inject private fundingService: FundingSourceService;
     @Inject private transferService: TransferService;
     @Inject private dwollaClient: dwolla.Client;
     @Inject private config: Config;
@@ -121,7 +163,6 @@ export class CreateTransactionTransferLogic extends Logic {
         this.transactionService.setRequestContext(this.context);
         this.userService.setRequestContext(this.context);
         this.transferService.setRequestContext(this.context);
-        this.fundingService.setRequestContext(this.context);
 
         const transaction = await this.transactionService.get(id);
         if (!transaction) {
@@ -129,10 +170,12 @@ export class CreateTransactionTransferLogic extends Logic {
         }
 
         try {
-            const user = await this.userService.get(this.context.getUser().id);
+            const admin = await this.userService.get(this.context.getUser().id);
 
             if (!transaction.transferId) {
-                await this.prepareTransfer(transaction, user);
+                const user = await this.userService.get(transaction.userId);
+                const logic = new PrepareTransferLogic(this.context);
+                transaction.transfer = await logic.execute([transaction], user, admin);
             } else {
                 transaction.transfer = await this.transferService.get(transaction.transferId);
             }
@@ -153,30 +196,6 @@ export class CreateTransactionTransferLogic extends Logic {
         return transaction;
     }
 
-    async prepareTransfer(_transaction: models.Transaction, admin: users.User): Promise<Transfer> {
-        const user = await this.userService.get(_transaction.userId);
-        const defaultFunding: FundingSource = await this.fundingService.getDefault(user.id);
-        if (!defaultFunding) {
-            throw new models.InvalidTransferDataError('Bank account not configured for recipient');
-        }
-
-        let transfer = new Transfer();
-        transfer.adminId = admin.id;
-        transfer.status = Statuses.new;
-        transfer.destinationUri = defaultFunding.dwollaUri;
-        transfer.sourceUri = this.config.get('dwolla.masterFunding');
-        transfer.value = Number(_transaction.value);
-        _transaction.status = models.Statuses.processing;
-        await transaction(this.transactionService.transaction(), async trx => {
-            transfer = await this.transferService.createTransfer(transfer, trx);
-            _transaction.transferId = transfer.id;
-            await this.transactionService.update(_transaction, trx);
-        });
-        _transaction.transfer = transfer;
-
-        return transfer;
-    }
-
     async createExternalTransfer(_transaction: models.Transaction) {
         const transfer = dwolla.transfer.factory({});
         transfer.setSource(_transaction.transfer.sourceUri);
@@ -193,6 +212,100 @@ export class CreateTransactionTransferLogic extends Logic {
             await updateStatusLogic.execute(_transaction, _transfer.status);
         } catch (e) {
             await updateStatusLogic.execute(_transaction, models.Statuses.failed);
+            throw e;
+        }
+    }
+}
+
+export class CreateTransactionsTransferLogic extends Logic {
+    @Inject private transactionService: TransactionService;
+    @Inject private userService: UserService;
+    @Inject private transferService: TransferService;
+    @Inject private dwollaClient: dwolla.Client;
+    @Inject private config: Config;
+
+    async execute(id: string, data: Array<string>): Promise<any> {
+        this.transactionService.setRequestContext(this.context);
+        this.userService.setRequestContext(this.context);
+
+        const transactions = [];
+        let userId;
+
+        for (const transId of data) {
+            const trans = await this.transactionService.get(transId);
+            if (!trans) {
+                continue;
+            }
+
+            if (!userId) {
+                userId = trans.userId;
+            } else if (userId != trans.userId) {
+                continue; // TODO: throw validation error?
+            }
+
+            if (trans.transferId || trans.status != Statuses.new) {
+                continue; // TODO: throw validation error?
+            }
+
+            transactions.push(trans);
+        }
+
+        if (_.isEmpty(transactions)) {
+            throw new Errors.ConflictError('No transactions provided');
+        }
+
+        try {
+            const admin = await this.userService.get(this.context.getUser().id);
+            const user = await this.userService.get(userId);
+            const logic = new PrepareTransferLogic(this.context);
+            const transfer = await logic.execute(transactions, user, admin);
+
+            await this.createExternalTransfer(transfer, transactions);
+            // TODO: send email
+            return transfer;
+        } catch (e) {
+            if (e instanceof models.InvalidTransferDataError || e instanceof Errors.NotAcceptableError) {
+                throw new Errors.NotAcceptableError(e.message);
+            }
+
+            throw new Errors.InternalServerError(e.message);
+        }
+    }
+
+    async createExternalTransfer(_transfer: Transfer, transactions: Array<models.Transaction>) {
+        const transfer = dwolla.transfer.factory({});
+        transfer.setSource(_transfer.sourceUri);
+        transfer.setDestination(_transfer.destinationUri);
+        transfer.setAmount(_transfer.value);
+        transfer.setCurrency('USD');
+
+        // TODO: better error handling
+        try {
+            await this.dwollaClient.authorize();
+            _transfer.externalId = await this.dwollaClient.createTransfer(transfer);
+            const _dwollaTransfer = await this.dwollaClient.getTransfer(_transfer.externalId);
+            _transfer.status = _dwollaTransfer.status;
+
+            await transaction(this.transactionService.transaction(), async trx => {
+                await this.transferService.update(_transfer, trx);
+
+                for (const trans of transactions) {
+                    trans.status = _transfer.status;
+                    await this.transactionService.update(trans, trx);
+                }
+            });
+        } catch (e) {
+            _transfer.status = Statuses.failed;
+
+            await transaction(this.transactionService.transaction(), async trx => {
+                await this.transferService.update(_transfer, trx);
+
+                for (const trans of transactions) {
+                    trans.status = _transfer.status;
+                    await this.transactionService.update(trans, trx);
+                }
+            });
+
             throw e;
         }
     }
