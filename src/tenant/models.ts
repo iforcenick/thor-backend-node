@@ -31,6 +31,10 @@ export class Tenant extends db.Model {
     businessType?: string = null;
     businessClassification?: string = null;
     website?: string = null;
+    fundingSourceUri?: string = null;
+    fundingSourceRouting?: string = null;
+    fundingSourceAccount?: string = null;
+    fundingSourceName?: string = null;
 
     static get relationMappings() {
         return {

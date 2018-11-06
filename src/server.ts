@@ -18,6 +18,7 @@ import {InvitationController, InvitationCheckController} from './invitation/cont
 import {ContractorController} from './contractor/controller';
 import {ContractorFundingSourceController, UserFundingSourceController} from './foundingSource/controller';
 import {BeneficialOwnerController} from './beneficialOwner/controller';
+import {TenantFundingSourcesController} from './tenant/fundingSource/controller';
 
 const knex = require('knex');
 const path = require('path');
@@ -142,7 +143,8 @@ export class ApiServer {
             ContractorController,
             ContractorFundingSourceController,
             UserFundingSourceController,
-            BeneficialOwnerController
+            BeneficialOwnerController,
+            TenantFundingSourcesController
         );
     }
 
