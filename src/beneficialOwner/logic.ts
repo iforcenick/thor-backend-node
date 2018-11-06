@@ -1,6 +1,7 @@
 import {AddBeneficialOwnerRequest, EditBeneficialOwnerRequest} from './models';
 import * as dwolla from '../dwolla/index';
 import {AutoWired, Inject} from 'typescript-ioc';
+import {Errors} from 'typescript-rest';
 import {BeneficialOwner} from '../dwolla/customer';
 import {TenantService} from '../tenant/service';
 import {Logic} from '../logic';
@@ -14,10 +15,10 @@ export class AddBeneficialOwnerLogic extends Logic {
         this.tenantService.setRequestContext(this.context);
         const tenant = await this.tenantService.get(tenantId);
         if (!tenant) {
-            throw new BeneficialOwnerError('Could not find tenant.');
+            throw new Errors.NotFoundError('Tenant not found');
         }
         if (!tenant.dwollaUri) {
-            throw new BeneficialOwnerError('Could not add beneficial owner for tenant, uri resource is invalid.');
+            throw new Errors.ConflictError('Could not add beneficial owner for tenant, no tenant company');
         }
 
         const beneficialOwner = new BeneficialOwner(request);

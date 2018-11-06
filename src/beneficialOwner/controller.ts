@@ -1,7 +1,7 @@
 import {BaseController} from '../api';
 import {AutoWired} from 'typescript-ioc';
 import {Security, Tags} from 'typescript-rest-swagger';
-import {DELETE, GET, PATCH, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
+import {DELETE, GET, PATCH, Path, PathParam, POST, Preprocessor, QueryParam, HttpError} from 'typescript-rest';
 import {
     AddBeneficialOwnerRequest,
     addBeneficialOwnerRequestSchema,
@@ -41,6 +41,11 @@ export abstract class BeneficialOwnerController extends BaseController {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError(null, null);
             }
+
+            if (err instanceof HttpError) {
+                throw err;
+            }
+
             throw new Errors.InternalServerError(err.message);
         }
     }
