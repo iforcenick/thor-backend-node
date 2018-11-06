@@ -193,6 +193,7 @@ export class UserController extends BaseController {
 
     @DELETE
     @Path(':id')
+    @Preprocessor(BaseController.requireAdmin)
     async delete(@PathParam('id') id: string) {
         this.service.setRequestContext(this.getRequestContext());
 
