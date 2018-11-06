@@ -9,7 +9,7 @@ import {raw, transaction} from 'objection';
 import * as _ from 'lodash';
 import {ApiServer} from '../server';
 import {JWTTokenProvider} from '../auth/encryption';
-import {RequestContext} from "../context";
+import {RequestContext} from '../context';
 
 const bcrypt = require('bcrypt');
 

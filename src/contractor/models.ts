@@ -25,6 +25,7 @@ export class ContractorResponse extends ContractorBaseModel {
 }
 
 export const contractorRequestSchema = Joi.object().keys({
+    password: Joi.string().required(),
     profile: profile.profileRequestSchema.required(),
     tenant: Joi.string().required(),
     invitationToken: Joi.string().required(),
