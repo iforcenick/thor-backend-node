@@ -26,14 +26,11 @@ export class ContractorController extends BaseController {
     @Inject private dwollaNotifier: DwollaNotifier;
     @Inject private invitationService: InvitationService;
 
-    constructor() {
-        super();
-        this.service.setRequestContext(this.getRequestContext());
-    }
-
     @POST
     @Path('')
     async createUser(data: ContractorRequest): Promise<ContractorResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+
         const parsedData = await this.validate(data, contractorRequestSchema);
         const profile = parsedData['profile'];
         ProfileService.validateAge(profile);
@@ -57,6 +54,8 @@ export class ContractorController extends BaseController {
     @Path('/password')
     @Tags('auth')
     async changePassword(data: PasswordRequest) {
+        this.service.setRequestContext(this.getRequestContext());
+
         const parsedData = await this.validate(data, passwordRequestSchema);
         const oldPassword = parsedData['oldPassword'];
         const newPassword = parsedData['newPassword'];
