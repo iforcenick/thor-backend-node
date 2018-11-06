@@ -70,6 +70,14 @@ export abstract class BeneficialOwnerController extends BaseController {
     @Path('beneficialOwners')
     async getBeneficialOwners(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<PaginatedBeneficialOwnerResponse> {
         try {
+            if (!page) {
+                page = 1;
+            }
+
+            if (!limit) {
+                limit = 5;
+            }
+
             const logic = new GetBeneficialOwnersLogic(this.getRequestContext());
             const beneficialOwners = await logic.execute(this.getRequestContext().getTenantId());
             const pagination = new Pagination(page, limit, beneficialOwners.length);
