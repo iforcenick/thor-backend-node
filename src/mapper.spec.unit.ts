@@ -1,8 +1,6 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai from 'chai';
-import {Container} from 'typescript-ioc';
 import 'mocha';
-import {sandbox} from './test-setup.spec.unit';
 import {mapper} from './api';
 import {Mapper} from './mapper';
 import * as _ from 'lodash';
@@ -68,6 +66,10 @@ class TypeCasting extends Mapper {
     tString: string = mapper.FIELD_STR;
     @mapper.object(TypeCastingNested)
     nested: TypeCastingNested = new TypeCastingNested();
+}
+
+class BooleanField extends Mapper {
+    field: boolean = mapper.FIELD_BOOLEAN;
 }
 
 const map = (mapper, data) => {
@@ -185,6 +187,16 @@ describe('Mapper', () => {
             expect(_.isString(output.nested.tString)).to.be.true;
             expect(_.isBoolean(output.nested.tBoolean)).to.be.true;
             expect(_.isBoolean(output.nested.tBoolean2)).to.be.true;
+        });
+
+        it('should map boolean false to false', async () => {
+            const expected = {
+                field: false,
+            };
+
+            const input = _.cloneDeep(expected);
+            const output = map(BooleanField, input);
+            expect(output.field).to.be.false;
         });
     });
 });

@@ -54,7 +54,9 @@ export class Mapper {
             if (!fromName) {
                 fromName = key;
             }
-            if (data[fromName]) {
+            if (_.isNil(data[fromName])) {
+                this[key] = null;
+            } else {
                 if (_.isObject(this[key])) {
                     const mapper = Reflect.getMetadata('mapper', this, key);
                     if (mapper) {
@@ -74,8 +76,6 @@ export class Mapper {
                 } else {
                     this[key] = this.cast(data[fromName], key);
                 }
-            } else {
-                this[key] = null;
             }
         }
         return this;
