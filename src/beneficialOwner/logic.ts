@@ -20,6 +20,9 @@ export class AddBeneficialOwnerLogic extends Logic {
         if (!tenant.dwollaUri) {
             throw new Errors.ConflictError('Could not add beneficial owner for tenant, no tenant company');
         }
+        if (tenant.dwollaType == dwolla.customer.BUSINESS_TYPE.Sole) {
+            throw new Errors.ConflictError('soleProprietorship company cannot have beneficial owners');
+        }
 
         const beneficialOwner = new BeneficialOwner(request);
         await this.dwollaClient.authorize();
