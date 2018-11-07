@@ -2,7 +2,7 @@ import {Logic} from '../logic';
 import {Errors} from 'typescript-rest';
 import {FundingSourceService} from './services';
 import {ProfileService} from '../profile/service';
-import {Inject} from 'typescript-ioc';
+import {AutoWired, Inject} from 'typescript-ioc';
 import {FundingSource} from './models';
 import {transaction} from 'objection';
 import * as dwolla from '../dwolla';
@@ -10,9 +10,10 @@ import {UserService} from '../user/service';
 import {MailerService} from '../mailer';
 import {Logger} from '../logger';
 import {User} from '../user/models';
-import {Profile} from "../profile/models";
-import * as profiles from "../profile/models";
+import {Profile} from '../profile/models';
+import * as profiles from '../profile/models';
 
+@AutoWired
 export class SetDefaultFundingSourceLogic extends Logic {
     @Inject protected profileService: ProfileService;
     @Inject protected fundingSourceService: FundingSourceService;
@@ -36,6 +37,7 @@ export class SetDefaultFundingSourceLogic extends Logic {
     }
 }
 
+@AutoWired
 export class CreateUserFundingSourceLogic extends Logic {
     @Inject protected dwollaClient: dwolla.Client;
     @Inject protected userService: UserService;
@@ -98,6 +100,7 @@ export class CreateUserFundingSourceLogic extends Logic {
     }
 }
 
+@AutoWired
 export class DeleteFundingSourceLogic extends Logic {
     @Inject protected dwollaClient: dwolla.Client;
     @Inject protected profileService: ProfileService;

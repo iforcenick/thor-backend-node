@@ -2,7 +2,7 @@ import {Logic} from '../logic';
 import * as transfer from './transfer/models';
 import {Transfer} from './transfer/models';
 import {Errors} from 'typescript-rest';
-import {Inject} from 'typescript-ioc';
+import {AutoWired, Inject} from 'typescript-ioc';
 import {FundingSourceService} from '../foundingSource/services';
 import {TransactionService} from './service';
 import {UserService} from '../user/service';
@@ -21,6 +21,7 @@ import {JobService} from '../job/service';
 import {Job} from '../job/models';
 import * as _ from 'lodash';
 
+@AutoWired
 export class UpdateTransactionStatusLogic extends Logic {
     @Inject private transactionService: TransactionService;
     @Inject private userService: UserService;
@@ -95,6 +96,7 @@ export class UpdateTransactionStatusLogic extends Logic {
     }
 }
 
+@AutoWired
 export class CancelTransactionLogic extends Logic {
     @Inject protected dwollaClient: dwolla.Client;
 
@@ -109,6 +111,7 @@ export class CancelTransactionLogic extends Logic {
     }
 }
 
+@AutoWired
 export class PrepareTransferLogic extends Logic {
     @Inject private fundingService: FundingSourceService;
     @Inject private transactionService: TransactionService;
@@ -152,6 +155,7 @@ export class PrepareTransferLogic extends Logic {
     }
 }
 
+@AutoWired
 export class CreateTransactionTransferLogic extends Logic {
     @Inject private transactionService: TransactionService;
     @Inject private userService: UserService;
@@ -196,7 +200,7 @@ export class CreateTransactionTransferLogic extends Logic {
         return transaction;
     }
 
-    async createExternalTransfer(_transaction: models.Transaction) {
+    private async createExternalTransfer(_transaction: models.Transaction) {
         const transfer = dwolla.transfer.factory({});
         transfer.setSource(_transaction.transfer.sourceUri);
         transfer.setDestination(_transaction.transfer.destinationUri);
@@ -217,6 +221,7 @@ export class CreateTransactionTransferLogic extends Logic {
     }
 }
 
+@AutoWired
 export class CreateTransactionsTransferLogic extends Logic {
     @Inject private transactionService: TransactionService;
     @Inject private userService: UserService;
@@ -272,7 +277,7 @@ export class CreateTransactionsTransferLogic extends Logic {
         }
     }
 
-    async createExternalTransfer(_transfer: Transfer, transactions: Array<models.Transaction>) {
+    private async createExternalTransfer(_transfer: Transfer, transactions: Array<models.Transaction>) {
         const transfer = dwolla.transfer.factory({});
         transfer.setSource(_transfer.sourceUri);
         transfer.setDestination(_transfer.destinationUri);
@@ -311,6 +316,7 @@ export class CreateTransactionsTransferLogic extends Logic {
     }
 }
 
+@AutoWired
 export class CreateTransactionLogic extends Logic {
     @Inject private userService: UserService;
     @Inject private fundingService: FundingSourceService;
