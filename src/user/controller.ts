@@ -118,10 +118,12 @@ export class UserController extends BaseController {
         try {
             const logic = new AddContractorLogic(this.getRequestContext());
             user = await logic.execute(parsedData.profile, this.getRequestContext().getTenantId(), parsedData.password);
-         } catch (err) {
+        } catch (err) {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError('profile');
             }
+
+            throw err;
         }
 
         return this.map(models.UserResponse, user);
