@@ -117,12 +117,12 @@ export abstract class ModelService<T extends any> {
         return {page, limit};
     }
 
-    async get(id: string): Promise<T> {
+    async get(id: string, trx?: transaction<any>): Promise<T> {
         if (!validate(id)) {
             throw new Errors.NotFoundError('Invalid id format');
         }
 
-        const query = this.modelType.query().findById(id);
+        const query = this.modelType.query(trx).findById(id);
 
         this.getOptions(query);
 

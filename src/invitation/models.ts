@@ -12,7 +12,6 @@ export const enum Relations {
 export const enum Status {
     pending = 'pending',
     used = 'used',
-    registered = 'registered',
 }
 
 export class Invitation extends db.Model {
@@ -39,13 +38,18 @@ export class Invitation extends db.Model {
             query.where(`${Invitation.tableName}.status`, status);
         }
     }
+
+    isPending() {
+        return this.status == Status.pending;
+    }
 }
 
 export class InvitationBase extends Mapper {
     email: string = mapper.FIELD_STR;
 }
 
-export class InvitationRequest extends InvitationBase {}
+export class InvitationRequest extends InvitationBase {
+}
 
 export class InvitationResponse extends InvitationBase {
     id: string = mapper.FIELD_STR;

@@ -26,6 +26,7 @@ import {TransactionService} from '../transaction/service';
 import {MailerService} from '../mailer';
 import * as _ from 'lodash';
 import {DwollaNotifier} from '../dwolla/notifier';
+import {AddContractorLogic} from "../contractor/logic";
 
 @Security('api_key')
 @Path('/users')
@@ -112,30 +113,15 @@ export class UserController extends BaseController {
         const parsedData: models.UserRequest = await this.validate(data, models.userRequestSchema);
         ProfileService.validateAge(parsedData.profile);
 
-        let user = models.User.factory({});
-        const profile = Profile.factory(parsedData.profile);
+        let user = null;
 
         try {
-            await this.dwollaClient.authorize();
-            const customer = dwolla.customer.factory(parsedData.profile);
-            customer.type = dwolla.customer.TYPE.Personal;
-            profile.dwollaUri = await this.dwollaClient.createCustomer(customer);
-            const dwollaCustomer = await this.dwollaClient.getCustomer(profile.dwollaUri);
-            profile.dwollaStatus = dwollaCustomer.status;
-            profile.dwollaType = dwollaCustomer.type;
-
-            if (parsedData.password) {
-                user.password = await this.service.hashPassword(parsedData.password);
-            }
-
-            user = await this.service.createWithProfile(user, profile);
-            user = await this.service.get(user.id);
-            await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
-        } catch (err) {
+            const logic = new AddContractorLogic(this.getRequestContext());
+            user = await logic.execute(parsedData.profile, this.getRequestContext().getTenantId(), parsedData.password);
+         } catch (err) {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError('profile');
             }
-            throw new Errors.InternalServerError(err.message);
         }
 
         return this.map(models.UserResponse, user);

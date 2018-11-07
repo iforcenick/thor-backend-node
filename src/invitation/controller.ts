@@ -99,7 +99,7 @@ export class InvitationCheckController extends BaseController {
             throw new Errors.NotFoundError();
         }
 
-        if (invitation.status != models.Status.pending) {
+        if (!invitation.isPending()) {
             throw new Errors.NotAcceptableError('Invitation already used');
         }
 
@@ -116,7 +116,7 @@ export class InvitationCheckController extends BaseController {
             throw new Errors.NotFoundError();
         }
 
-        if (invitation.status != models.Status.pending) {
+        if (!invitation.isPending()) {
             throw new Errors.NotAcceptableError('Invitation already used');
         }
 

@@ -10,7 +10,6 @@ export class ContractorRequest extends ContractorBaseModel {
     password: string = mapper.FIELD_STR;
     @mapper.object(profile.ProfileRequest)
     profile: profile.ProfileRequest = new profile.ProfileRequest();
-    tenant: string = mapper.FIELD_STR;
     invitationToken: string = mapper.FIELD_STR;
 }
 
@@ -27,7 +26,6 @@ export class ContractorResponse extends ContractorBaseModel {
 export const contractorRequestSchema = Joi.object().keys({
     password: Joi.string().required(),
     profile: profile.profileRequestSchema.required(),
-    tenant: Joi.string().required(),
     invitationToken: Joi.string().required(),
 });
 

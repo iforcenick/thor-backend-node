@@ -6,7 +6,6 @@ import {UserService} from '../user/service';
 import {ProfileService} from '../profile/service';
 import {Inject} from 'typescript-ioc';
 import * as Errors from 'typescript-rest/dist/server-errors';
-import {DwollaNotifier} from '../dwolla/notifier';
 import {
     ContractorRequest,
     contractorRequestSchema,
@@ -14,29 +13,25 @@ import {
     PasswordRequest,
     passwordRequestSchema
 } from './models';
-import {InvitationService} from '../invitation/service';
-import {AddContractorLogic} from './logic';
+import {AddInvitedContractorLogic} from './logic';
 
 @Security('api_key')
 @Path('/contractors')
-@Tags('contractor')
+@Tags('contractors')
 export class ContractorController extends BaseController {
-    @Inject private dwollaClient: dwolla.Client;
     @Inject private service: UserService;
-    @Inject private dwollaNotifier: DwollaNotifier;
-    @Inject private invitationService: InvitationService;
 
     @POST
     @Path('')
-    async createUser(data: ContractorRequest): Promise<ContractorResponse> {
+    async addContractor(data: ContractorRequest): Promise<ContractorResponse> {
         this.service.setRequestContext(this.getRequestContext());
 
         const parsedData = await this.validate(data, contractorRequestSchema);
         const profile = parsedData['profile'];
         ProfileService.validateAge(profile);
         try {
-            const logic = new AddContractorLogic(this.getRequestContext());
-            const user = await logic.execute(profile, parsedData.tenant, parsedData.invitationToken, parsedData.password);
+            const logic = new AddInvitedContractorLogic(this.getRequestContext());
+            const user = await logic.execute(profile, parsedData.invitationToken, parsedData.password);
             const contractorResponse = this.map(ContractorResponse, user);
             contractorResponse.token = await this.service.generateJwt(user);
 
@@ -45,7 +40,8 @@ export class ContractorController extends BaseController {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError('profile');
             }
-            throw new Errors.InternalServerError(err.message);
+
+            throw err;
         }
     }
 
