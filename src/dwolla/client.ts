@@ -158,6 +158,13 @@ export class Client {
         return response.headers.get('status');
     }
 
+    public async certifyBusinessVerifiedBeneficialOwnership(uri: string) {
+        const response = await this.post(`${uri}/beneficial-ownership`, {
+            status: 'certified'
+        });
+        return response.body.status;
+    }
+
     public async listBusinessVerifiedBeneficialOwners(localization: string) {
         const response = await this.get(`${localization}/beneficial-owners`);
         const owners = [];
@@ -206,6 +213,25 @@ export class Client {
     public async getFundingSource(localization: string): Promise<funding.ISource> {
         const response = await this.get(localization);
         return funding.factory(response.body).setLocalization(localization);
+    }
+
+    public async createFundingSourceMicroDeposit(localization: string): Promise<boolean> {
+        const response = await this.post(`${localization}/micro-deposits`, {});
+        return response.status == 201;
+    }
+
+    public async verifyFundingSourceMicroDeposit(localization: string, amount1, amount2: number): Promise<boolean> {
+        const response = await this.post(`${localization}/micro-deposits`, {
+            amount1: {
+                value: amount1,
+                currency: 'USD'
+            },
+            amount2: {
+                value: amount2,
+                currency: 'USD'
+            }
+        });
+        return response;
     }
 
     public async createTransfer(trans: transaction.ITransfer): Promise<string> {

@@ -134,6 +134,39 @@ const createTransfer = async (from, to, amount) => {
     }
 };
 
+const certifyBusinessVerifiedBeneficialOwnership = async (uri) => {
+    await client.authorize();
+
+    try {
+        const result = await client.certifyBusinessVerifiedBeneficialOwnership(uri);
+        console.log(result);
+    } catch (e) {
+        console.log(e);
+    }
+};
+
+const createFundingSourceMicroDeposit = async (uri) => {
+    await client.authorize();
+
+    try {
+        const result = await client.createFundingSourceMicroDeposit(uri);
+        console.log(result);
+    } catch (e) {
+        console.log(e);
+    }
+};
+
+const verifyFundingSourceMicroDeposit = async (uri, amount1, amount2) => {
+    await client.authorize();
+
+    try {
+        const result = await client.verifyFundingSourceMicroDeposit(uri, amount1, amount2);
+        console.log(result);
+    } catch (e) {
+        console.log(e);
+    }
+};
+
 // listDocuments(customerId).then();
 // listFundingSources(customerId).then();
 // getBalanceSource(customerId).then();
@@ -142,9 +175,12 @@ const createTransfer = async (from, to, amount) => {
 // listBusinessClassification().then();
 // getCustomer('d2ed9740-2150-4e2d-8022-e8605ae00d37').then();
 // createBusinessVerifiedBeneficialOwner('af839255-d253-41db-ae2c-3db2f579b6a1').then();
-// listBusinessVerifiedBeneficialOwners('af839255-d253-41db-ae2c-3db2f579b6a1').then();
-createTransfer(
-    'https://api-sandbox.dwolla.com/funding-sources/24a53f09-99ae-420d-8adc-2793845714b6',
-    'https://api-sandbox.dwolla.com/funding-sources/0f4c28f3-1700-4ce3-81e0-017ffdf5acf2',
-    1
-).then();
+// listBusinessVerifiedBeneficialOwners('2604618d-1cae-4d1b-90fb-1ea430623aae').then();
+// createTransfer(
+//     'https://api-sandbox.dwolla.com/funding-sources/3e886555-2c81-45a3-b0c2-3bb9364ff266',
+//     'https://api-sandbox.dwolla.com/funding-sources/24a53f09-99ae-420d-8adc-2793845714b6',
+//     1
+// ).then();
+// certifyBusinessVerifiedBeneficialOwnership('https://dashboard-sandbox.dwolla.com/customers/2604618d-1cae-4d1b-90fb-1ea430623aae').then();
+// createFundingSourceMicroDeposit('https://api-sandbox.dwolla.com/funding-sources/3e886555-2c81-45a3-b0c2-3bb9364ff266').then();
+// verifyFundingSourceMicroDeposit('https://api-sandbox.dwolla.com/funding-sources/3e886555-2c81-45a3-b0c2-3bb9364ff266', 0.02, 0.03).then();
