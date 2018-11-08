@@ -16,6 +16,7 @@ import {transaction} from 'objection';
 import {ProfileService} from '../profile/service';
 import {Errors} from 'typescript-rest';
 import * as generator from 'generate-password';
+import {Logger} from '../logger';
 
 @AutoWired
 export class AddContractorLogic extends Logic {
@@ -25,6 +26,7 @@ export class AddContractorLogic extends Logic {
     @Inject private invitationService: InvitationService;
     @Inject private roleService: RoleService;
     @Inject private profileService: ProfileService;
+    @Inject private logger: Logger;
 
     constructor(context: RequestContext) {
         super(context);
@@ -67,7 +69,11 @@ export class AddContractorLogic extends Logic {
             user = await this.userService.get(user.id, _trx);
         });
 
-        await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
+        try {
+            await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
+        } catch (e) {
+            this.logger.error(e.message);
+        }
 
         return user;
     }
