@@ -47,7 +47,6 @@ export class GetTenantFundingSourceLogic {
 
 @AutoWired
 export class DeleteTenantFundingSourcesLogic {
-
     @Inject private service: TenantService;
     @Inject private client: dwolla.Client;
 

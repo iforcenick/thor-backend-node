@@ -19,9 +19,6 @@ export class SetDefaultFundingSourceLogic extends Logic {
     @Inject protected fundingSourceService: FundingSourceService;
 
     async execute(fundingId, userId: string): Promise<any> {
-        this.fundingSourceService.setRequestContext(this.context);
-        this.profileService.setRequestContext(this.context);
-
         const fundingSource = await this.fundingSourceService.get(fundingId);
         if (!fundingSource) {
             throw new Errors.NotFoundError(`Could not find funding source for id ${fundingId}`);
@@ -47,10 +44,6 @@ export class CreateUserFundingSourceLogic extends Logic {
     @Inject protected logger: Logger;
 
     async execute(data: any, user: User): Promise<any> {
-        this.fundingSourceService.setRequestContext(this.context);
-        this.profileService.setRequestContext(this.context);
-        this.userService.setRequestContext(this.context);
-
         const profile = user.tenantProfile;
         const sourceUri = await this.dwollaClient.createFundingSource(
             profile.dwollaUri,
@@ -108,9 +101,6 @@ export class DeleteFundingSourceLogic extends Logic {
     @Inject protected logger: Logger;
 
     async execute(id: string, user: User): Promise<any> {
-        this.fundingSourceService.setRequestContext(this.context);
-        this.profileService.setRequestContext(this.context);
-
         const profile: Profile = user.tenantProfile;
         const sourceInfo = {
             sourceUri: profile.dwollaUri,

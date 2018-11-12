@@ -3,7 +3,7 @@ import {Config} from './config';
 import {Logger} from './logger';
 import {Errors} from '../node_modules/typescript-rest';
 import * as _ from 'lodash';
-import {RequestContext, RequestContextMissingError} from './context';
+import {ContextAwareInterface, RequestContext, RequestContextMissingError} from './context';
 import {Inject} from 'typescript-ioc';
 
 const validate = require('uuid-validate');
@@ -78,7 +78,7 @@ export class Paginated<T> {
 }
 
 // WARNING: @Inject only through constructor not field annotation to persist namespace context
-export abstract class ModelService<T extends any> {
+export abstract class ModelService<T extends any> extends ContextAwareInterface {
     @Inject protected config: Config;
     @Inject protected logger: Logger;
     protected modelType: any;
@@ -88,6 +88,7 @@ export abstract class ModelService<T extends any> {
     protected abstract setModelType();
 
     protected constructor() {
+        super();
         this.setModelType();
     }
 
@@ -197,18 +198,6 @@ export abstract class ModelService<T extends any> {
             .delete()
             .debug()
             .where(`${this.modelType.tableName}.id`, entity.id);
-    }
-
-    setRequestContext(requestContext: RequestContext) {
-        this.requestContext = requestContext;
-    }
-
-    getRequestContext() {
-        if (!this.requestContext) {
-            throw new RequestContextMissingError(`Request context not passed to service`);
-        }
-
-        return this.requestContext;
     }
 
     getTenantId(): string {

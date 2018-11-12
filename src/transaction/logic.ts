@@ -45,10 +45,6 @@ export class UpdateTransactionStatusLogic extends Logic {
     }
 
     async execute(_transaction: Transaction, status: string): Promise<any> {
-        this.transactionService.setRequestContext(this.context);
-        this.transferService.setRequestContext(this.context);
-        this.userService.setRequestContext(this.context);
-
         await transaction(this.transactionService.transaction(), async trx => {
             status = this.mapDwollaStatus(status);
             _transaction.status = status;
@@ -119,11 +115,6 @@ export class PrepareTransferLogic extends Logic {
     @Inject private config: Config;
 
     async execute(transactions: Array<models.Transaction>, user, admin: users.User): Promise<any> {
-        this.transactionService.setRequestContext(this.context);
-        this.userService.setRequestContext(this.context);
-        this.transferService.setRequestContext(this.context);
-        this.fundingService.setRequestContext(this.context);
-
         const defaultFunding: FundingSource = await this.fundingService.getDefault(user.id);
         if (!defaultFunding) {
             throw new models.InvalidTransferDataError('Bank account not configured for recipient');
@@ -163,10 +154,6 @@ export class CreateTransactionTransferLogic extends Logic {
     @Inject private config: Config;
 
     async execute(id: string): Promise<any> {
-        this.transactionService.setRequestContext(this.context);
-        this.userService.setRequestContext(this.context);
-        this.transferService.setRequestContext(this.context);
-
         const transaction = await this.transactionService.get(id);
         if (!transaction) {
             throw new Errors.NotFoundError();
@@ -228,9 +215,6 @@ export class CreateTransactionsTransferLogic extends Logic {
     @Inject private config: Config;
 
     async execute(id: string, data: Array<string>): Promise<any> {
-        this.transactionService.setRequestContext(this.context);
-        this.userService.setRequestContext(this.context);
-
         const transactions = [];
         let userId;
 
@@ -321,11 +305,6 @@ export class CreateTransactionLogic extends Logic {
     @Inject private transactionService: TransactionService;
 
     async execute(data: TransactionRequest): Promise<any> {
-        this.transactionService.setRequestContext(this.context);
-        this.jobService.setRequestContext(this.context);
-        this.userService.setRequestContext(this.context);
-        this.fundingService.setRequestContext(this.context);
-
         const user = await this.userService.get(data.userId);
         if (!user) {
             throw new Errors.NotFoundError('User not found');

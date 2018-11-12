@@ -23,6 +23,22 @@ export class RequestContext {
     }
 }
 
+export class ContextAwareInterface {
+    protected requestContext: RequestContext;
+
+    setRequestContext(requestContext: RequestContext) {
+        this.requestContext = requestContext;
+    }
+
+    getRequestContext(): RequestContext {
+        if (!this.requestContext) {
+            throw new RequestContextMissingError(`Request context not passed to service`);
+        }
+
+        return this.requestContext;
+    }
+}
+
 export class RequestContextMissingError extends Error {
 }
 

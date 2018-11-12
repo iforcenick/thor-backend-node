@@ -10,7 +10,6 @@ import {DwollaNotifier} from '../dwolla/notifier';
 import {InvitationService} from '../invitation/service';
 import * as role from '../user/role';
 import {RoleService} from '../user/role/service';
-import {RequestContext} from '../context';
 import * as _ from 'lodash';
 import {transaction} from 'objection';
 import {ProfileService} from '../profile/service';
@@ -27,14 +26,6 @@ export class AddContractorLogic extends Logic {
     @Inject private roleService: RoleService;
     @Inject private profileService: ProfileService;
     @Inject private logger: Logger;
-
-    constructor(context: RequestContext) {
-        super(context);
-        this.userService.setRequestContext(context);
-        this.invitationService.setRequestContext(context);
-        this.roleService.setRequestContext(context);
-        this.profileService.setRequestContext(context);
-    }
 
     async execute(profileData: any, tenantId, password: string, trx?: any) {
         this.userService.setTenantId(tenantId);
@@ -110,16 +101,9 @@ export class AddContractorOnRetryStatusLogic extends Logic {
     @Inject private logger: Logger;
     @Inject private profileService: ProfileService;
 
-    constructor(context: RequestContext) {
-        super(context);
-        this.profileService.setRequestContext(context);
-        this.userService.setRequestContext(context);
-    }
-
     async execute(profileData: any, tenantId, userId: string) {
         this.userService.setTenantId(tenantId);
         const user = await this.userService.get(userId);
-        await this.dwollaClient.authorize();
         const customer = dwolla.customer.factory(profileData);
         customer.type = dwolla.customer.TYPE.Personal;
         const updateableFields = customer.updateableFields();
@@ -150,11 +134,6 @@ export class AddContractorOnRetryStatusLogic extends Logic {
 @AutoWired
 export class AddInvitedContractorLogic extends Logic {
     @Inject private invitationService: InvitationService;
-
-    constructor(context: RequestContext) {
-        super(context);
-        this.invitationService.setRequestContext(context);
-    }
 
     async execute(profileData: any, invitationToken, password: string) {
         const invitation = await this.invitationService.getForAllTenants(invitationToken);
