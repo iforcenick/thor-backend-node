@@ -6,7 +6,15 @@ export abstract class Logic {
 
     constructor(context: RequestContext) {
         this.context = context;
-        const prototype = this.constructor['__parent'].prototype;
+        const parent = this.constructor['__parent'];
+        if (!parent) {
+            throw new IoCMetadataMissing('Missing parent metadata, check if @AutoWired is present');
+        }
+
+        const prototype = parent.prototype;
+        if (!prototype) {
+            throw new IoCMetadataMissing('Missing parent metadata, check if @AutoWired is present');
+        }
 
         for (const field of _.keys(prototype)) {
             if (prototype[field] instanceof ContextAwareInterface) {
@@ -17,3 +25,5 @@ export abstract class Logic {
 
     abstract execute(...params): Promise<any>;
 }
+
+export class IoCMetadataMissing extends Error {}

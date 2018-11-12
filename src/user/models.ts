@@ -146,13 +146,11 @@ export class UserDocument extends Mapper {
     created: Date = mapper.FIELD_DATE;
     failureReason: string = mapper.FIELD_STR;
 }
+
 export class ContractorOnRetryRequest extends UserBaseInfo {
-    password: string = mapper.FIELD_STR;
     @mapper.object(profile.ProfileBaseInfo)
     profile: profile.ProfileBaseInfo = new profile.ProfileBaseInfo();
 }
-
-
 
 export class ContractorOnRetryResponse extends UserBaseInfo {
     id: string = mapper.FIELD_STR;
@@ -163,7 +161,5 @@ export class ContractorOnRetryResponse extends UserBaseInfo {
     tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
 }
 export const contractorOnRetryRequestSchema = Joi.object().keys({
-    password: Joi.string().required(),
     profile: profile.profileRequestSchema.required(),
-
 });

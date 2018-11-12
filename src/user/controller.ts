@@ -308,8 +308,7 @@ export class UserController extends BaseController {
     @Path('/:userId')
     async addContractorOnRetry(@PathParam('userId') userId: string, data: models.ContractorOnRetryRequest): Promise<models.ContractorOnRetryResponse> {
         this.service.setRequestContext(this.getRequestContext());
-
-        const parsedData = data; // await this.validate(data, models.contractorOnRetryRequestSchema);
+        const parsedData = await this.validate(data, models.contractorOnRetryRequestSchema);
         const profile = parsedData['profile'];
         ProfileService.validateAge(profile);
         try {

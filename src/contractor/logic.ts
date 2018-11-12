@@ -94,6 +94,7 @@ export class AddContractorLogic extends Logic {
     }
 }
 
+@AutoWired
 export class AddContractorOnRetryStatusLogic extends Logic {
     @Inject private dwollaClient: dwolla.Client;
     @Inject private dwollaNotifier: DwollaNotifier;
@@ -113,10 +114,7 @@ export class AddContractorOnRetryStatusLogic extends Logic {
 
         user.tenantProfile.dwollaStatus = dwollaCustomer.status;
         user.tenantProfile.dwollaType = dwollaCustomer.type;
-
         user.tenantProfile.merge(profileData);
-
-        console.log(user.tenantProfile);
 
         await this.profileService.update(user.tenantProfile);
 
