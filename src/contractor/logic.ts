@@ -15,8 +15,8 @@ import * as _ from 'lodash';
 import {transaction} from 'objection';
 import {ProfileService} from '../profile/service';
 import {Errors} from 'typescript-rest';
-import * as generator from 'generate-password';
 import {Logger} from '../logger';
+import * as generator from 'generate-password';
 
 @AutoWired
 export class AddContractorLogic extends Logic {
@@ -102,6 +102,50 @@ export class AddContractorLogic extends Logic {
         return await this.roleService.find(role);
     }
 }
+
+export class AddContractorOnRetryStatusLogic extends Logic {
+    @Inject private dwollaClient: dwolla.Client;
+    @Inject private dwollaNotifier: DwollaNotifier;
+    @Inject private userService: UserService;
+    @Inject private logger: Logger;
+    @Inject private profileService: ProfileService;
+
+    constructor(context: RequestContext) {
+        super(context);
+        this.profileService.setRequestContext(context);
+        this.userService.setRequestContext(context);
+    }
+
+    async execute(profileData: any, tenantId, userId: string) {
+        this.userService.setTenantId(tenantId);
+        const user = await this.userService.get(userId);
+        await this.dwollaClient.authorize();
+        const customer = dwolla.customer.factory(profileData);
+        customer.type = dwolla.customer.TYPE.Personal;
+        const updateableFields = customer.updateableFields();
+        await this.dwollaClient.updateCustomer(user.tenantProfile.dwollaUri, updateableFields);
+
+        const dwollaCustomer = await this.dwollaClient.getCustomer(user.tenantProfile.dwollaUri);
+
+        user.tenantProfile.dwollaStatus = dwollaCustomer.status;
+        user.tenantProfile.dwollaType = dwollaCustomer.type;
+
+        user.tenantProfile.merge(profileData);
+
+        console.log(user.tenantProfile);
+
+        await this.profileService.update(user.tenantProfile);
+
+        try {
+            await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
+        } catch (e) {
+            this.logger.error(e.message);
+        }
+
+        return user;
+    }
+}
+
 
 @AutoWired
 export class AddInvitedContractorLogic extends Logic {

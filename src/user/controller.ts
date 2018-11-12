@@ -9,7 +9,7 @@ import {
     Path,
     PathParam,
     POST,
-    Preprocessor,
+    Preprocessor, PUT,
     QueryParam,
     ServiceContext,
 } from 'typescript-rest';
@@ -26,7 +26,8 @@ import {TransactionService} from '../transaction/service';
 import {MailerService} from '../mailer';
 import * as _ from 'lodash';
 import {DwollaNotifier} from '../dwolla/notifier';
-import {AddContractorLogic} from "../contractor/logic";
+import {AddContractorLogic, AddContractorOnRetryStatusLogic} from '../contractor/logic';
+
 
 @Security('api_key')
 @Path('/users')
@@ -300,6 +301,29 @@ export class UserController extends BaseController {
             });
         } catch (e) {
             throw new Errors.InternalServerError(e);
+        }
+    }
+
+    @PUT
+    @Path('/:userId/retry')
+    async addContractorOnRetry(@PathParam('userId') userId: string, data: models.ContractorOnRetryRequest): Promise<models.ContractorOnRetryResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+
+        const parsedData = data; // await this.validate(data, models.contractorOnRetryRequestSchema);
+        const profile = parsedData['profile'];
+        ProfileService.validateAge(profile);
+        try {
+            const logic = new AddContractorOnRetryStatusLogic(this.getRequestContext());
+            const tenantId = this.getRequestContext().getTenantId();
+            const user = await logic.execute(profile, tenantId, userId);
+            const contractorResponse = this.map(models.ContractorOnRetryResponse, user);
+
+            return contractorResponse;
+        } catch (err) {
+            if (err instanceof dwolla.DwollaRequestError) {
+                throw err.toValidationError('profile');
+            }
+            throw err;
         }
     }
 }

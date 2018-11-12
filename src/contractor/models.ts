@@ -13,6 +13,7 @@ export class ContractorRequest extends ContractorBaseModel {
     invitationToken: string = mapper.FIELD_STR;
 }
 
+
 export class ContractorResponse extends ContractorBaseModel {
     id: string = mapper.FIELD_STR;
     createdAt: Date = mapper.FIELD_DATE;
@@ -28,6 +29,8 @@ export const contractorRequestSchema = Joi.object().keys({
     profile: profile.profileRequestSchema.required(),
     invitationToken: Joi.string().required(),
 });
+
+
 
 export interface PasswordRequest {
     oldPassword: string;

@@ -8,6 +8,7 @@ import Joi = require('joi');
 import _ from 'lodash';
 import {Transaction, TransactionResponse} from '../transaction/models';
 import {Errors} from 'typescript-rest';
+import {ContractorBaseModel} from '../contractor/models';
 
 export const enum Relations {
     roles = 'roles',
@@ -145,3 +146,24 @@ export class UserDocument extends Mapper {
     created: Date = mapper.FIELD_DATE;
     failureReason: string = mapper.FIELD_STR;
 }
+export class ContractorOnRetryRequest extends UserBaseInfo {
+    password: string = mapper.FIELD_STR;
+    @mapper.object(profile.ProfileBaseInfo)
+    profile: profile.ProfileBaseInfo = new profile.ProfileBaseInfo();
+}
+
+
+
+export class ContractorOnRetryResponse extends UserBaseInfo {
+    id: string = mapper.FIELD_STR;
+    createdAt: Date = mapper.FIELD_DATE;
+    updatedAt: Date = mapper.FIELD_DATE;
+    lastActivity: Date = mapper.FIELD_DATE;
+    @mapper.object(profile.ProfileResponse)
+    tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
+}
+export const contractorOnRetryRequestSchema = Joi.object().keys({
+    password: Joi.string().required(),
+    profile: profile.profileRequestSchema.required(),
+
+});

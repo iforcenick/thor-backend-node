@@ -1,5 +1,5 @@
 import {Security, Tags} from 'typescript-rest-swagger';
-import {PATCH, Path, POST} from 'typescript-rest';
+import {PATCH, Path, PathParam, POST, PUT} from 'typescript-rest';
 import {BaseController} from '../api';
 import * as dwolla from '../dwolla';
 import {UserService} from '../user/service';
@@ -13,7 +13,7 @@ import {
     PasswordRequest,
     passwordRequestSchema
 } from './models';
-import {AddInvitedContractorLogic} from './logic';
+import {AddContractorOnRetryStatusLogic, AddInvitedContractorLogic} from './logic';
 
 @Security('api_key')
 @Path('/contractors')
@@ -45,7 +45,6 @@ export class ContractorController extends BaseController {
         }
     }
 
-    @Security('api_key')
     @PATCH
     @Path('/password')
     @Tags('auth')

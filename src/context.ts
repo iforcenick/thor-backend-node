@@ -9,13 +9,25 @@ export class RequestContext {
     }
 
     getTenantId(): string {
-        return this.context.request['tenantId'];
+        if (this.context.request['tenantId']) {
+            return this.context.request['tenantId'];
+        }
+        throw new RequestContextMissingTenantError();
     }
 
     getUser(): User {
-        return this.context.request['user'];
+        if (this.context.request['user']) {
+            return this.context.request['user'];
+        }
+        throw new RequestContextMissingUserError();
     }
 }
 
 export class RequestContextMissingError extends Error {
+}
+
+export class RequestContextMissingTenantError extends Error {
+}
+
+export class RequestContextMissingUserError extends Error {
 }
