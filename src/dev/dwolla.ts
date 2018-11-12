@@ -9,7 +9,6 @@ const transfersUrl = baseUrl + 'transfers/';
 const fundingSources = baseUrl + 'funding-sources/';
 
 const getCustomer = async (id) => {
-    await client.authorize();
     try {
         const customer = await client.getCustomer(customersUrl + id);
         console.log(customer);
@@ -19,7 +18,6 @@ const getCustomer = async (id) => {
 };
 
 const listDocuments = async (id) => {
-    await client.authorize();
     try {
         const docs = await client.listDocuments(customersUrl + id);
         console.log(docs);
@@ -29,7 +27,6 @@ const listDocuments = async (id) => {
 };
 
 const listBusinessVerifiedBeneficialOwners = async (id) => {
-    await client.authorize();
     try {
         const docs = await client.listBusinessVerifiedBeneficialOwners(customersUrl + id);
         console.log(docs);
@@ -39,7 +36,6 @@ const listBusinessVerifiedBeneficialOwners = async (id) => {
 };
 
 const createBusinessVerifiedBeneficialOwner = async (id) => {
-    await client.authorize();
     try {
         let owner = dwolla.customer.beneficialOwnerFactory({
             firstName: 'firstName',
@@ -65,7 +61,6 @@ const createBusinessVerifiedBeneficialOwner = async (id) => {
 };
 
 const listFundingSources = async (id) => {
-    await client.authorize();
     try {
         const sources = await client.listFundingSource(customersUrl + id);
         console.log(sources);
@@ -75,7 +70,6 @@ const listFundingSources = async (id) => {
 };
 
 const getBalanceSource = async (id) => {
-    await client.authorize();
     try {
         const source = await client.getBalanceFundingSource(customersUrl + id);
         console.log(source);
@@ -85,7 +79,6 @@ const getBalanceSource = async (id) => {
 };
 
 const getFundingSource = async (id) => {
-    await client.authorize();
     try {
         const source = await client.getFundingSource(fundingSources + id);
         console.log(source);
@@ -95,7 +88,6 @@ const getFundingSource = async (id) => {
 };
 
 const cancelTransfer = async (id) => {
-    await client.authorize();
     try {
         await client.getTransfer(transfersUrl + id);
         const source = await client.cancelTransfer(transfersUrl + id);
@@ -106,8 +98,6 @@ const cancelTransfer = async (id) => {
 };
 
 const listBusinessClassification = async () => {
-    await client.authorize();
-
     try {
         const classifications = await client.listBusinessClassification();
         for (const classification of classifications) {
@@ -119,8 +109,6 @@ const listBusinessClassification = async () => {
 };
 
 const createTransfer = async (from, to, amount) => {
-    await client.authorize();
-
     try {
         const transfer = dwolla.transfer.factory({});
         transfer.setSource(from);
@@ -135,8 +123,6 @@ const createTransfer = async (from, to, amount) => {
 };
 
 const certifyBusinessVerifiedBeneficialOwnership = async (uri) => {
-    await client.authorize();
-
     try {
         const result = await client.certifyBusinessVerifiedBeneficialOwnership(uri);
         console.log(result);
@@ -146,8 +132,6 @@ const certifyBusinessVerifiedBeneficialOwnership = async (uri) => {
 };
 
 const createFundingSourceMicroDeposit = async (uri) => {
-    await client.authorize();
-
     try {
         const result = await client.createFundingSourceMicroDeposit(uri);
         console.log(result);
@@ -157,8 +141,6 @@ const createFundingSourceMicroDeposit = async (uri) => {
 };
 
 const verifyFundingSourceMicroDeposit = async (uri, amount1, amount2) => {
-    await client.authorize();
-
     try {
         const result = await client.verifyFundingSourceMicroDeposit(uri, amount1, amount2);
         console.log(result);

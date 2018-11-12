@@ -42,7 +42,6 @@ export class ProfileService extends db.ModelService<models.Profile> {
 
     async updateWithDwolla(profile: models.Profile, trx?: transaction<any>): Promise<any> {
         try {
-            await this.dwollaClient.authorize();
             const customer = dwolla.customer.factory(profile);
             customer.status = profile.dwollaStatus;
             customer.type = profile.dwollaType;

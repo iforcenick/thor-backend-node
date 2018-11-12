@@ -102,7 +102,6 @@ export class CancelTransactionLogic extends Logic {
 
     async execute(_transaction: models.Transaction): Promise<any> {
         const updateStatusLogic = new UpdateTransactionStatusLogic(this.context);
-        await this.dwollaClient.authorize();
         const result = await this.dwollaClient.cancelTransfer(_transaction.transfer.externalId);
 
         if (result) {
@@ -210,7 +209,6 @@ export class CreateTransactionTransferLogic extends Logic {
         const updateStatusLogic = new UpdateTransactionStatusLogic(this.context);
 
         try {
-            await this.dwollaClient.authorize();
             _transaction.transfer.externalId = await this.dwollaClient.createTransfer(transfer);
             const _transfer = await this.dwollaClient.getTransfer(_transaction.transfer.externalId);
             await updateStatusLogic.execute(_transaction, _transfer.status);
@@ -286,7 +284,6 @@ export class CreateTransactionsTransferLogic extends Logic {
 
         // TODO: better error handling
         try {
-            await this.dwollaClient.authorize();
             _transfer.externalId = await this.dwollaClient.createTransfer(transfer);
             const _dwollaTransfer = await this.dwollaClient.getTransfer(_transfer.externalId);
             _transfer.status = _dwollaTransfer.status;

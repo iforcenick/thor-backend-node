@@ -4,8 +4,6 @@ import * as dwolla from '../../dwolla';
 const client: dwolla.Client = Container.get(dwolla.Client);
 
 const certify = async (uri) => {
-    await client.authorize();
-
     try {
         const result = await client.certifyBusinessVerifiedBeneficialOwnership(uri);
         console.log(result);

@@ -274,7 +274,6 @@ export class UserController extends BaseController {
                 throw new Errors.NotAcceptableError('User cannot upload documents');
             }
 
-            await this.dwollaClient.authorize();
             const location = await this.dwollaClient.createDocument(user.tenantProfile.dwollaUri, file.buffer, file.originalname, type);
             const doc = await this.dwollaClient.getDocument(location);
             return this.map(models.UserDocument, doc);
@@ -294,7 +293,6 @@ export class UserController extends BaseController {
                 throw new Errors.NotFoundError('User not found');
             }
 
-            await this.dwollaClient.authorize();
             const docs = await this.dwollaClient.listDocuments(user.tenantProfile.dwollaUri);
 
             return docs.map((doc) => {

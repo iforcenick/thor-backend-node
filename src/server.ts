@@ -80,7 +80,6 @@ export class ApiServer {
                 this.logger.info(`Listening to http://${this.server.address().address}:${this.server.address().port}`);
 
                 try {
-                    await this.dwollaClient.authorize();
                     await this.dwollaClient.webhooksCleanup();
                 } catch (e) {
                     this.logger.error(`Dwolla webhooks cleanup error: ${e.message}`);

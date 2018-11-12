@@ -6,7 +6,7 @@ import {event} from './index';
 import {IEvent} from './event';
 import {Tags} from 'typescript-rest-swagger';
 import {TransactionService} from '../transaction/service';
-import {UpdateTransactionStatusLogic} from "../transaction/logic";
+import {UpdateTransactionStatusLogic} from '../transaction/logic';
 
 @Tags('dwolla')
 @Path('/dwolla/events')
@@ -22,7 +22,6 @@ export class DwollaController extends BaseController {
         try {
             const _event = event.factory(data);
             console.log('Dwolla event:\n', JSON.stringify(_event, null, 2));
-            await this.dwollaClient.authorize();
 
             switch (_event.topic) {
                 case event.TYPE.transferCreated:

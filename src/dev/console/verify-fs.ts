@@ -4,8 +4,6 @@ import * as dwolla from '../../dwolla';
 const client: dwolla.Client = Container.get(dwolla.Client);
 
 const verify = async (uri) => {
-    await client.authorize();
-
     try {
         if (await client.createFundingSourceMicroDeposit(uri)) {
             const result = await client.verifyFundingSourceMicroDeposit(uri, 0.01, 0.02);

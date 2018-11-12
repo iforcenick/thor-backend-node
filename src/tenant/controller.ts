@@ -76,7 +76,6 @@ export class TenantController extends BaseController {
 
         let customer;
         try {
-            await this.dwollaClient.authorize();
             customer = await this.dwollaClient.getCustomer(tenant.dwollaUri);
         } catch (e) {
             this.logger.error(e.message);
@@ -102,7 +101,6 @@ export class TenantController extends BaseController {
         }
 
         try {
-            await this.dwollaClient.authorize();
             const customer = dwolla.customer.factory(parsedData);
             customer.type = dwolla.customer.TYPE.Business;
             tenant.dwollaUri = await this.dwollaClient.createCustomer(customer);
@@ -138,7 +136,6 @@ export class TenantController extends BaseController {
         }
 
         try {
-            await this.dwollaClient.authorize();
             const customer = dwolla.customer.factory(parsedData);
             customer.type = tenant.dwollaType;
             await this.dwollaClient.updateCustomer(tenant.dwollaUri, customer.updateableFields());
@@ -162,7 +159,6 @@ export class TenantController extends BaseController {
     @Tags('tenantCompany')
     async getBusinessCategories() {
         let businessCategories;
-        await this.dwollaClient.authorize();
 
         businessCategories = await this.dwollaClient.listBusinessClassification();
         return this.map(BusinessClassificationsResponse, businessCategories);

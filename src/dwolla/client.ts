@@ -5,11 +5,10 @@ import * as transaction from './transfer';
 import * as documents from './documents';
 import {Logger} from '../logger';
 import {Config} from '../config';
-import {AutoWired, Inject} from 'typescript-ioc';
-import _ from 'lodash';
-import {CUSTOMER_STATUS} from './customer';
+import {AutoWired, Inject, Singleton} from 'typescript-ioc';
 import {ValidationError} from '../errors';
 import {Errors} from 'typescript-rest';
+import moment = require('moment');
 
 const FormData = require('form-data');
 
@@ -63,7 +62,22 @@ export class DwollaRequestError extends Error {
     }
 }
 
+class AuthorizationState {
+    authorized: boolean;
+    expiration: moment.Moment;
+
+    authorize(expiration) {
+        this.authorized = true;
+        this.expiration = moment(Date.now()).add(expiration, 'seconds');
+    }
+
+    requiresAuthorization() {
+        return !this.authorized || !this.expiration || this.expiration.isBefore(Date.now());
+    }
+}
+
 @AutoWired
+@Singleton
 export class Client {
     @Inject private config: Config;
     @Inject private logger: Logger;
@@ -72,12 +86,13 @@ export class Client {
     private environment: string;
     private _client: any;
     private client: any;
-    private authorized: boolean;
+    private authState: AuthorizationState;
 
     constructor() {
         this.key = this.config.get('dwolla.key');
         this.secret = this.config.get('dwolla.secret');
         this.environment = this.config.get('dwolla.environment');
+        this.authState = new AuthorizationState();
         this._client = new dwolla.Client({
             key: this.key,
             secret: this.secret,
@@ -86,13 +101,15 @@ export class Client {
     }
 
     public async authorize(): Promise<any> {
-        if (!this.authorized) {
+        if (this.authState.requiresAuthorization()) {
             this.client = await this._client.auth.client();
-            this.authorized = true;
+            this.authState.authorize(this.config.get('dwolla.expirationTime'));
         }
     }
 
     private async get(url: string) {
+        await this.authorize();
+
         try {
             return await this.client.get(url);
         } catch (e) {
@@ -101,6 +118,8 @@ export class Client {
     }
 
     private async delete(url: string) {
+        await this.authorize();
+
         try {
             return await this.client.delete(url);
         } catch (e) {
@@ -109,6 +128,8 @@ export class Client {
     }
 
     private async post(url: string, payload: any) {
+        await this.authorize();
+
         try {
             return await this.client.post(url, payload);
         } catch (e) {

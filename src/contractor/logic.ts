@@ -44,7 +44,6 @@ export class AddContractorLogic extends Logic {
 
         let user: User = User.factory({});
         const profile = Profile.factory(profileData);
-        await this.dwollaClient.authorize();
         const customer = dwolla.customer.factory(profileData);
         customer.type = dwolla.customer.TYPE.Personal;
         profile.dwollaUri = await this.dwollaClient.createCustomer(customer);

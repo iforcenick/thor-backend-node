@@ -52,7 +52,6 @@ export class CreateUserFundingSourceLogic extends Logic {
         this.userService.setRequestContext(this.context);
 
         const profile = user.tenantProfile;
-        await this.dwollaClient.authorize();
         const sourceUri = await this.dwollaClient.createFundingSource(
             profile.dwollaUri,
             data.routing,
@@ -128,7 +127,6 @@ export class DeleteFundingSourceLogic extends Logic {
             throw new Errors.ConflictError('Funding source can only be delete by its owner.');
         }
 
-        await this.dwollaClient.authorize();
         await this.dwollaClient.deleteFundingSource(fundingSource.dwollaUri);
 
         try {

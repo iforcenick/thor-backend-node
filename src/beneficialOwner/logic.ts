@@ -25,7 +25,6 @@ export class AddBeneficialOwnerLogic extends Logic {
         }
 
         const beneficialOwner = new BeneficialOwner(request);
-        await this.dwollaClient.authorize();
         const response = await this.dwollaClient.createBusinessVerifiedBeneficialOwner(tenant.dwollaUri, beneficialOwner);
         return await this.dwollaClient.getBusinessVerifiedBeneficialOwner(response);
     }
@@ -43,7 +42,6 @@ export class GetBeneficialOwnersLogic extends Logic {
             throw new BeneficialOwnerError('Could not find tenant.');
         }
 
-        await this.dwollaClient.authorize();
         return await this.dwollaClient.listBusinessVerifiedBeneficialOwners(tenant.dwollaUri);
     }
 }
@@ -53,7 +51,6 @@ export class GetBeneficialOwnerLogic extends Logic {
     @Inject private dwollaClient: dwolla.Client;
 
     async execute(id: string): Promise<BeneficialOwner> {
-        await this.dwollaClient.authorize();
         return await this.dwollaClient.getBusinessVerifiedBeneficialOwner(dwolla.Client.beneficialOwnerUri(id));
     }
 }
@@ -63,7 +60,6 @@ export class DeleteBeneficialOwnerLogic extends Logic {
     @Inject private dwollaClient: dwolla.Client;
 
     async execute(id: string): Promise<BeneficialOwner> {
-        await this.dwollaClient.authorize();
         return await this.dwollaClient.deleteBusinessVerifiedBeneficialOwner(id);
     }
 }
@@ -76,7 +72,6 @@ export class EditBeneficialOwnerLogic extends Logic {
     async execute(request: EditBeneficialOwnerRequest): Promise<BeneficialOwner> {
         this.tenantService.setRequestContext(this.context);
         const beneficialOwner = new BeneficialOwner(request);
-        await this.dwollaClient.authorize();
         const response = await this.dwollaClient.editBusinessVerifiedBeneficialOwner(request.id, beneficialOwner);
         return await this.dwollaClient.getBusinessVerifiedBeneficialOwner(response);
     }

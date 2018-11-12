@@ -18,8 +18,6 @@ export class CreateTenantFundingSourceLogic {
         }
 
         try {
-            await this.dwollaClient.authorize();
-
             const fundingSourceUri = await this.dwollaClient
                 .createFundingSource(tenant.dwollaUri, request.routing,
                     request.account, request.bankAccountType, request.name);
@@ -56,7 +54,6 @@ export class DeleteTenantFundingSourcesLogic {
     async execute(tenantId: string) {
         const tenant = await this.service.get(tenantId);
 
-        await this.client.authorize();
         await this.client.deleteFundingSource(tenant.fundingSourceUri);
 
         tenant.fundingSourceUri = null;

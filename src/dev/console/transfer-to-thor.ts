@@ -8,8 +8,6 @@ const masterBalance = config.get('dwolla.masterFunding');
 const dwollaUri = 'https://api-sandbox.dwolla.com'; // TODO: get from config
 
 const transfer = async (from, amount) => {
-    await client.authorize();
-
     try {
         await client.getFundingSource(from);
     } catch (e) {
