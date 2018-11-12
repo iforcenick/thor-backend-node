@@ -72,6 +72,7 @@ export class Tenant extends db.Model {
             businessName: this.businessName,
             doingBusinessAs: this.doingBusinessAs,
             website: this.website,
+            status: this.dwollaStatus
         };
     }
 }
@@ -94,6 +95,7 @@ export class TenantCompanyResponse extends Mapper {
     businessName?: string = mapper.FIELD_STR;
     doingBusinessAs?: string = mapper.FIELD_STR;
     website?: string = mapper.FIELD_STR;
+    status: string = mapper.FIELD_STR;
 }
 
 export class TenantResponse extends TenantBaseInfo {
