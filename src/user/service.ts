@@ -176,7 +176,13 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async findByEmailAndTenant(email: string, tenantId: string): Promise<models.User> {
-        const tmpTenant = this.getTenantId();
+        let tmpTenant;
+        try {
+            tmpTenant = this.getTenantId();
+        } catch (e) {
+            tmpTenant = null;
+        }
+
         this.setTenantId(tenantId);
         const query = this.useTenantContext(this.getOptions(this.modelType.query()));
         query.where(`${models.Relations.tenantProfile}.email`, email);
