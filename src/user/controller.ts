@@ -305,7 +305,7 @@ export class UserController extends BaseController {
     }
 
     @PUT
-    @Path('/:userId/retry')
+    @Path('/:userId')
     async addContractorOnRetry(@PathParam('userId') userId: string, data: models.ContractorOnRetryRequest): Promise<models.ContractorOnRetryResponse> {
         this.service.setRequestContext(this.getRequestContext());
 
