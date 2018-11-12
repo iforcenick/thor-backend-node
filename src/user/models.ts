@@ -133,11 +133,11 @@ export const rankingRequestSchema = Joi.object().keys({
 });
 
 export class UserStatisticsResponse extends Mapper {
-    rank: string = mapper.FIELD_STR;
-    nJobs: string = mapper.FIELD_STR;
-    prev: string = mapper.FIELD_STR;
-    current: string = mapper.FIELD_STR;
-    ytd: string = mapper.FIELD_STR;
+    rank: number = mapper.FIELD_NUM;
+    nJobs: number = mapper.FIELD_NUM;
+    prev: number = mapper.FIELD_NUM;
+    current: number = mapper.FIELD_NUM;
+    ytd: number = mapper.FIELD_NUM;
 }
 
 export class UserDocument extends Mapper {
