@@ -1,4 +1,4 @@
-import {Errors, GET, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
+import {Errors, GET, Path, PathParam, POST, DELETE, Preprocessor, QueryParam} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
@@ -81,6 +81,54 @@ export class InvitationController extends BaseController {
         }
 
         return this.map(models.InvitationResponse, invitation);
+    }
+
+    @POST
+    @Path(':id/resend')
+    @Preprocessor(BaseController.requireAdmin)
+    async resendInvitation(@PathParam('id') id: string) {
+        this.service.setRequestContext(this.getRequestContext());
+
+        const invitation = await this.service.get(id);
+        if (!invitation) {
+            throw new Errors.NotFoundError();
+        }
+
+        if (!invitation.isPending()) {
+            throw new Errors.ConflictError('Invitation already used');
+        }
+
+        try {
+            const tenant = await this.tenantService.get(this.getRequestContext().getTenantId());
+            await this.mailer.sendInvitation(invitation.email, {
+                link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`,
+                companyName: tenant.businessName
+            });
+        } catch (e) {
+            this.logger.error(e.message);
+        }
+    }
+
+    @DELETE
+    @Path(':id')
+    @Preprocessor(BaseController.requireAdmin)
+    async deleteInvitation(@PathParam('id') id: string) {
+        this.service.setRequestContext(this.getRequestContext());
+
+        const invitation = await this.service.get(id);
+        if (!invitation) {
+            throw new Errors.NotFoundError();
+        }
+
+        if (!invitation.isPending()) {
+            throw new Errors.ConflictError('Invitation already used');
+        }
+
+        try {
+            await this.service.delete(invitation);
+        } catch (e) {
+            throw new Errors.InternalServerError(e);
+        }
     }
 }
 
