@@ -9,10 +9,7 @@ export class RequestContext {
     }
 
     getTenantId(): string {
-        if (this.context.request['tenantId']) {
-            return this.context.request['tenantId'];
-        }
-        throw new RequestContextMissingTenantError();
+        return this.context.request['tenantId'];
     }
 
     getUser(): User {
