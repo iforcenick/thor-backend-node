@@ -77,7 +77,6 @@ class AuthorizationState {
 }
 
 @AutoWired
-@Singleton
 export class Client {
     @Inject private config: Config;
     @Inject private logger: Logger;
