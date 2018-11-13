@@ -254,7 +254,7 @@ export class UserController extends BaseController {
     @Path(':id/documents')
     async createUserDocument(@PathParam('id') userId: string,
                              @QueryParam('type') type: string,
-                             @FileParam('file') file, @ContextRequest context: ServiceContext): Promise<models.UserDocument> {
+                             @FileParam('filepond') file, @ContextRequest context: ServiceContext): Promise<models.UserDocument> {
         this.service.setRequestContext(this.getRequestContext());
 
         if (!file) {
