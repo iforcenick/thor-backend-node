@@ -139,6 +139,10 @@ export class AddInvitedContractorLogic extends Logic {
 
     async execute(profileData: any, invitationToken, password: string) {
         const invitation = await this.invitationService.getForAllTenants(invitationToken);
+        if (!invitation) {
+            throw new Errors.NotFoundError('Invitation not found');
+        }
+
         const tenantId = invitation.tenantId;
         let user: User;
 
@@ -147,7 +151,7 @@ export class AddInvitedContractorLogic extends Logic {
         }
 
         if (invitation.email != profileData.email) {
-            throw new Errors.BadRequestError('Contractor and invitation emails do not match.');
+            throw new Errors.ConflictError('Contractor and invitation emails do not match.');
         }
 
         await transaction(this.invitationService.transaction(), async trx => {
