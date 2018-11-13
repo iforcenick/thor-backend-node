@@ -1,4 +1,4 @@
-import {Errors, GET, PATCH, Path, POST, Preprocessor} from 'typescript-rest';
+import {Errors, GET, PATCH, Path, POST, Preprocessor, PUT} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
@@ -8,6 +8,11 @@ import {Security, Tags} from 'typescript-rest-swagger';
 import * as dwolla from '../dwolla';
 import {DwollaNotifier} from '../dwolla/notifier';
 import {UserService} from '../user/service';
+import {
+    AddTenantCompanyLogic, GetTenantCompanyLogic, GetTenantCompanyOwnerLogic, GetTenantLogic, RetryTenantCompanyLogic,
+    UpdateTenantCompanyLogic
+} from './logic';
+import {TenantCompanyRetryRequest} from "./models";
 
 @Security('api_key')
 @Path('/tenants')
@@ -22,10 +27,8 @@ export class TenantController extends BaseController {
     @GET
     @Path('')
     async getTenant(): Promise<models.TenantResponse> {
-        const tenant = await this.service.get(this.getRequestContext().getTenantId());
-        if (!tenant) {
-            throw new Errors.NotFoundError();
-        }
+        const logic = new GetTenantLogic(this.getRequestContext());
+        const tenant = await logic.execute(this.getRequestContext().getTenantId());
 
         return this.map(models.TenantResponse, tenant);
     }
@@ -53,105 +56,53 @@ export class TenantController extends BaseController {
     @Path('/company')
     @Tags('tenantCompany')
     async getTenantCompany(): Promise<models.TenantCompanyResponse> {
-        const tenant = await this.service.get(this.getRequestContext().getTenantId());
-        if (!tenant) {
-            throw new Errors.NotFoundError();
-        }
+        const logic = new GetTenantCompanyLogic(this.getRequestContext());
+        const company = await logic.execute(this.getRequestContext().getTenantId());
 
-        if (!tenant.dwollaUri) {
-            throw new Errors.NotFoundError('Tenant company details not found');
-        }
-
-        return this.map(models.TenantCompanyResponse, tenant.company);
+        return this.map(models.TenantCompanyResponse, company);
     }
 
     @GET
     @Path('/company/owner')
     @Tags('tenantCompany')
     async getTenantCompanyOwner(): Promise<models.TenantOwnerResponse> {
-        const tenant = await this.service.get(this.getRequestContext().getTenantId());
-        if (!tenant) {
-            throw new Errors.NotFoundError();
-        }
+        const logic = new GetTenantCompanyOwnerLogic(this.getRequestContext());
+        const owner = await logic.execute(this.getRequestContext().getTenantId());
 
-        let customer;
-        try {
-            customer = await this.dwollaClient.getCustomer(tenant.dwollaUri);
-        } catch (e) {
-            this.logger.error(e.message);
-            throw new Errors.NotFoundError('Owner data not found');
-        }
-
-        return this.map(models.TenantOwnerResponse, customer.controller);
+        return this.map(models.TenantOwnerResponse, owner);
     }
 
     @POST
     @Path('/company')
     @Tags('tenantCompany')
     async createTenantCompany(data: models.TenantCompanyPostRequest): Promise<models.TenantCompanyResponse> {
-        const tenant: models.Tenant = await this.service.get(this.getRequestContext().getTenantId());
         const parsedData: models.TenantCompanyPostRequest = await this.validate(data, models.tenantCompanyPostRequestSchema);
+        const logic = new AddTenantCompanyLogic(this.getRequestContext());
+        const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());
 
-        if (!tenant) {
-            throw new Errors.NotFoundError('Tenant not found');
-        }
-
-        if (tenant.dwollaUri) {
-            throw new Errors.NotAcceptableError('Tenant company details already created');
-        }
-
-        try {
-            const customer = dwolla.customer.factory(parsedData);
-            customer.type = dwolla.customer.TYPE.Business;
-            tenant.dwollaUri = await this.dwollaClient.createCustomer(customer);
-            const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.dwollaUri);
-            tenant.dwollaStatus = dwollaCustomer.status;
-            tenant.dwollaType = dwollaCustomer.type;
-            tenant.merge(parsedData);
-
-            await this.service.update(tenant);
-        } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
-                throw err.toValidationError();
-            }
-            throw new Errors.InternalServerError(err.message);
-        }
-
-        return this.map(models.TenantCompanyResponse, tenant.company);
+        return this.map(models.TenantCompanyResponse, company);
     }
 
     @PATCH
     @Path('/company')
     @Tags('tenantCompany')
     async updateTenantCompany(data: models.TenantCompanyPatchRequest): Promise<models.TenantCompanyResponse> {
-        const tenant: models.Tenant = await this.service.get(this.getRequestContext().getTenantId());
         const parsedData: models.TenantCompanyPatchRequest = await this.validate(data, models.tenantCompanyPatchRequestSchema);
+        const logic = new UpdateTenantCompanyLogic(this.getRequestContext());
+        const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());
 
-        if (!tenant) {
-            throw new Errors.NotFoundError('Tenant not found');
-        }
+        return this.map(models.TenantCompanyResponse, company);
+    }
 
-        if (!tenant.dwollaUri) {
-            throw new Errors.NotFoundError('Tenant company details not found');
-        }
+    @PUT
+    @Path('/company')
+    @Tags('tenantCompany')
+    async retryTenantCompany(data: models.TenantCompanyRetryRequest): Promise<models.TenantCompanyResponse> {
+        const parsedData: models.TenantCompanyRetryRequest = await this.validate(data, models.tenantCompanyRetryRequestSchema);
+        const logic = new RetryTenantCompanyLogic(this.getRequestContext());
+        const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());
 
-        try {
-            const customer = dwolla.customer.factory(parsedData);
-            customer.type = tenant.dwollaType;
-            await this.dwollaClient.updateCustomer(tenant.dwollaUri, customer.updateableFields());
-            const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.dwollaUri);
-            tenant.dwollaStatus = dwollaCustomer.status;
-            tenant.merge(parsedData);
-
-            await this.service.update(tenant);
-        } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
-                throw err.toValidationError();
-            }
-            throw new Errors.InternalServerError(err.message);
-        }
-
-        return this.map(models.TenantCompanyResponse, tenant.company);
+        return this.map(models.TenantCompanyResponse, company);
     }
 
     @GET

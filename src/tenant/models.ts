@@ -175,6 +175,8 @@ export class TenantCompanyPatchRequest extends Mapper {
     website: string = mapper.FIELD_STR;
 }
 
+export class TenantCompanyRetryRequest extends TenantCompanyPostRequest {}
+
 export class TenantRequest extends TenantBaseInfo {
 }
 
@@ -239,6 +241,8 @@ export const tenantCompanyPatchRequestSchema = Joi.object().keys({
     doingBusinessAs: Joi.string().allow('', null),
     website: Joi.string().allow('', null),
 });
+
+export const tenantCompanyRetryRequestSchema = tenantCompanyPostRequestSchema;
 
 export class BusinessClassificationItem extends Mapper {
     id: string = mapper.FIELD_STR;
