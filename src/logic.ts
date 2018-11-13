@@ -18,7 +18,8 @@ export abstract class Logic {
 
         for (const field of _.keys(prototype)) {
             if (prototype[field] instanceof ContextAwareInterface) {
-                prototype[field].setRequestContext(this.context);
+                this[field] = _.clone(prototype[field]);
+                this[field].setRequestContext(this.context);
             }
         }
     }

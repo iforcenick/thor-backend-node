@@ -79,16 +79,16 @@ node('docker') {
                 echo "Skipping. Runs only for ${DEV_BRANCH} and ${PROD_BRANCH} branches"
                 return;
             }
-            docker.withRegistry("${GCR_URL}", "gcr:${GCR_CREDENTIALS}") { 
+            docker.withRegistry("${GCR_URL}", "gcr:${GCR_CREDENTIALS}") {
                 sh "docker push ${DOCKER_REPOSITORY}:${version}"
-            } 
+            }
         }
 
         stage('Deploy') {
 			if (env.BRANCH_NAME == DEV_BRANCH) {
 				echo "Deploy to dev"
                 withCredentials([file(credentialsId: DEV_SERVICE_ACCOUNT_KEY, variable: 'KEY_FILE')]) {
-                    docker.withRegistry("${GCR_URL}", "gcr:${GCR_CREDENTIALS}") { 
+                    docker.withRegistry("${GCR_URL}", "gcr:${GCR_CREDENTIALS}") {
                         docker.image('us.gcr.io/odin-214321/jenkins-deployer:0.1.0').inside("-u root") {
                             sh "/root/google-cloud-sdk/bin/gcloud auth activate-service-account ${DEV_SERVICE_ACCOUNT} --key-file=${KEY_FILE}"
                             sh "/root/google-cloud-sdk/bin/gcloud container clusters get-credentials ${DEV_CLUSTER_NAME} --zone ${DEV_ZONE} --project ${DEV_GCP_PROJECT}"
@@ -104,7 +104,7 @@ node('docker') {
             if (env.BRANCH_NAME == PROD_BRANCH) {
 				echo "Deploy to prod"
                 withCredentials([file(credentialsId: PROD_SERVICE_ACCOUNT_KEY, variable: 'KEY_FILE')]) {
-                    docker.withRegistry("${GCR_URL}", "gcr:${GCR_CREDENTIALS}") { 
+                    docker.withRegistry("${GCR_URL}", "gcr:${GCR_CREDENTIALS}") {
                         docker.image('us.gcr.io/odin-214321/jenkins-deployer:0.1.0').inside("-u root") {
                             sh "/root/google-cloud-sdk/bin/gcloud auth activate-service-account ${PROD_SERVICE_ACCOUNT} --key-file=${KEY_FILE}"
                             sh "/root/google-cloud-sdk/bin/gcloud container clusters get-credentials ${PROD_CLUSTER_NAME} --zone ${PROD_ZONE} --project ${PROD_GCP_PROJECT}"
