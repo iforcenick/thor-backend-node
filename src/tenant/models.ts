@@ -35,6 +35,7 @@ export class Tenant extends db.Model {
     fundingSourceRouting?: string = null;
     fundingSourceAccount?: string = null;
     fundingSourceName?: string = null;
+    fundingSourceVerificationStatus?: string = null;
 
     static get relationMappings() {
         return {

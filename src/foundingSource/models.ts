@@ -5,6 +5,11 @@ import {Mapper} from '../mapper';
 import Joi = require('joi');
 
 
+export const enum VerificationStatuse {
+    initiated = 'initiated',
+    completed = 'completed'
+}
+
 export const enum Relations {
     tenant = 'tenant',
     profile = 'profile'

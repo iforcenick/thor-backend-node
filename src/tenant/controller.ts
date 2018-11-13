@@ -9,14 +9,16 @@ import * as dwolla from '../dwolla';
 import {DwollaNotifier} from '../dwolla/notifier';
 import {UserService} from '../user/service';
 import {
-    AddTenantCompanyLogic, GetTenantCompanyLogic, GetTenantCompanyOwnerLogic, GetTenantLogic, RetryTenantCompanyLogic,
+    AddTenantCompanyLogic,
+    GetTenantCompanyLogic,
+    GetTenantCompanyOwnerLogic,
+    GetTenantLogic,
+    RetryTenantCompanyLogic,
     UpdateTenantCompanyLogic
 } from './logic';
-import {TenantCompanyRetryRequest} from "./models";
 
 @Security('api_key')
 @Path('/tenants')
-@Tags('tenants')
 @Preprocessor(BaseController.requireAdmin)
 export class TenantController extends BaseController {
     @Inject private service: TenantService;
@@ -26,6 +28,7 @@ export class TenantController extends BaseController {
 
     @GET
     @Path('')
+    @Tags('tenants')
     async getTenant(): Promise<models.TenantResponse> {
         const logic = new GetTenantLogic(this.getRequestContext());
         const tenant = await logic.execute(this.getRequestContext().getTenantId());
@@ -35,6 +38,7 @@ export class TenantController extends BaseController {
 
     @POST
     @Path('')
+    @Tags('tenants')
     async createTenant(data: models.TenantRequest): Promise<models.TenantResponse> {
         throw new Errors.NotImplementedError();
         // const parsedData = await this.validate(data, models.tenantRequestSchema);
