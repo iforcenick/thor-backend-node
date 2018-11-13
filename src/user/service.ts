@@ -191,6 +191,16 @@ export class UserService extends db.ModelService<models.User> {
         return await query;
     }
 
+    async findByExternalIdAndTenant(externalId: string, tenantId: string): Promise<models.User> {
+        const tmpTenant = this.getTenantId();
+        this.setTenantId(tenantId);
+        const query = this.useTenantContext(this.getOptions(this.modelType.query()));
+        query.where(`${models.Relations.tenantProfile}.externalId`, externalId);
+        query.first();
+        this.setTenantId(tmpTenant);
+        return await query;
+    }
+
     async getRole(role: role.models.Types): Promise<role.models.Role> {
         return await this.rolesService.find(role);
     }

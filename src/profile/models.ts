@@ -41,6 +41,7 @@ export class Profile extends db.Model {
     userId?: string = null;
     roles?: Array<role.models.Role>;
     deletedAt?: Date = null;
+    externalId?: string = null;
 
     get externalStatus() {
         return this.dwollaStatus;
@@ -129,6 +130,7 @@ export class Profile extends db.Model {
         this.dwollaSourceUri = null;
         this.dwollaStatus = null;
         this.deletedAt = new Date();
+        this.externalId = null;
     }
 
     dwollaUpdateAvailable() {
@@ -148,6 +150,7 @@ export class ProfileBaseInfo extends Mapper {
     address1: string = mapper.FIELD_STR;
     address2: string = mapper.FIELD_STR;
     dateOfBirth: string = mapper.FIELD_STR;
+    externalId: string = mapper.FIELD_STR;
 }
 
 export class ProfileResponse extends ProfileBaseInfo {
@@ -179,6 +182,7 @@ export class ProfilePatchRequest extends ProfileBaseInfo {
 }
 
 export const profileRequestSchema = Joi.object().keys({
+    externalId: Joi.string().allow('', null),
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
     phone: Joi.string().allow('', null).regex(regex.phoneRegex),
@@ -194,6 +198,7 @@ export const profileRequestSchema = Joi.object().keys({
 });
 
 export const profilePatchSchema = Joi.object().keys({
+    externalId: Joi.string().allow('', null),
     firstName: Joi.string(),
     lastName: Joi.string(),
     phone: Joi.string().regex(regex.phoneRegex),

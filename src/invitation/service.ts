@@ -18,6 +18,10 @@ export class InvitationService extends db.ModelService<models.Invitation> {
         return await this.getOneBy('email', email);
     }
 
+    async getByExternalId(externalId: string): Promise<models.Invitation> {
+        return await this.getOneBy('externalId', externalId);
+    }
+
     protected setModelType() {
         this.modelType = models.Invitation;
     }

@@ -18,6 +18,7 @@ export class Invitation extends db.Model {
     static tableName = db.Tables.contractorInvitations;
     email?: string = null;
     status?: string = null;
+    externalId?: string = null;
     tenantId?: string = null;
 
     static get relationMappings() {
@@ -46,6 +47,7 @@ export class Invitation extends db.Model {
 
 export class InvitationBase extends Mapper {
     email: string = mapper.FIELD_STR;
+    externalId: string = mapper.FIELD_STR;
 }
 
 export class InvitationRequest extends InvitationBase {
@@ -64,4 +66,5 @@ export interface InvitationPaginatedResponse extends PaginatedResponse {
 
 export const requestSchema = Joi.object().keys({
     email: Joi.string().email(),
+    externalId: Joi.string().allow('', null),
 });

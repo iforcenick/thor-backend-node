@@ -305,7 +305,19 @@ export class CreateTransactionLogic extends Logic {
     @Inject private transactionService: TransactionService;
 
     async execute(data: TransactionRequest): Promise<any> {
-        const user = await this.userService.get(data.userId);
+        // was an user id or external id provided
+        let user: users.User = null;
+        if (data.externalId) {
+            user = await this.userService.findByExternalIdAndTenant(data.externalId, this.context.getTenantId());
+            if (!user) {
+                throw new Errors.NotFoundError('External Id not found');
+            }
+
+            data.userId = user.id;
+        } else {
+            user = await this.userService.get(data.userId);
+        }
+
         if (!user) {
             throw new Errors.NotFoundError('User not found');
         }

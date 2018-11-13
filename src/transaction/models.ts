@@ -152,6 +152,7 @@ export class PeriodsStatsResponse extends Mapper {
 export class TransactionRequest extends TransactionBaseInfo {
     @mapper.object(job.JobRequest)
     job: job.JobRequest = new job.JobRequest();
+    externalId: string = mapper.FIELD_STR;
 }
 
 export class TransactionsTransferRequest extends Mapper {
@@ -164,12 +165,11 @@ export interface PaginatedTransactionResponse extends PaginatedResponse {
 
 export const MAXINT = 2147483647;
 export const transactionRequestSchema = Joi.object().keys({
-    userId: Joi.string()
-        .required()
-        .guid(),
+    userId: Joi.string().guid(),
+    externalId: Joi.string().allow('', null),
     job: job.jobRequestSchema.required(),
     quantity: Joi.number().required().greater(0).integer().max(MAXINT),
-});
+}).xor('userId', 'externalId');
 
 export class InvalidTransferDataError extends Error {
 }

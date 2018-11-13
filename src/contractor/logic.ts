@@ -27,7 +27,7 @@ export class AddContractorLogic extends Logic {
     @Inject private profileService: ProfileService;
     @Inject private logger: Logger;
 
-    async execute(profileData: any, tenantId, password: string, trx?: any) {
+    async execute(profileData: any, tenantId, password: string, externalId?: string, trx?: any) {
         this.userService.setTenantId(tenantId);
         if (!trx) {
             trx = this.userService.transaction();
@@ -51,6 +51,7 @@ export class AddContractorLogic extends Logic {
         await transaction(trx, async _trx => {
             user = await this.userService.insert(user, _trx);
             profile.userId = user.id;
+            profile.externalId = externalId;
             const contractorRole = await this.getRole(role.models.Types.contractor);
             const roles = [contractorRole];
 
@@ -148,7 +149,7 @@ export class AddInvitedContractorLogic extends Logic {
 
         await transaction(this.invitationService.transaction(), async trx => {
             const logic = new AddContractorLogic(this.context);
-            user = await logic.execute(profileData, tenantId, password, trx);
+            user = await logic.execute(profileData, tenantId, password, invitation.externalId, trx);
 
             invitation.status = Status.used;
             await this.invitationService.update(invitation, trx);
