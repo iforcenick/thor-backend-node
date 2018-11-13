@@ -21,7 +21,7 @@ export class DwollaController extends BaseController {
 
         try {
             const _event = event.factory(data);
-            console.log('Dwolla event:\n', JSON.stringify(_event, null, 2));
+            this.logger.info('Dwolla event: ' + JSON.stringify(_event, null, 2));
 
             switch (_event.topic) {
                 case event.TYPE.transferCreated:
