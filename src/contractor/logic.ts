@@ -55,9 +55,7 @@ export class AddContractorLogic extends Logic {
             const contractorRole = await this.getRole(role.models.Types.contractor);
             const roles = [contractorRole];
 
-            await this.createBaseProfile(profile, roles, _trx);
-            await this.createTenantProfile(profile, roles, tenantId, _trx);
-            user = await this.userService.get(user.id, _trx);
+            user.tenantProfile = await this.createTenantProfile(profile, roles, tenantId, _trx);
         });
 
         try {
@@ -73,6 +71,7 @@ export class AddContractorLogic extends Logic {
         profile.tenantId = tenantId;
         profile = await this.profileService.insert(profile, trx);
         await this.addRoles(profile, roles, trx);
+        return profile;
     }
 
     private async createBaseProfile(profile: Profile, roles: Array<role.models.Role>, trx: transaction<any>) {
@@ -82,11 +81,14 @@ export class AddContractorLogic extends Logic {
         baseProfile.dwollaSourceUri = undefined;
         baseProfile = await this.profileService.insert(baseProfile, trx);
         await this.addRoles(baseProfile, roles, trx);
+        return baseProfile;
     }
 
     private async addRoles(profile: Profile, roles: Array<role.models.Role>, trx: transaction<any>) {
+        profile.roles = [];
         for (const role of roles) {
             await profile.$relatedQuery(models.Relations.roles, trx).relate(role.id);
+            profile.roles.push(role);
         }
     }
 
@@ -133,11 +135,12 @@ export class AddContractorOnRetryStatusLogic extends Logic {
 @AutoWired
 export class AddInvitedContractorLogic extends Logic {
     @Inject private invitationService: InvitationService;
+    @Inject private userService: UserService;
 
     async execute(profileData: any, invitationToken, password: string) {
         const invitation = await this.invitationService.getForAllTenants(invitationToken);
         const tenantId = invitation.tenantId;
-        let user = null;
+        let user: User;
 
         if (!invitation.isPending()) {
             throw new Errors.NotAcceptableError('Invitation already used');
