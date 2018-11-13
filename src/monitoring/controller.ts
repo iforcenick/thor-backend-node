@@ -13,6 +13,7 @@ export class MonitoringController extends BaseController {
     @GET
     @Path('')
     async health() {
+        const testHeader = this.getRequestContext().getHeader('X-Test');
         const info = getRepoInfo();
         return {
                 build: {
@@ -34,6 +35,7 @@ export class MonitoringController extends BaseController {
                     averageLoad: osUtils.loadavg(1),
                 },
                 running: true,
+                headerXTest: testHeader,
             };
     }
 }

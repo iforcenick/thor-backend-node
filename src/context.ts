@@ -18,6 +18,10 @@ export class RequestContext {
         }
         throw new RequestContextMissingUserError();
     }
+
+    getHeader(header: string) {
+        return this.context.request.header(header);
+    }
 }
 
 export class ContextAwareInterface {
