@@ -23,6 +23,7 @@ def DEV_GCP_PROJECT = "odin-214321"
 def DEV_CLUSTER_NAME = "thor-dev"
 def DEV_ZONE = "us-west1-a"
 
+
 node('docker') {
     def version = ''
     def errorMessage = ''
