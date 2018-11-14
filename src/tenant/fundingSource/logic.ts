@@ -127,6 +127,10 @@ export class VerifyTenantFundingSourceLogic extends Logic {
         } catch (e) {
             if (e instanceof dwolla.DwollaRequestError) {
                 // I HATE DWOLLA SO MUCH SINCE THEY MADE ME DO IT!
+                if (e.message.search('Wrong amount') != -1) {
+                    throw new Errors.ConflictError('Wrong amounts');
+                }
+
                 e.message = e.message.replace(/\/value/g, '');
                 throw e.toValidationError();
             }
