@@ -74,6 +74,7 @@ export class UserController extends BaseController {
 
         const dates: any = await this.validate({startDate, endDate}, models.rankingRequestSchema);
         const users: any = await this.service.getJobsRanking(dates.startDate, dates.endDate, page, limit, status);
+        console.log('queried data');
 
         return this.paginate(
             users.pagination,
