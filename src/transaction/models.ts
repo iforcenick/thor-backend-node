@@ -95,7 +95,7 @@ export class Transaction extends db.Model {
     static filter(query, startDate?: Date, endDate?: Date, status?: string, userId?: string, emptyDates?: boolean) {
         if (startDate && endDate) {
             query.whereBetween(`${db.Tables.transactions}.createdAt`, [startDate, endDate]);
-            if (emptyDates) {
+            if (emptyDates && !status) {
                 query.orWhere(`${db.Tables.transactions}.createdAt`, null);
             }
         }
