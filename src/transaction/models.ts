@@ -154,6 +154,12 @@ export class TransactionRequest extends TransactionBaseInfo {
     externalId: string = mapper.FIELD_STR;
 }
 
+export class TransactionPatchRequest extends Mapper {
+    jobId: string = mapper.FIELD_STR;
+    quantity: number = mapper.FIELD_NUM;
+    value: number = mapper.FIELD_NUM;
+}
+
 export class TransactionsTransferRequest extends Mapper {
     transactionsIds: Array<string> = Array<string>();
 }
@@ -169,6 +175,12 @@ export const transactionRequestSchema = Joi.object().keys({
     job: job.jobRequestSchema.required(),
     quantity: Joi.number().required().greater(0).integer().max(MAXINT),
 }).xor('userId', 'externalId');
+
+export const transactionPatchRequestSchema = Joi.object().keys({
+    jobId: Joi.string().guid(),
+    quantity: Joi.number().greater(0).integer().max(MAXINT),
+    value: Joi.number().greater(0).precision(2).strict(),       // preemtive support for removal of quantity
+});
 
 export class InvalidTransferDataError extends Error {
 }

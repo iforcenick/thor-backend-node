@@ -12,7 +12,7 @@ import {transaction} from 'objection';
 import * as dwolla from '../dwolla';
 import {DwollaRequestError, event} from '../dwolla';
 import * as models from './models';
-import {Statuses, Transaction, TransactionRequest} from './models';
+import {Statuses, Transaction, TransactionRequest, TransactionPatchRequest} from './models';
 import {MailerService} from '../mailer';
 import {Logger} from '../logger';
 import {FundingSource, VerificationStatuses} from '../foundingSource/models';
@@ -411,6 +411,65 @@ export class CreateTransactionLogic extends Logic {
             transactionFromDb.job = jobFromDb;
             return transactionFromDb;
         });
+    }
+}
+
+@AutoWired
+export class UpdateTransactionLogic extends Logic {
+    @Inject private transactionService: TransactionService;
+    @Inject private jobService: JobService;
+
+    async execute(id: string, data: TransactionPatchRequest): Promise<any> {
+        const transactionFromDb = await this.transactionService.get(id);
+        if (!transactionFromDb) {
+            throw new Errors.NotFoundError('Transaction not found');
+        }
+
+        if (transactionFromDb.status !==  Statuses.new) {
+            throw new Errors.ConflictError('Transaction cannot be updated');
+        }
+
+        // check if a new job id was provided and validate it
+        let jobFromDb: Job;
+        if (data.jobId) {
+            jobFromDb = await this.jobService.get(data.jobId);
+            if (!jobFromDb) {
+                throw new Errors.InternalServerError('Job not found');
+            }
+        } else {
+            jobFromDb = await this.jobService.get(transactionFromDb.jobId);
+        }
+
+        try {
+            transactionFromDb.merge(data);
+            await this.transactionService.update(transactionFromDb);
+        } catch (e) {
+            throw new Errors.InternalServerError(e);
+        }
+        transactionFromDb.job = jobFromDb;
+        return transactionFromDb;
+    }
+}
+
+@AutoWired
+export class DeleteTransactionLogic extends Logic {
+    @Inject private transactionService: TransactionService;
+
+    async execute(id: string): Promise<any> {
+        const transaction = await this.transactionService.get(id);
+        if (!transaction) {
+            throw new Errors.NotFoundError('Transaction not found');
+        }
+
+        if (transaction.status !==  Statuses.new) {
+            throw new Errors.ConflictError('Transaction cannot be deleted');
+        }
+
+        try {
+            await this.transactionService.delete(transaction);
+        } catch (e) {
+            throw new Errors.InternalServerError(e);
+        }
     }
 }
 

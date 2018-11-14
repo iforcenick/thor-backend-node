@@ -1,4 +1,4 @@
-import {DELETE, Errors, GET, HttpError, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
+import {DELETE, Errors, GET, HttpError, Path, PathParam, POST, PATCH, Preprocessor, QueryParam} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
@@ -11,6 +11,8 @@ import {FundingSourceService} from '../foundingSource/services';
 import {
     CancelTransactionLogic,
     CreateTransactionLogic,
+    UpdateTransactionLogic,
+    DeleteTransactionLogic,
     CreateTransactionsTransferLogic,
     CreateTransactionTransferLogic
 } from './logic';
@@ -105,6 +107,25 @@ export class TransactionController extends BaseController {
 
             throw new Errors.InternalServerError(err.message);
         }
+    }
+
+    @PATCH
+    @Path(':id')
+    @Preprocessor(BaseController.requireAdmin)
+    async updateTransaction(@PathParam('id') id: string, data: models.TransactionPatchRequest): Promise<models.TransactionResponse> {
+        const parsedData: models.TransactionPatchRequest = await this.validate(data, models.transactionPatchRequestSchema);
+
+        const logic = new UpdateTransactionLogic(this.getRequestContext());
+        const transaction = await logic.execute(id, parsedData);
+        return this.map(models.TransactionResponse, transaction);
+    }
+
+    @DELETE
+    @Path(':id')
+    @Preprocessor(BaseController.requireAdmin)
+    async deleteTransaction(@PathParam('id') id: string) {
+        const logic = new DeleteTransactionLogic(this.getRequestContext());
+        await logic.execute(id);
     }
 
     @POST
