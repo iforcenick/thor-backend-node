@@ -95,6 +95,8 @@ export class TenantCompanyResponse extends Mapper {
     address2: string = mapper.FIELD_STR;
     businessName?: string = mapper.FIELD_STR;
     doingBusinessAs?: string = mapper.FIELD_STR;
+    businessType?: string = mapper.FIELD_STR;
+    businessClassification?: string = mapper.FIELD_STR;
     website?: string = mapper.FIELD_STR;
     status: string = mapper.FIELD_STR;
 }
