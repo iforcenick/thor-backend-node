@@ -185,6 +185,13 @@ export class TenantCompanyRetryRequest extends TenantCompanyPostRequest {}
 export class TenantRequest extends TenantBaseInfo {
 }
 
+export class TenantCompanyDocument extends Mapper {
+    type: string = mapper.FIELD_STR;
+    status: string = mapper.FIELD_STR;
+    created: Date = mapper.FIELD_DATE;
+    failureReason: string = mapper.FIELD_STR;
+}
+
 export const tenantRequestSchema = Joi.object().keys({
     name: Joi.string().required(),
     dwollaUri: Joi.string(),

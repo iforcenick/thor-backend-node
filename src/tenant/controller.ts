@@ -1,4 +1,4 @@
-import {Errors, GET, PATCH, Path, POST, Preprocessor, PUT} from 'typescript-rest';
+import {Errors, GET, PATCH, Path, PathParam, POST, Preprocessor, PUT} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
@@ -12,10 +12,11 @@ import {
     AddTenantCompanyLogic,
     GetTenantCompanyLogic,
     GetTenantCompanyOwnerLogic,
-    GetTenantLogic,
+    GetTenantLogic, ListTenantCompanyDocumentsLogic,
     RetryTenantCompanyLogic,
     UpdateTenantCompanyLogic
 } from './logic';
+import {TenantCompanyDocument} from './models';
 
 @Security('api_key')
 @Path('/tenants')
@@ -117,5 +118,16 @@ export class TenantController extends BaseController {
 
         businessCategories = await this.dwollaClient.listBusinessClassification();
         return this.map(BusinessClassificationsResponse, businessCategories);
+    }
+
+    @GET
+    @Path('/company/documents')
+    async getTenantCompanyDocuments(@PathParam('id') userId: string): Promise<Array<TenantCompanyDocument>> {
+        const logic = new ListTenantCompanyDocumentsLogic(this.getRequestContext());
+        const docs = await logic.execute(this.getRequestContext().getTenantId());
+
+        return docs.map((doc) => {
+            return this.map(TenantCompanyDocument, doc);
+        });
     }
 }
