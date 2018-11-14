@@ -73,7 +73,11 @@ export class UserService extends db.ModelService<models.User> {
 
     private rankingQuery(startDate: Date, endDate: Date, status?: string) {
         const query = this.useTenantContext(this.getMinOptions(this.filterCustomerRole(this.modelType.query())));
-        query.leftJoinRelation(models.Relations.transactions);
+        if (status) {
+            query.joinRelation(models.Relations.transactions);
+        } else {
+            query.leftJoinRelation(models.Relations.transactions);
+        }
         query.leftJoin(db.Tables.jobs, `${db.Tables.transactions}.jobId`, `${db.Tables.jobs}.id`);
         transactions.Transaction.filter(query, startDate, endDate, status, null, true);
 
