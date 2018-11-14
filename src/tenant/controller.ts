@@ -1,4 +1,4 @@
-import {Errors, GET, PATCH, Path, PathParam, POST, Preprocessor, PUT} from 'typescript-rest';
+import {Errors, FileParam, GET, PATCH, Path, PathParam, POST, Preprocessor, PUT, QueryParam} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
@@ -9,6 +9,7 @@ import * as dwolla from '../dwolla';
 import {DwollaNotifier} from '../dwolla/notifier';
 import {UserService} from '../user/service';
 import {
+    AddTenantCompanyDocumentsLogic,
     AddTenantCompanyLogic,
     GetTenantCompanyLogic,
     GetTenantCompanyOwnerLogic,
@@ -17,6 +18,7 @@ import {
     UpdateTenantCompanyLogic
 } from './logic';
 import {TenantCompanyDocument} from './models';
+import * as _ from "lodash";
 
 @Security('api_key')
 @Path('/tenants')
@@ -122,12 +124,29 @@ export class TenantController extends BaseController {
 
     @GET
     @Path('/company/documents')
-    async getTenantCompanyDocuments(@PathParam('id') userId: string): Promise<Array<TenantCompanyDocument>> {
+    async getTenantCompanyDocuments(): Promise<Array<TenantCompanyDocument>> {
         const logic = new ListTenantCompanyDocumentsLogic(this.getRequestContext());
         const docs = await logic.execute(this.getRequestContext().getTenantId());
 
         return docs.map((doc) => {
             return this.map(TenantCompanyDocument, doc);
         });
+    }
+
+    @POST
+    @Path('/company/documents')
+    async createTenantCompanyDocuments(@QueryParam('type') type: string, @FileParam('filepond') file): Promise<TenantCompanyDocument> {
+        if (!file) {
+            throw new Errors.NotAcceptableError('File missing');
+        }
+
+        if (!_.has(dwolla.documents.TYPE, type)) {
+            throw new Errors.ConflictError('Invalid type');
+        }
+
+        const logic = new AddTenantCompanyDocumentsLogic(this.getRequestContext());
+        const doc = await logic.execute(this.getRequestContext().getTenantId(), file, type);
+
+        return this.map(TenantCompanyDocument, doc);
     }
 }
