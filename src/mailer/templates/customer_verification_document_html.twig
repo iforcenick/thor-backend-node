@@ -1,46 +1,1182 @@
 <!DOCTYPE html>
-<html>
+<!-- Last Published: Wed Oct 31 2018 20:51:13 GMT+0000 (UTC) -->
+<html data-wf-domain="tokensale.webflow.io" data-wf-page="5bd9e873569311fc438ab728" data-wf-site="5a7b77c587d05300019b4000"
+  style="font-family: sans-serif; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; height: 100%;">
 
-<body style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; min-height: 100%; font-family: Exo, sans-serif; font-size: 14px; line-height: 20px; color: #333; overflow: visible; max-width: 100%; overflow-x: hidden; margin: 0px 0px 0;"
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta charset="utf-8">
+  <title>Customer Verification</title>
+  <meta content="Dwolla Skin" property="og:title">
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <!--[if lt IE 9]><script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js" type="text/javascript"></script><![endif]-->
+  <link href="https://uploads-ssl.webflow.com/5a7b77c587d05300019b4000/5a7b77c587d05300019b4075_Favicon_trans.png" rel="shortcut icon"
+    type="image/x-icon">
+  <link href="https://uploads-ssl.webflow.com/5a7b77c587d05300019b4000/5a7b77c587d05300019b4058_THOR_webclip.png" rel="apple-touch-icon">
+  <style>
+    body {
+      margin: 0;
+    }
+
+    a:active {
+      outline: 0;
+    }
+
+    a:hover {
+      outline: 0;
+    }
+
+    img {
+      border: 0;
+    }
+
+    @font-face {
+      font-family: 'webflow-icons';
+      src: url('data:application/x-font-ttf;charset=utf-8;base64,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') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    .w-icon-slider-right:before {
+      content: "\e600";
+    }
+
+    .w-icon-slider-left:before {
+      content: "\e601";
+    }
+
+    .w-icon-nav-menu:before {
+      content: "\e602";
+    }
+
+    .w-icon-arrow-down:before {
+      content: "\e603";
+    }
+
+    .w-icon-dropdown-toggle:before {
+      content: "\e603";
+    }
+
+    .w-icon-file-upload-remove:before {
+      content: "\e900";
+    }
+
+    .w-icon-file-upload-icon:before {
+      content: "\e903";
+    }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      background-color: #fff;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      line-height: 20px;
+      color: #333;
+    }
+
+    img {
+      max-width: 100%;
+      vertical-align: middle;
+      display: inline-block;
+    }
+
+    .w-clearfix:before {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-clearfix:after {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-clearfix:after {
+      clear: both;
+    }
+
+    .w-embed:before {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-embed:after {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-embed:after {
+      clear: both;
+    }
+
+    .w-input:focus {
+      border-color: #3898EC;
+      outline: 0;
+    }
+
+    .w-select:focus {
+      border-color: #3898EC;
+      outline: 0;
+    }
+
+    .w-checkbox:before {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-radio:before {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-checkbox:after {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-radio:after {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-checkbox:after {
+      clear: both;
+    }
+
+    .w-radio:after {
+      clear: both;
+    }
+
+    .w-container:before {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-container:after {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-container:after {
+      clear: both;
+    }
+
+    .w-row:before {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-row:after {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-row:after {
+      clear: both;
+    }
+
+    .w-widget-twitter-count-shim:not(.w--vertical):before {
+      top: 50%;
+      left: 0;
+      border: solid transparent;
+      content: " ";
+      height: 0;
+      width: 0;
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .w-widget-twitter-count-shim:not(.w--vertical):after {
+      top: 50%;
+      left: 0;
+      border: solid transparent;
+      content: " ";
+      height: 0;
+      width: 0;
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .w-widget-twitter-count-shim:not(.w--vertical):before {
+      border-color: rgba(117, 134, 150, 0);
+      border-right-color: #5d6c7b;
+      border-width: 4px;
+      margin-left: -9px;
+      margin-top: -4px;
+    }
+
+    .w-widget-twitter-count-shim:not(.w--vertical).w--large:before {
+      border-width: 5px;
+      margin-left: -10px;
+      margin-top: -5px;
+    }
+
+    .w-widget-twitter-count-shim:not(.w--vertical):after {
+      border-color: rgba(255, 255, 255, 0);
+      border-right-color: white;
+      border-width: 4px;
+      margin-left: -8px;
+      margin-top: -4px;
+    }
+
+    .w-widget-twitter-count-shim:not(.w--vertical).w--large:after {
+      border-width: 5px;
+      margin-left: -9px;
+      margin-top: -5px;
+    }
+
+    .w-widget-twitter-count-shim.w--vertical:before {
+      top: 100%;
+      left: 50%;
+      border: solid transparent;
+      content: " ";
+      height: 0;
+      width: 0;
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .w-widget-twitter-count-shim.w--vertical:after {
+      top: 100%;
+      left: 50%;
+      border: solid transparent;
+      content: " ";
+      height: 0;
+      width: 0;
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .w-widget-twitter-count-shim.w--vertical:before {
+      border-color: rgba(117, 134, 150, 0);
+      border-top-color: #5d6c7b;
+      border-width: 5px;
+      margin-left: -5px;
+    }
+
+    .w-widget-twitter-count-shim.w--vertical:after {
+      border-color: rgba(255, 255, 255, 0);
+      border-top-color: white;
+      border-width: 4px;
+      margin-left: -4px;
+    }
+
+    .w-lightbox-view:before {
+      content: "";
+      height: 100vh;
+    }
+
+    .w-lightbox-group .w-lightbox-view:before {
+      height: 86vh;
+    }
+
+    .w-lightbox-view:before {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .w-lightbox-spinner:after {
+      content: "";
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      bottom: -4px;
+      left: -4px;
+      border: 3px solid transparent;
+      border-bottom-color: #fff;
+      border-radius: 50%;
+    }
+
+    .w-lightbox-inactive:hover {
+      opacity: 0;
+    }
+
+    .w-richtext:before {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-richtext:after {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-richtext:after {
+      clear: both;
+    }
+
+    .w-richtext[contenteditable="true"]:before {
+      white-space: initial;
+    }
+
+    .w-richtext[contenteditable="true"]:after {
+      white-space: initial;
+    }
+
+    .w-richtext .w-richtext-figure-selected.w-richtext-figure-type-video div:before {
+      outline: 2px solid #2895f7;
+    }
+
+    .w-richtext .w-richtext-figure-selected[data-rt-type="video"] div:before {
+      outline: 2px solid #2895f7;
+    }
+
+    .w-richtext figure.w-richtext-figure-type-video>div:before {
+      content: '';
+      position: absolute;
+      display: none;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+    }
+
+    .w-richtext figure[data-rt-type="video"]>div:before {
+      content: '';
+      position: absolute;
+      display: none;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+    }
+
+    .w-richtext figure>div:before {
+      cursor: default !important;
+    }
+
+    .w-nav:before {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-nav:after {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-nav:after {
+      clear: both;
+    }
+
+    .w-tabs:before {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-tabs:after {
+      content: " ";
+      display: table;
+      grid-column-start: 1;
+      grid-row-start: 1;
+      grid-column-end: 2;
+      grid-row-end: 2;
+    }
+
+    .w-tabs:after {
+      clear: both;
+    }
+
+    .w-ix-emptyfix:after {
+      content: "";
+    }
+
+    @keyframes spin {}
+
+    @media screen and (max-width:991px) {
+      .w-container {
+        max-width: 728px;
+      }
+
+      .w-hidden-main {
+        display: inherit !important;
+      }
+
+      .w-hidden-medium {
+        display: none !important;
+      }
+
+      .w-col-medium-1 {
+        width: 8.33333333%;
+      }
+
+      .w-col-medium-2 {
+        width: 16.66666667%;
+      }
+
+      .w-col-medium-3 {
+        width: 25%;
+      }
+
+      .w-col-medium-4 {
+        width: 33.33333333%;
+      }
+
+      .w-col-medium-5 {
+        width: 41.66666667%;
+      }
+
+      .w-col-medium-6 {
+        width: 50%;
+      }
+
+      .w-col-medium-7 {
+        width: 58.33333333%;
+      }
+
+      .w-col-medium-8 {
+        width: 66.66666667%;
+      }
+
+      .w-col-medium-9 {
+        width: 75%;
+      }
+
+      .w-col-medium-10 {
+        width: 83.33333333%;
+      }
+
+      .w-col-medium-11 {
+        width: 91.66666667%;
+      }
+
+      .w-col-medium-12 {
+        width: 100%;
+      }
+
+      .w-col-stack {
+        width: 100%;
+        left: auto;
+        right: auto;
+      }
+
+      .w-nav[data-collapse="medium"] .w-dropdown {
+        display: block;
+      }
+
+      .w-nav[data-collapse="medium"] .w-dropdown-toggle {
+        display: block;
+      }
+
+      .w-nav[data-collapse="medium"] .w-dropdown-list {
+        position: static;
+      }
+
+      .w-nav[data-collapse="medium"] .w-nav-menu {
+        display: none;
+      }
+
+      .w-nav[data-collapse="medium"] .w-nav-button {
+        display: block;
+      }
+    }
+
+    @media screen and (max-width:767px) {
+      .w-hidden-main {
+        display: inherit !important;
+      }
+
+      .w-hidden-medium {
+        display: inherit !important;
+      }
+
+      .w-hidden-small {
+        display: none !important;
+      }
+
+      .w-row {
+        margin-left: 0;
+        margin-right: 0;
+      }
+
+      .w-container .w-row {
+        margin-left: 0;
+        margin-right: 0;
+      }
+
+      .w-col {
+        width: 100%;
+        left: auto;
+        right: auto;
+      }
+
+      .w-col-small-1 {
+        width: 8.33333333%;
+      }
+
+      .w-col-small-2 {
+        width: 16.66666667%;
+      }
+
+      .w-col-small-3 {
+        width: 25%;
+      }
+
+      .w-col-small-4 {
+        width: 33.33333333%;
+      }
+
+      .w-col-small-5 {
+        width: 41.66666667%;
+      }
+
+      .w-col-small-6 {
+        width: 50%;
+      }
+
+      .w-col-small-7 {
+        width: 58.33333333%;
+      }
+
+      .w-col-small-8 {
+        width: 66.66666667%;
+      }
+
+      .w-col-small-9 {
+        width: 75%;
+      }
+
+      .w-col-small-10 {
+        width: 83.33333333%;
+      }
+
+      .w-col-small-11 {
+        width: 91.66666667%;
+      }
+
+      .w-col-small-12 {
+        width: 100%;
+      }
+
+      .w-nav[data-collapse="small"] .w-dropdown {
+        display: block;
+      }
+
+      .w-nav[data-collapse="small"] .w-dropdown-toggle {
+        display: block;
+      }
+
+      .w-nav[data-collapse="small"] .w-dropdown-list {
+        position: static;
+      }
+
+      .w-nav-brand {
+        padding-left: 10px;
+      }
+
+      .w-nav[data-collapse="small"] .w-nav-menu {
+        display: none;
+      }
+
+      .w-nav[data-collapse="small"] .w-nav-button {
+        display: block;
+      }
+
+      .w-nav-brand {
+        padding-left: 10px;
+      }
+    }
+
+    @media screen and (max-width:479px) {
+      .w-container {
+        max-width: none;
+      }
+
+      .w-hidden-main {
+        display: inherit !important;
+      }
+
+      .w-hidden-medium {
+        display: inherit !important;
+      }
+
+      .w-hidden-small {
+        display: inherit !important;
+      }
+
+      .w-hidden-tiny {
+        display: none !important;
+      }
+
+      .w-col {
+        width: 100%;
+      }
+
+      .w-col-tiny-1 {
+        width: 8.33333333%;
+      }
+
+      .w-col-tiny-2 {
+        width: 16.66666667%;
+      }
+
+      .w-col-tiny-3 {
+        width: 25%;
+      }
+
+      .w-col-tiny-4 {
+        width: 33.33333333%;
+      }
+
+      .w-col-tiny-5 {
+        width: 41.66666667%;
+      }
+
+      .w-col-tiny-6 {
+        width: 50%;
+      }
+
+      .w-col-tiny-7 {
+        width: 58.33333333%;
+      }
+
+      .w-col-tiny-8 {
+        width: 66.66666667%;
+      }
+
+      .w-col-tiny-9 {
+        width: 75%;
+      }
+
+      .w-col-tiny-10 {
+        width: 83.33333333%;
+      }
+
+      .w-col-tiny-11 {
+        width: 91.66666667%;
+      }
+
+      .w-col-tiny-12 {
+        width: 100%;
+      }
+
+      .w-nav[data-collapse="tiny"] .w-dropdown {
+        display: block;
+      }
+
+      .w-nav[data-collapse="tiny"] .w-dropdown-toggle {
+        display: block;
+      }
+
+      .w-nav[data-collapse="tiny"] .w-dropdown-list {
+        position: static;
+      }
+
+      .w-nav[data-collapse="tiny"] .w-nav-menu {
+        display: none;
+      }
+
+      .w-nav[data-collapse="tiny"] .w-nav-button {
+        display: block;
+      }
+
+      .w-tab-link {
+        display: block;
+      }
+    }
+
+    @media (min-width:768px) {
+      .w-lightbox-content {
+        height: 96vh;
+        margin-top: 2vh;
+      }
+
+      .w-lightbox-view {
+        height: 96vh;
+      }
+
+      .w-lightbox-view:before {
+        height: 96vh;
+      }
+
+      .w-lightbox-group {
+        height: 84vh;
+      }
+
+      .w-lightbox-group .w-lightbox-view {
+        height: 84vh;
+      }
+
+      .w-lightbox-group .w-lightbox-view:before {
+        height: 84vh;
+      }
+
+      .w-lightbox-image {
+        max-width: 96vw;
+        max-height: 96vh;
+      }
+
+      .w-lightbox-group .w-lightbox-image {
+        max-width: 82.3vw;
+        max-height: 84vh;
+      }
+
+      .w-lightbox-left {
+        display: block;
+        opacity: .5;
+      }
+
+      .w-lightbox-right {
+        display: block;
+        opacity: .5;
+      }
+
+      .w-lightbox-close {
+        opacity: .8;
+      }
+
+      .w-lightbox-control:hover {
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 991px) {
+      .main-nav {
+        top: 0px;
+        display: block;
+        width: 100%;
+        margin-top: 0px;
+        margin-right: auto;
+        margin-left: auto;
+        background-color: #004c8f;
+      }
+
+      .nav-menu._100 {
+        margin-right: 0px;
+        background-color: #000;
+      }
+
+      .nav-link {
+        display: block;
+        margin-top: 15px;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      .nav-link.w--current {
+        border-style: none;
+      }
+
+      .brand {
+        margin-left: 11px;
+      }
+
+      .body {
+        margin-top: 0px;
+        margin-right: 0px;
+        margin-left: 0px;
+      }
+
+      .whitelist-reg {
+        width: 100%;
+      }
+
+      .div-block {
+        width: 50%;
+      }
+
+      .footer-logo {
+        width: auto;
+      }
+
+      .menu-button {
+        background-color: #004c8f;
+      }
+
+      .menu-button:active {
+        background-color: #176ec4;
+      }
+
+      .social {
+        width: auto;
+      }
+
+      .primary-cont {
+        width: auto;
+      }
+
+      .left-cont {
+        display: block;
+        margin-right: auto;
+        margin-left: auto;
+      }
+
+      .right-cont {
+        display: block;
+        margin-right: auto;
+        margin-left: auto;
+      }
+
+      .get-whitelisted-btn {
+        position: relative;
+        display: block;
+        width: 100%;
+      }
+
+      .part-2 {
+        padding-right: 20px;
+        padding-left: 20px;
+      }
+
+      .message {
+        display: block;
+        width: 400px;
+        margin-right: auto;
+        margin-left: auto;
+      }
+
+      .message-type {
+        display: block;
+        margin-right: auto;
+        margin-left: auto;
+      }
+
+      .notif {
+        top: -4px;
+      }
+
+      .get-w-div {
+        top: 0px;
+        display: block;
+        width: 360px;
+      }
+
+      .sign-up-full {
+        display: block;
+        width: 90%;
+        margin-right: auto;
+        margin-left: auto;
+        padding-left: 0px;
+      }
+
+      .big-img {
+        width: auto;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .top-tag {
+        width: auto;
+      }
+
+      .whitelist-reg {
+        padding-right: 10px;
+        padding-bottom: 45px;
+        padding-left: 10px;
+      }
+
+      .div-block {
+        position: relative;
+        top: -44px;
+        display: block;
+        width: 90%;
+        margin-right: auto;
+        margin-left: auto;
+      }
+
+      .menu-button {
+        background-color: transparent;
+      }
+
+      .notif {
+        top: -4px;
+      }
+
+      .big-img {
+        width: auto;
+        margin-bottom: 50px;
+      }
+
+      .text-container {
+        width: auto;
+      }
+    }
+
+    @media (max-width: 479px) {
+      .main-nav {
+        z-index: 2000;
+        border-radius: 0px;
+        background-color: #0188ee;
+      }
+
+      .nav-menu._100 {
+        background-color: #000;
+      }
+
+      .brand._100 {
+        position: static;
+        left: 0px;
+        top: 0px;
+        right: 0px;
+        display: block;
+        margin-right: auto;
+        margin-left: auto;
+        float: none;
+        text-align: center;
+      }
+
+      .underline-tag {
+        border-bottom-style: none;
+      }
+
+      .underline-tag.blue {
+        border-bottom-style: solid;
+        border-bottom-color: #019bee;
+      }
+
+      .all-sections {
+        overflow: hidden;
+      }
+
+      .particles {
+        display: block;
+        width: 100%;
+        margin-right: auto;
+        margin-left: auto;
+      }
+
+      .whitelist-reg {
+        padding-right: 10px;
+        padding-left: 10px;
+      }
+
+      .social-icon {
+        max-width: 60px;
+      }
+
+      .primary-cont {
+        margin-top: 0px;
+      }
+
+      .right-cont {
+        width: auto;
+        padding-right: 10px;
+        padding-left: 10px;
+      }
+
+      .get-whitelisted-btn {
+        width: auto;
+      }
+
+      .primary-btn {
+        width: 100%;
+      }
+
+      .email-pass-form {
+        width: auto;
+      }
+
+      .sign-up-btn {
+        width: auto;
+      }
+
+      .sign-up-btn.grey {
+        width: 100%;
+      }
+
+      .info-form {
+        width: auto;
+      }
+
+      .message {
+        width: auto;
+        padding-right: 15px;
+        padding-left: 15px;
+      }
+
+      .message-type {
+        width: auto;
+      }
+
+      .notif {
+        top: -6px;
+      }
+
+      .get-w-div {
+        width: 90%;
+      }
+
+      .current-distrib {
+        left: 54px;
+      }
+
+      .neo-received {
+        left: 54px;
+      }
+
+      .original-sale {
+        margin-top: 50px;
+      }
+
+      .sale-info-section {
+        display: block;
+        margin-right: auto;
+        margin-left: auto;
+      }
+
+      .big-img {
+        width: auto;
+        margin-bottom: 50px;
+      }
+
+      .image-8 {
+        display: block;
+        margin-right: auto;
+        margin-left: auto;
+      }
+
+      .text-container {
+        width: auto;
+      }
+
+      .tooltip {
+        width: 260px;
+      }
+
+      .tooltip-arrow {
+        left: 110px;
+      }
+
+      .status-heading {
+        font-size: 24px;
+      }
+
+      .intro-div.short {
+        height: auto;
+      }
+
+      .email-cta-butt {
+        line-height: 30px;
+      }
+
+      .image-10 {
+        max-width: 50px;
+      }
+
+      .heading-2 {
+        margin-left: 13px;
+        font-size: 25px;
+      }
+    }
+  </style>
+</head>
+
+<body class="email-body" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; min-height: 100%; font-family: Exo, sans-serif; font-size: 18px; line-height: 20px; color: #333; margin: 0;"
   bgcolor="#fff">
-  <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; display: block; overflow: visible; background: #0188ee none repeat 0% 0% / auto; margin: 0px;">
-    <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; position: absolute; left: 0px; top: 0px; z-index: -1; width: 100%; height: 1000px; display: none; background: #176ec4 linear-gradient(180deg, hsla(0, 0%, 100%, 0), rgba(0, 0, 0, .13));"></div>
-    <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; padding-top: 50px; padding-bottom: 50px; background-color: #fff;">
-      <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; margin-left: auto; margin-right: auto; max-width: 940px;">
-        <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; display: block; width: auto; margin-right: auto; margin-left: auto;"><img
-            src="https://uploads-ssl.webflow.com/5b5f7776d9b73f8aefb48d54/5b5f7da16abb677e1f379ef9_BlueHeart.png" width="128"
-            style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; max-width: 100%; vertical-align: middle; display: block; margin-right: auto; margin-left: auto; border: 0;"></div>
-        <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">
-          <h2 style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; font-weight: 300; margin-bottom: 10px; font-size: 60px; line-height: 70px; margin-top: 40px; color: #355fe6;"
-            align="center">Hi {{ name }}<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">Welcome
-            to Thor!</h2>
-        </div>
-        <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; display: flex; width: 100%; margin-top: 50px;"></div>
-        <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; color: #000; font-size: 16px; line-height: 30px;"
-          align="center">We’re very excited to have you on board. To verify your email, please click the link below:<br
-            style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;"><br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">Bring
-          your
-          hammer!<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">
-        </div>
-        <a id="verify-link" href="{{ link }}" style="background-color: #355fe6; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; display: block; color: white; line-height: inherit; text-decoration: none; cursor: pointer; border-radius: 7px; width: auto; max-width: 600px; margin-top: 20px; margin-right: auto; margin-left: auto; box-shadow: 1px 1px 6px 0 rgba(0, 0, 0, .33); font-size: 16px; text-align: center; padding: 16px; border: 0;">Verify
-          Email</a>
+  <div class="w-container" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; margin-left: auto; margin-right: auto; max-width: 940px;">
+    <div class="email-content" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; display: block; overflow: hidden; margin-right: auto; margin-left: auto; padding-bottom: 64px; border-radius: 11px; background-color: #f7f8f9;">
+      <div class="intro-div short" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; height: 150px; padding-top: 30px; margin-right: 20px; margin-left: 20px; background: #f7f8f9 none repeat 50% 50% / auto;">
+        <img src="https://uploads-ssl.webflow.com/5a7b77c587d05300019b4000/5bda140ee73b925a2ec8d87f_THOR_Logos_400px.png"
+          width="100" alt="" class="image-10" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; max-width: 100%; vertical-align: middle; display: inline-block; margin-right: auto; margin-left: auto; border: 0;">
+        <h1 class="heading-2" style="font-size: 38px; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; font-weight: bold; line-height: 44px; position: relative; top: 8px; display: inline-block; margin: 20px 20px 10px;">Payment
+          Notice</h1>
       </div>
-    </div>
-  </div>
-  <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; display: none;"></div>
-  <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; padding-top: 0px; background-color: #fff;">
-    <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; margin-left: auto; margin-right: auto; max-width: 940px; position: static; margin-top: 0px; padding-right: 20px; padding-left: 20px;">
-      <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; display: block; width: auto; margin-top: 33px; margin-right: auto; margin-left: auto;">
-        <img src="https://uploads-ssl.webflow.com/5b5f7776d9b73f8aefb48d54/5b8f0d4f5a28eadd7351a5d6_WithLoveFrom.png"
-          width="402" srcset="https://uploads-ssl.webflow.com/5b5f7776d9b73f8aefb48d54/5b8f0d4f5a28eadd7351a5d6_WithLoveFrom-p-500.png 500w, https://uploads-ssl.webflow.com/5b5f7776d9b73f8aefb48d54/5b8f0d4f5a28eadd7351a5d6_WithLoveFrom.png 804w"
-          sizes="(max-width: 479px) 92vw, 402px" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; max-width: 100%; vertical-align: middle; display: block; margin-right: auto; margin-bottom: 30px; margin-left: auto; border: 0;">
-        <div style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; color: #929191; margin-top: 20px; text-transform: none;"
-          align="center">Thor Technologies<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">1161
+      <div class="main-cont-div" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; position: relative; top: 0px; margin-top: 20px; margin-right: 20px; margin-left: 20px; border-radius: 11px; background-color: #fff; padding: 40px 25px 50px;">
+        <div class="tb_bold" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; font-family: Exo, sans-serif; font-size: 20px; line-height: 36px;"
+          align="left">Hello Joe,<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">A
+          payment initiated to Kelly Slater has failed. Here are the details of this payment:<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;"><br
+            style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;"><span class="text-span-4"
+            style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; font-weight: 700;">Transfer
+            type:</span> Bank Transfer<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;"><span
+            class="text-span-4" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; font-weight: 700;">Source:</span>
+          Wells Fargo Checking<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;"><span
+            class="text-span-4" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; font-weight: 700;">Recipient:</span>
+          Kelly Slater<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;"><span
+            class="text-span-4" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; font-weight: 700;">Amount:
+          </span>$120.00<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;"><span
+            class="text-span-4" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; font-weight: 700;">Date
+            Initiated:</span> 10/31/2018<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;"><br
+            style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">If you have
+          any questions or concerns about this transfer,<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">please
+          contact support at support@gothor.com<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;"><br
+            style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">‍</div>
+      </div>
+      <div class="footer-div" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">
+        <img src="https://uploads-ssl.webflow.com/5a7b77c587d05300019b4000/5bda1539ef473b84ec72459b_THOR_Grey.png"
+          width="203.5" alt="" class="email-footer-logo" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; max-width: 100%; vertical-align: middle; display: block; margin-top: 50px; margin-right: auto; margin-left: auto; border: 0;">
+        <div class="footer-top-line" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; margin-top: 30px; color: #929191; line-height: 30px;"
+          align="center">Thor is fixing the Gig Economy for Business and Contractors.<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">
+          <a href="http://gothor.com" target="_blank" class="link-3" style="background-color: transparent; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; color: #0178ee; text-decoration: none;">Learn
+            more→</a>
+        </div>
+        <div class="footer-address" style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; margin-top: 51px; color: #929191; line-height: 30px;"
+          align="center">Thor Technologies Inc.<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">1161
           Mission Street<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">San
-          Francisco, CA 94103<br style="-webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box;">‍</div>
+          Francisco, CA 94103</div>
       </div>
     </div>
   </div>
+  <!--[if lte IE 9]><script src="//cdnjs.cloudflare.com/ajax/libs/placeholders/3.0.2/placeholders.min.js"></script><![endif]-->
 </body>
 
 </html>

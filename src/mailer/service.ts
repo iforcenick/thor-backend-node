@@ -24,46 +24,82 @@ export class MailerService {
         return await this.send(user.tenantProfile.email, this.from, await template.getSubject(), await template.getHtml(), await template.getText());
     }
 
-    async sendFundingSourceCreated(user: users.User, params: any) {
+    async sendFundingSourceCreated(user: users.User, sourceInfo: any) {
+        const params = {
+            title: 'Bank Added',
+            description1: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+            description2: `A bank account has been added to your profile.`,
+            field1: 'Account:',
+            field1Text: `${sourceInfo.account}`,
+            field2: 'Routing Number:',
+            field2Text: `${sourceInfo.routing}`,
+            field3: 'Type:',
+            field3Text: `Checking`,
+        };
         const template = new templates.Template();
         template
-            .setSubject('sendFundingSourceCreated')
-            .setHtml(templates.TemplatesFiles.FUNDING_SOURCE_CREATED_HTML)
-            .setText(templates.TemplatesFiles.FUNDING_SOURCE_CREATED_TEXT)
+            .setSubject('Bank account added')
+            .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+            .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
             .setParams(params);
         return await this.sendTemplate(user, template);
     }
 
-    async sendFundingSourceRemoved(user: users.User, params: any) {
+    async sendFundingSourceRemoved(user: users.User, sourceInfo: any) {
         const template = new templates.Template();
+        const params = {
+            title: 'Bank Added',
+            description1: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+            description2: `A bank account has been added to your profile.`,
+            field1: 'Account:',
+            field1Text: `${sourceInfo.account}`,
+            field2: 'Routing Number:',
+            field2Text: `${sourceInfo.routing}`,
+            field3: 'Type:',
+            field3Text: `Checking`,
+        };
         template
-            .setSubject('sendFundingSourceRemoved')
-            .setHtml(templates.TemplatesFiles.FUNDING_SOURCE_REMOVED_HTML)
-            .setText(templates.TemplatesFiles.FUNDING_SOURCE_REMOVED_TEXT)
+            .setSubject('Bank account removed')
+            .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+            .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
             .setParams(params);
         return await this.sendTemplate(user, template);
     }
 
-    async sendTransferProcessed(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendTransferProcessed')
-            .setHtml(templates.TemplatesFiles.TRANSFER_PROCESSED_HTML)
-            .setText(templates.TemplatesFiles.TRANSFER_PROCESSED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // TODO: dwolla event template
+    // async sendTransferProcessed(user: users.User, sourceInfo: any) {
+    //     const template = new templates.Template();
+    //     const params = {
+    //         title: 'Bank Added',
+    //         description1: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+    //         description2: `A bank account has been added to your profile.`,
+    //         field1: 'Account:',
+    //         field1Text: `${sourceInfo.account}`,
+    //         field2: 'Routing Number:',
+    //         field2Text: `${sourceInfo.routing}`,
+    //         field3: 'Type:',
+    //         field3Text: `Checking`,
+    //     };
+    //     template
+    //         .setSubject('A Transfer has been processed')
+    //         .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+    //         .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
+    // TODO: dwolla event template
     async sendTransferFailed(user: users.User, params: any) {
         const template = new templates.Template();
         template
-            .setSubject('sendTransferFailed')
-            .setHtml(templates.TemplatesFiles.TRANSFER_FAILED_HTML)
-            .setText(templates.TemplatesFiles.TRANSFER_FAILED_TEXT)
+            .setSubject('A Transfer has failed')
+            .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+            .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
             .setParams(params);
         return await this.sendTemplate(user, template);
     }
 
+    // TODO: dwolla event template
     async sendCustomerVerificationRetry(user: users.User, params: any) {
         const template = new templates.Template();
         template
@@ -74,6 +110,7 @@ export class MailerService {
         return await this.sendTemplate(user, template);
     }
 
+    //
     async sendCustomerVerificationDocument(user: users.User, params: any) {
         const template = new templates.Template();
         template
@@ -122,17 +159,25 @@ export class MailerService {
      */
     async sendCustomerTransferCreatedSender(recipient: users.User, { admin, user, transaction }) {
         const params = {
-            name: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`, // TODO: change to company name
-            recipientName: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-            fundingSource: transaction.transfer.sourceUri.split('/').pop(), // TODO: change to bank name / account number
-            amount: transaction.transfer.value,
-            date: transaction.transfer.createdAt
+            title: 'Payment Notice',
+            description1: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName},`,
+            description2: `A payment initiated to ${user.tenantProfile.firstName} ${user.tenantProfile.lastName} has been created. Here are the details of this payment:`,
+            field1: 'Transfer Type:',
+            field1Text: 'Money Transfer',
+            field2: 'Source:',
+            field2Text: 'Bank Checking',
+            field3: 'Recipient:',
+            field3Text: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
+            field4: 'Amount:',
+            field4Text: transaction.transfer.value,
+            field5: 'Date:',
+            field5Text: transaction.transfer.createdAt,
         };
         const template = new templates.Template();
         template
             .setSubject('You sent a payment')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_CREATED_SENDER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_CREATED_SENDER_TEXT)
+            .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+            .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
             .setParams(params);
         return await this.sendTemplate(recipient, template);
     }
@@ -147,74 +192,105 @@ export class MailerService {
      */
     async sendCustomerTransferCreatedReceiver(recipient: users.User, { admin, user, transaction }) {
         const params = {
-            name: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-            senderName: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`, // TODO: change to company name
-            fundingSource: transaction.transfer.destinationUri.split('/').pop(), // TODO: change to bank name / account number
-            amount: transaction.transfer.value,
-            date: transaction.transfer.createdAt
+            title: 'Payment Notice',
+            description1: `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+            description2: `A payment initiated from ${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName} has been created. Here are the details of this payment:`,
+            field1: 'Transfer Type:',
+            field1Text: 'Money Transfer',
+            field2: 'Source:',
+            field2Text: 'Bank Checking',
+            field3: 'Recipient:',
+            field3Text: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
+            field4: 'Amount:',
+            field4Text: transaction.transfer.value,
+            field5: 'Date:',
+            field5Text: transaction.transfer.createdAt,
         };
         const template = new templates.Template();
         template
             .setSubject('You are receiving a payment')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_CREATED_RECEIVER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_CREATED_RECEIVER_TEXT)
+            .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+            .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
             .setParams(params);
         return await this.sendTemplate(recipient, template);
     }
 
-    async sendRecurringPaymentScheduled(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendRecurringPaymentScheduled')
-            .setHtml(templates.TemplatesFiles.RECURRING_PAYMENT_SCHEDULED_HTML)
-            .setText(templates.TemplatesFiles.RECURRING_PAYMENT_SCHEDULED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendRecurringPaymentScheduled(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendRecurringPaymentScheduled')
+    //         .setHtml(templates.TemplatesFiles.RECURRING_PAYMENT_SCHEDULED_HTML)
+    //         .setText(templates.TemplatesFiles.RECURRING_PAYMENT_SCHEDULED_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendRecurringPaymentCancelled(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendRecurringPaymentCancelled')
-            .setHtml(templates.TemplatesFiles.RECURRING_PAYMENT_CANCELLED_HTML)
-            .setText(templates.TemplatesFiles.RECURRING_PAYMENT_CANCELLED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendRecurringPaymentCancelled(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendRecurringPaymentCancelled')
+    //         .setHtml(templates.TemplatesFiles.RECURRING_PAYMENT_CANCELLED_HTML)
+    //         .setText(templates.TemplatesFiles.RECURRING_PAYMENT_CANCELLED_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerTransferCancelledSender(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerTransferCancelledSender')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_CANCELLED_SENDER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_CANCELLED_SENDER_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerTransferCancelledSender(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerTransferCancelledSender')
+    //         .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_CANCELLED_SENDER_HTML)
+    //         .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_CANCELLED_SENDER_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerTransferCancelledReceiver(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerTransferCancelledReceiver')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_CANCELLED_RECEIVER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_CANCELLED_RECEIVER_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerTransferCancelledReceiver(user: users.User, params: any) {
+    //     const params = {
+    //         title: 'Payment Failed Notice',
+    //         description1: `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+    //         description2: `A payment initiated from ${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName} has failed. Here are the details of this payment:`,
+    //         field1: 'Transfer Type:',
+    //         field1Text: 'Money Transfer',
+    //         field2: 'Status:',
+    //         field2Text: 'Failed',
+    //         field3: 'Recipient:',
+    //         field3Text: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
+    //         field4: 'Amount:',
+    //         field4Text: transaction.transfer.value,
+    //         field5: 'Date:',
+    //         field5Text: transaction.transfer.createdAt,
+    //     };
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerTransferCancelledReceiver')
+    //         .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+    //         .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
     async sendCustomerTransferFailedSender(recipient: users.User, { admin, user, transaction }) {
         const params = {
-            name: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`,
-            recipientName: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-            fundingSource: transaction.transfer.sourceUri.split('/').pop(),
-            amount: transaction.transfer.value,
-            date: transaction.transfer.createdAt
+            title: 'Payment Failed Notice',
+            description1: `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+            description2: `A payment initiated from ${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName} has failed. Here are the details of this payment:`,
+            field1: 'Transfer Type:',
+            field1Text: 'Money Transfer',
+            field2: 'Status:',
+            field2Text: 'Failed',
+            field3: 'Recipient:',
+            field3Text: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
+            field4: 'Amount:',
+            field4Text: transaction.transfer.value,
+            field5: 'Date:',
+            field5Text: transaction.transfer.createdAt,
         };
         const template = new templates.Template();
         template
             .setSubject('Customer Transfer Failed')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_FAILED_SENDER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_FAILED_SENDER_TEXT)
+            .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+            .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
             .setParams(params);
         return await this.sendTemplate(recipient, template);
     }
@@ -229,17 +305,25 @@ export class MailerService {
      */
     async sendCustomerTransferFailedReceiver(recipient: users.User, { admin, user, transaction }) {
         const params = {
-            name: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-            senderName: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`, // TODO: change to company name
-            fundingSource: transaction.transfer.destinationUri.split('/').pop(), // TODO: change to bank name / account number
-            amount: transaction.transfer.value,
-            date: transaction.transfer.createdAt
+            title: 'Payment Failed Notice',
+            description1: `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+            description2: `A payment initiated from ${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName} has failed. Here are the details of this payment:`,
+            field1: 'Transfer Type:',
+            field1Text: 'Money Transfer',
+            field2: 'Status:',
+            field2Text: 'Failed',
+            field3: 'Recipient:',
+            field3Text: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
+            field4: 'Amount:',
+            field4Text: transaction.transfer.value,
+            field5: 'Date:',
+            field5Text: transaction.transfer.createdAt,
         };
         const template = new templates.Template();
         template
             .setSubject('Customer Transfer Failed')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_FAILED_RECEIVER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_FAILED_RECEIVER_TEXT)
+            .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+            .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
             .setParams(params);
         return await this.sendTemplate(recipient, template);
     }
@@ -254,17 +338,25 @@ export class MailerService {
      */
     async sendCustomerTransferCompletedSender(recipient: users.User, { admin, user, transaction }) {
         const params = {
-            name: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`, // TODO: change to company name
-            recipientName: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-            fundingSource: transaction.transfer.sourceUri.split('/').pop(), // TODO: change to bank name / account number
-            amount: transaction.transfer.value,
-            date: transaction.transfer.createdAt
+            title: 'Transfer Completed',
+            description1: `Hi ${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName},`,
+            description2: `A payment initiated from ${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName} has been completed. Here are the details of this payment:`,
+            field1: 'Transfer Type:',
+            field1Text: 'Money Transfer',
+            field2: 'Status:',
+            field2Text: 'Completed',
+            field3: 'Recipient:',
+            field3Text: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
+            field4: 'Amount:',
+            field4Text: transaction.transfer.value,
+            field5: 'Date:',
+            field5Text: transaction.transfer.createdAt,
         };
         const template = new templates.Template();
         template
             .setSubject('Customer Transfer Completed')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_COMPLETED_SENDER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_COMPLETED_SENDER_TEXT)
+            .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+            .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
             .setParams(params);
         return await this.sendTemplate(recipient, template);
     }
@@ -279,247 +371,204 @@ export class MailerService {
      */
     async sendCustomerTransferCompletedReceiver(recipient: users.User, { admin, user, transaction }) {
         const params = {
-            name: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-            senderName: `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName}`, // TODO: change to company name
-            fundingSource: transaction.transfer.destinationUri.split('/').pop(), // TODO: change to bank name / account number
-            amount: transaction.transfer.value,
-            date: transaction.transfer.createdAt
+            title: 'Transfer Completed',
+            description1: `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+            description2: `A payment initiated from ${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName} has completed. Here are the details of this payment:`,
+            field1: 'Transfer Type:',
+            field1Text: 'Money Transfer',
+            field2: 'Status:',
+            field2Text: 'Completed',
+            field3: 'Recipient:',
+            field3Text: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
+            field4: 'Amount:',
+            field4Text: transaction.transfer.value,
+            field5: 'Date:',
+            field5Text: transaction.transfer.createdAt,
         };
         const template = new templates.Template();
         template
             .setSubject('Customer Transfer Completed')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_COMPLETED_RECEIVER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_COMPLETED_RECEIVER_TEXT)
+            .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+            .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
             .setParams(params);
         return await this.sendTemplate(recipient, template);
     }
 
-    async sendCustomerBankTransferCreatedSender(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerBankTransferCreatedSender')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CREATED_SENDER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CREATED_SENDER_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerBankTransferCreatedSender(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerBankTransferCreatedSender')
+    //         .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+    //         .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerBankTransferCreatedReceiver(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerBankTransferCreatedReceiver')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CREATED_RECEIVER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CREATED_RECEIVER_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerBankTransferCreatedReceiver(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerBankTransferCreatedReceiver')
+    //         .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+    //         .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerBankTransferCancelledSender(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerBankTransferCancelledSender')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CANCELLED_SENDER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CANCELLED_SENDER_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerBankTransferCancelledSender(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerBankTransferCancelledSender')
+    //         .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+    //         .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerBankTransferCancelledReceiver(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerBankTransferCancelledReceiver')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CANCELLED_RECEIVER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CANCELLED_RECEIVER_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerBankTransferCancelledReceiver(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerBankTransferCancelledReceiver')
+    //         .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+    //         .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerBankTransferFailedSender(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerBankTransferFailedSender')
-            .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_FAILED_SENDER_TEXT)
-            .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_FAILED_SENDER_HTML)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerBankTransferFailedSender(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerBankTransferFailedSender')
+    //         .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+    //         .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerBankTransferFailedReceiver(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerBankTransferFailedReceiver')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_FAILED_RECEIVER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_FAILED_RECEIVER_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerBankTransferFailedReceiver(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerBankTransferFailedReceiver')
+    //         .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+    //         .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerBankTransferCompletedSender(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerBankTransferCompletedSender')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_COMPLETED_SENDER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_COMPLETED_SENDER_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerBankTransferCompletedSender(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerBankTransferCompletedSender')
+    //         .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+    //         .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerBankTransferCompletedReceiver(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerBankTransferCompletedReceiver')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_COMPLETED_RECEIVER_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_COMPLETED_RECEIVER_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerBankTransferCompletedReceiver(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerBankTransferCompletedReceiver')
+    //         .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+    //         .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerFundingSourceAdded(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('Customer Funding Source Added')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_ADDED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_ADDED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerFundingSourceAdded(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('Customer Funding Source Added')
+    //         .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+    //         .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerFundingSourceRemoved(recipient: users.User, { event }) {
-        const params = {
-            accountId: event._links['resource']['href'].split('/').pop(),
-            date: event['created']
-        };
-        const template = new templates.Template();
-        template
-            .setSubject('Customer Funding Source Removed')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_REMOVED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_REMOVED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(recipient, template);
-    }
+    // async sendCustomerFundingSourceRemoved(recipient: users.User, { event }) {
+    //     const params = {
+    //         accountId: event._links['resource']['href'].split('/').pop(),
+    //         date: event['created']
+    //     };
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('Customer Funding Source Removed')
+    //         .setHtml(templates.TemplatesFiles.BANKING_EVENT_HTML)
+    //         .setText(templates.TemplatesFiles.BANKING_EVENT_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(recipient, template);
+    // }
 
-    async sendCustomerFundingSourceVerified(recipient: users.User, { event }) {
-        const params = {
-            accountId: event._links['resource']['href'].split('/').pop(),
-            date: event['created']
-        };
-        const template = new templates.Template();
-        template
-            .setSubject('Customer Funding Source Verified')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_VERIFIED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_VERIFIED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(recipient, template);
-    }
+    // async sendCustomerFundingSourceVerified(recipient: users.User, { event }) {
+    //     const params = {
+    //         accountId: event._links['resource']['href'].split('/').pop(),
+    //         date: event['created']
+    //     };
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('Customer Funding Source Verified')
+    //         .setHtml(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_VERIFIED_HTML)
+    //         .setText(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_VERIFIED_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(recipient, template);
+    // }
 
-    async sendCustomerMicrodepositsInitiated(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerMicrodepositsInitiated')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_INITIATED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_INITIATED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerMicrodepositsInitiated(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerMicrodepositsInitiated')
+    //         .setHtml(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_INITIATED_HTML)
+    //         .setText(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_INITIATED_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerMicrodepositsCompleted(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerMicrodepositsCompleted')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_COMPLETED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_COMPLETED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerMicrodepositsCompleted(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerMicrodepositsCompleted')
+    //         .setHtml(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_COMPLETED_HTML)
+    //         .setText(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_COMPLETED_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerMicrodepositsFailed(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerMicrodepositsFailed')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_FAILED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_FAILED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
+    // async sendCustomerMicrodepositsFailed(user: users.User, params: any) {
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('sendCustomerMicrodepositsFailed')
+    //         .setHtml(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_FAILED_HTML)
+    //         .setText(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_FAILED_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(user, template);
+    // }
 
-    async sendCustomerCreated(recipient: users.User, { user, tenant }) {
-        const params = {
-            name: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-            tenantName: tenant['name']
-        };
-        const template = new templates.Template();
-        template
-            .setSubject('Customer Created')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_CREATED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_CREATED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(recipient, template);
-    }
+    // async sendCustomerCreated(recipient: users.User, { user, tenant }) {
+    //     const params = {
+    //         name: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
+    //         tenantName: tenant['name']
+    //     };
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('Customer Created')
+    //         .setHtml(templates.TemplatesFiles.CUSTOMER_CREATED_HTML)
+    //         .setText(templates.TemplatesFiles.CUSTOMER_CREATED_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(recipient, template);
+    // }
 
-    async sendCustomerVerified(recipient: users.User, { user }) {
-        const params = {
-            name: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-        };
-        const template = new templates.Template();
-        template
-            .setSubject('Customer Verified')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFIED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_VERIFIED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(recipient, template);
-    }
+    // async sendCustomerVerified(recipient: users.User, { user }) {
+    //     const params = {
+    //         name: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
+    //     };
+    //     const template = new templates.Template();
+    //     template
+    //         .setSubject('Customer Verified')
+    //         .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFIED_HTML)
+    //         .setText(templates.TemplatesFiles.CUSTOMER_VERIFIED_TEXT)
+    //         .setParams(params);
+    //     return await this.sendTemplate(recipient, template);
+    // }
 
-    async sendCustomerSuspended(recipient: users.User, { user }) {
-        const params = {
-            name: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`,
-        };
-        const template = new templates.Template();
-        template
-            .setSubject('Customer Suspended')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_SUSPENDED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_SUSPENDED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(recipient, template);
-    }
 
-    async sendCustomerVerificationDocumentNeeded(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerVerificationDocumentNeeded')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_NEEDED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_NEEDED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
-
-    async sendCustomerVerificationDocumentUploaded(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerVerificationDocumentUploaded')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_UPLOADED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_UPLOADED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
-
-    async sendCustomerVerificationDocumentApproved(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerVerificationDocumentApproved')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_APPROVED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_APPROVED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
-
-    async sendCustomerVerificationDocumentFailed(user: users.User, params: any) {
-        const template = new templates.Template();
-        template
-            .setSubject('sendCustomerVerificationDocumentFailed')
-            .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_FAILED_HTML)
-            .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_FAILED_TEXT)
-            .setParams(params);
-        return await this.sendTemplate(user, template);
-    }
 
 }

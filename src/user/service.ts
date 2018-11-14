@@ -73,9 +73,9 @@ export class UserService extends db.ModelService<models.User> {
 
     private rankingQuery(startDate: Date, endDate: Date, status?: string) {
         const query = this.useTenantContext(this.getMinOptions(this.filterCustomerRole(this.modelType.query())));
-        query.joinRelation(models.Relations.transactions);
-        query.join(db.Tables.jobs, `${db.Tables.transactions}.jobId`, `${db.Tables.jobs}.id`);
-        transactions.Transaction.filter(query, startDate, endDate, status);
+        query.leftJoinRelation(models.Relations.transactions);
+        query.leftJoin(db.Tables.jobs, `${db.Tables.transactions}.jobId`, `${db.Tables.jobs}.id`);
+        transactions.Transaction.filter(query, startDate, endDate, status, null, true);
 
         const columns = [
             `${db.Tables.users}.id`,
@@ -97,22 +97,22 @@ export class UserService extends db.ModelService<models.User> {
 
     async getJobsRanking(startDate: Date, endDate: Date, page?: number, limit?: number, status?: string) {
         const query = this.rankingQuery(startDate, endDate, status);
+
         const pag = this.addPagination(query, page, limit);
 
         query.mergeEager(`${models.Relations.transactions}(transactions)`, {
             transactions: builder => {
                 builder.select([
-                    'jobId', 'name',
+                    'jobId', 'name', 'status', 'transactions.id',
                     raw('sum(quantity) * value as total'),
                     raw(`count("${db.Tables.transactions}"."jobId") as jobs`),
                 ]);
                 builder.joinRelation(transactions.Relations.job);
                 transactions.Transaction.filter(builder, startDate, endDate, status);
 
-                builder.groupBy(['userId', 'jobId', 'value', 'name']);
+                builder.groupBy(['userId', 'jobId', 'value', 'name', 'status', 'transactions.id']);
             },
         });
-
         const transactionsQuery = this.modelType.relatedQuery(models.Relations.transactions);
         transactions.Transaction.filter(transactionsQuery, startDate, endDate, status);
         transactionsQuery
@@ -120,7 +120,6 @@ export class UserService extends db.ModelService<models.User> {
             .groupBy('userId').as('ids');
 
         query.select(transactionsQuery);
-
         const results: any = await query;
         return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results);
     }

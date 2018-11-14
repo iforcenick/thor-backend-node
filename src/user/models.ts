@@ -68,6 +68,8 @@ export class RankingJobsEntry extends Mapper {
     name: string = mapper.FIELD_STR;
     total: string = mapper.FIELD_STR;
     jobs: number = mapper.FIELD_NUM;
+    status: string = mapper.FIELD_STR;
+    id: string = mapper.FIELD_STR;
 }
 
 export class RankingJobs extends Mapper {

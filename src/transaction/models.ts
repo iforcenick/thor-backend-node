@@ -7,6 +7,7 @@ import * as tenant from '../tenant/models';
 import * as user from '../user/models';
 import * as job from '../job/models';
 import * as transfer from './transfer/models';
+import {number} from 'joi';
 
 export const enum Relations {
     user = 'user',
@@ -91,9 +92,12 @@ export class Transaction extends db.Model {
         };
     }
 
-    static filter(query, startDate?: Date, endDate?: Date, status?: string, userId?: string) {
+    static filter(query, startDate?: Date, endDate?: Date, status?: string, userId?: string, emptyDates?: boolean) {
         if (startDate && endDate) {
             query.whereBetween(`${db.Tables.transactions}.createdAt`, [startDate, endDate]);
+            if (emptyDates) {
+                query.orWhere(`${db.Tables.transactions}.createdAt`, null);
+            }
         }
 
         if (status) {
