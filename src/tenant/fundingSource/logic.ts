@@ -77,6 +77,7 @@ export class DeleteTenantFundingSourcesLogic extends Logic {
         tenant.fundingSourceAccount = null;
         tenant.fundingSourceName = null;
         tenant.fundingSourceRouting = null;
+        tenant.fundingSourceVerificationStatus = null;
 
         await this.tenantService.update(tenant);
     }
