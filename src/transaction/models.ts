@@ -7,7 +7,6 @@ import * as tenant from '../tenant/models';
 import * as user from '../user/models';
 import * as job from '../job/models';
 import * as transfer from './transfer/models';
-import {number} from "joi";
 
 export const enum Relations {
     user = 'user',

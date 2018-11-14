@@ -5,7 +5,7 @@ import {TenantService} from '../service';
 import {Tenant} from '../models';
 import {Logic} from '../../logic';
 import {Errors} from 'typescript-rest';
-import {VerificationStatuse} from '../../foundingSource/models';
+import {VerificationStatuses} from '../../foundingSource/models';
 
 
 @AutoWired
@@ -102,7 +102,7 @@ export class InitiateTenantFundingSourceVerificationLogic extends Logic {
             throw new Errors.NotAcceptableError('Funding source verification initiation failed');
         }
 
-        tenant.fundingSourceVerificationStatus = VerificationStatuse.initiated;
+        tenant.fundingSourceVerificationStatus = VerificationStatuses.initiated;
         await this.tenantService.update(tenant);
     }
 }
@@ -118,7 +118,7 @@ export class VerifyTenantFundingSourceLogic extends Logic {
             throw new Errors.NotFoundError('Funding source not found');
         }
 
-        if (tenant.fundingSourceVerificationStatus != VerificationStatuse.initiated) {
+        if (tenant.fundingSourceVerificationStatus != VerificationStatuses.initiated) {
             throw new Errors.NotAcceptableError('Funding source verification not initiated');
         }
 
@@ -134,7 +134,7 @@ export class VerifyTenantFundingSourceLogic extends Logic {
             throw e;
         }
 
-        tenant.fundingSourceVerificationStatus = VerificationStatuse.completed;
+        tenant.fundingSourceVerificationStatus = VerificationStatuses.completed;
         await this.tenantService.update(tenant);
     }
 }

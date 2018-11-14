@@ -15,6 +15,7 @@ export class Transfer extends db.Model {
     static tableName = db.Tables.transfers;
     adminId?: string;
     externalId?: string;
+    tenantChargeId?: string;
     sourceUri?: string;
     destinationUri?: string;
     meta?: string;

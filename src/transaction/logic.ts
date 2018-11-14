@@ -10,16 +10,20 @@ import {TransferService} from './transfer/service';
 import * as users from '../user/models';
 import {transaction} from 'objection';
 import * as dwolla from '../dwolla';
-import {event} from '../dwolla';
+import {DwollaRequestError, event} from '../dwolla';
 import * as models from './models';
 import {Statuses, Transaction, TransactionRequest} from './models';
 import {MailerService} from '../mailer';
 import {Logger} from '../logger';
-import {FundingSource} from '../foundingSource/models';
+import {FundingSource, VerificationStatuses} from '../foundingSource/models';
 import {Config} from '../config';
 import {JobService} from '../job/service';
 import {Job} from '../job/models';
 import * as _ from 'lodash';
+import {BaseError} from '../api';
+import {User} from '../user/models';
+import {TenantService} from '../tenant/service';
+import {Tenant} from '../tenant/models';
 
 @AutoWired
 export class UpdateTransactionStatusLogic extends Logic {
@@ -107,6 +111,60 @@ export class CancelTransactionLogic extends Logic {
 }
 
 @AutoWired
+export class ChargeTenantLogic extends Logic {
+    @Inject protected dwollaClient: dwolla.Client;
+    @Inject protected tenantService: TenantService;
+    @Inject protected transferService: TransferService;
+    @Inject protected config: Config;
+
+    async execute(value: number, admin: User): Promise<any> {
+        const tenant: Tenant = await this.tenantService.get(this.context.getTenantId());
+        if (!tenant.fundingSourceUri) {
+            throw new ChargeTenantError('Tenant funding source not found');
+        }
+
+        if (tenant.fundingSourceVerificationStatus != VerificationStatuses.completed) {
+            throw new ChargeTenantError('Tenant funding source not verified');
+        }
+
+        const transfer = new Transfer();
+        transfer.adminId = admin.id;
+        transfer.status = Statuses.new;
+        transfer.destinationUri = this.config.get('dwolla.masterFunding');
+        transfer.sourceUri = tenant.fundingSourceUri;
+        transfer.value = value;
+
+        const dwollaTransfer = dwolla.transfer.factory({});
+        dwollaTransfer.setSource(transfer.sourceUri);
+        dwollaTransfer.setDestination(transfer.destinationUri);
+        dwollaTransfer.setAmount(transfer.value);
+        dwollaTransfer.setCurrency('USD');
+
+        try {
+            transfer.externalId = await this.dwollaClient.createTransfer(dwollaTransfer);
+            const _transfer = await this.dwollaClient.getTransfer(transfer.externalId);
+            transfer.status = _transfer.status;
+            return await this.transferService.createTransfer(transfer);
+        } catch (e) {
+            if (e instanceof DwollaRequestError) {
+                let message;
+                if (e.message.search('Sender restricted') != -1) {
+                    message = 'Tenant company is in restricted mode, finish verification';
+                } else if (e.message.search('Invalid funding source') != -1) {
+                    message = 'Funding source is not verified';
+                } else {
+                    message = e.toValidationError().message;
+                }
+
+                throw new ChargeTenantError(message);
+            }
+
+            throw new ChargeTenantError(e.message);
+        }
+    }
+}
+
+@AutoWired
 export class PrepareTransferLogic extends Logic {
     @Inject private fundingService: FundingSourceService;
     @Inject private transactionService: TransactionService;
@@ -114,16 +172,10 @@ export class PrepareTransferLogic extends Logic {
     @Inject private userService: UserService;
     @Inject private config: Config;
 
-    async execute(transactions: Array<models.Transaction>, user, admin: users.User): Promise<any> {
+    async execute(transactions: Array<models.Transaction>, user, admin: users.User, tenantCharge: Transfer): Promise<any> {
         const defaultFunding: FundingSource = await this.fundingService.getDefault(user.id);
         if (!defaultFunding) {
             throw new models.InvalidTransferDataError('Bank account not configured for recipient');
-        }
-
-        let value = 0;
-        for (const trans of transactions) {
-            trans.status = models.Statuses.processing;
-            value += Number(trans.value);
         }
 
         let transfer = new Transfer();
@@ -131,7 +183,8 @@ export class PrepareTransferLogic extends Logic {
         transfer.status = Statuses.new;
         transfer.destinationUri = defaultFunding.dwollaUri;
         transfer.sourceUri = this.config.get('dwolla.masterFunding');
-        transfer.value = value;
+        transfer.value = tenantCharge.value;
+        transfer.tenantChargeId = tenantCharge.id;
 
         await transaction(this.transactionService.transaction(), async trx => {
             transfer = await this.transferService.createTransfer(transfer, trx);
@@ -144,6 +197,10 @@ export class PrepareTransferLogic extends Logic {
         return transfer;
     }
 }
+
+const calculateTransactionsValue = (transactions: Array<models.Transaction>) => {
+    return transactions.reduce((total, trans) => { return total + Number(trans.value); }, 0);
+};
 
 @AutoWired
 export class CreateTransactionTransferLogic extends Logic {
@@ -160,12 +217,13 @@ export class CreateTransactionTransferLogic extends Logic {
         }
 
         try {
-            const admin = await this.userService.get(this.context.getUser().id);
-
             if (!transaction.transferId) {
+                const admin = await this.userService.get(this.context.getUser().id);
                 const user = await this.userService.get(transaction.userId);
+                const tenantLogic = new ChargeTenantLogic(this.context);
+                const tenantCharge = await tenantLogic.execute(calculateTransactionsValue([transaction]), admin);
                 const logic = new PrepareTransferLogic(this.context);
-                transaction.transfer = await logic.execute([transaction], user, admin);
+                transaction.transfer = await logic.execute([transaction], user, admin, tenantCharge);
             } else {
                 transaction.transfer = await this.transferService.get(transaction.transferId);
             }
@@ -176,7 +234,7 @@ export class CreateTransactionTransferLogic extends Logic {
 
             await this.createExternalTransfer(transaction);
         } catch (e) {
-            if (e instanceof models.InvalidTransferDataError || e instanceof Errors.NotAcceptableError) {
+            if (e instanceof models.InvalidTransferDataError || e instanceof Errors.NotAcceptableError || e instanceof ChargeTenantError) {
                 throw new Errors.NotAcceptableError(e.message);
             }
 
@@ -244,14 +302,16 @@ export class CreateTransactionsTransferLogic extends Logic {
         try {
             const admin = await this.userService.get(this.context.getUser().id);
             const user = await this.userService.get(userId);
+            const tenantLogic = new ChargeTenantLogic(this.context);
+            const tenantCharge = await tenantLogic.execute(calculateTransactionsValue(transactions), admin);
             const logic = new PrepareTransferLogic(this.context);
-            const transfer = await logic.execute(transactions, user, admin);
+            const transfer = await logic.execute(transactions, user, admin, tenantCharge);
 
             await this.createExternalTransfer(transfer, transactions);
             // TODO: send email
             return transfer;
         } catch (e) {
-            if (e instanceof models.InvalidTransferDataError || e instanceof Errors.NotAcceptableError) {
+            if (e instanceof models.InvalidTransferDataError || e instanceof Errors.NotAcceptableError || e instanceof ChargeTenantError) {
                 throw new Errors.NotAcceptableError(e.message);
             }
 
@@ -352,4 +412,7 @@ export class CreateTransactionLogic extends Logic {
             return transactionFromDb;
         });
     }
+}
+
+export class ChargeTenantError extends BaseError {
 }

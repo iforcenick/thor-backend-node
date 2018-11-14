@@ -5,7 +5,7 @@ import {Mapper} from '../mapper';
 import Joi = require('joi');
 
 
-export const enum VerificationStatuse {
+export const enum VerificationStatuses {
     initiated = 'initiated',
     completed = 'completed'
 }

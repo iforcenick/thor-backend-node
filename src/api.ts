@@ -94,5 +94,14 @@ export class BaseController {
     }
 }
 
-export class ContextMissingError extends Error {
+export class BaseError extends Error {
+    message: string;
+
+    constructor(message: string) {
+        super();
+        this.message = message;
+    }
+}
+
+export class ContextMissingError extends BaseError {
 }
