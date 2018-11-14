@@ -72,6 +72,8 @@ export class Tenant extends db.Model {
             address2: this.address2,
             businessName: this.businessName,
             doingBusinessAs: this.doingBusinessAs,
+            businessType: this.businessType,
+            businessClassification: this.businessClassification,
             website: this.website,
             status: this.dwollaStatus
         };
