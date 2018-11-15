@@ -16,6 +16,7 @@ mailer:
   # override:
   #   to: test.acsft@gmail.com
   #   override settings
+    #   test settings
   mailgun:
     url: https://api.mailgun.net/v3
     user: api
