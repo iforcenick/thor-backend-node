@@ -13,8 +13,8 @@ swagger:
   host: odin-api.dev.gothor.com
   schema: https
 mailer:
-  override:
-    to: test.acsft@gmail.com
+  # override:
+  #   to: test.acsft@gmail.com
   mailgun:
     url: https://api.mailgun.net/v3
     user: api
