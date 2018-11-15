@@ -15,10 +15,12 @@ export class EventFactory {
         switch (event.topic) {
             case dwolla.event.TYPE.customer.created:
                 this.logger.info(event);
+                break;
             case dwolla.event.TYPE.customer.verificationDocumentNeeded:
                 return new ContractorDocumentEventLogic(context);
             case dwolla.event.TYPE.customerFundingSource.added:
                 this.logger.info(event);
+                break;
             case dwolla.event.TYPE.transfer.created:
                 this.logger.info(event);
                 break;
@@ -30,6 +32,7 @@ export class EventFactory {
                 return new UpdateTransactionStatusLogic(context);
             default:
                 this.logger.warn(`Received unrecognized event eventTopic:'${event.topic} eventId:${event.id}' eventResourceId: ${event.resourceId}`);
+                break;
         }
     }
 }
