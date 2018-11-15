@@ -3,13 +3,19 @@ import {User} from './user/models';
 
 export class RequestContext {
     private context: ServiceContext;
+    private _tenantId: string;
 
     constructor(context: ServiceContext) {
         this.context = context;
+        this._tenantId = this.context.request['tenantId'];
     }
 
     getTenantId(): string {
-        return this.context.request['tenantId'];
+        return this._tenantId;
+    }
+
+    setForceTenantId(id: string) {
+        this._tenantId = id;
     }
 
     getUser(): User {

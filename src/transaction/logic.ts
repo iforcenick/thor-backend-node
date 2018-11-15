@@ -35,13 +35,13 @@ export class UpdateTransactionStatusLogic extends Logic {
 
     private mapDwollaStatus(status: string) {
         switch (status) {
-            case event.TYPE.transferCanceled:
+            case event.TYPE.transfer.canceled:
                 return models.Statuses.cancelled;
-            case event.TYPE.transferFailed:
+            case event.TYPE.transfer.failed:
                 return models.Statuses.failed;
-            case event.TYPE.transferReclaimed:
+            case event.TYPE.transfer.reclaimed:
                 return models.Statuses.reclaimed;
-            case event.TYPE.transferCompleted:
+            case event.TYPE.transfer.completed:
                 return models.Statuses.processed;
         }
 

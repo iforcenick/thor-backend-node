@@ -7,52 +7,29 @@ import {IEvent} from './event';
 import {Tags} from 'typescript-rest-swagger';
 import {TransactionService} from '../transaction/service';
 import {UpdateTransactionStatusLogic} from '../transaction/logic';
+import {EventFactory} from '../webhooks/logic';
+import {Config} from '../config';
 
 @Tags('dwolla')
 @Path('/dwolla/events')
 export class DwollaController extends BaseController {
-    @Inject private dwollaClient: dwolla.Client;
-    @Inject private transactionService: TransactionService;
+
+    @Inject config: Config;
 
     @POST
     @Path('')
     async events(data: IEvent) {
-        this.transactionService.setRequestContext(this.getRequestContext());
-
         try {
             const _event = event.factory(data);
             this.logger.info('Dwolla event: ' + JSON.stringify(_event, null, 2));
 
-            switch (_event.topic) {
-                case event.TYPE.transferCreated:
-                    this.logger.info(_event);
-                    break;
-                case event.TYPE.transferCanceled:
-                case event.TYPE.transferFailed:
-                case event.TYPE.transferReclaimed:
-                case event.TYPE.transferCompleted: {
-                    this.logger.info(_event);
-                    const id = _event._links['resource']['href'];
+            this.getRequestContext().setForceTenantId(this.config.get('dwolla.tenantId'));
 
-                    if (!id) {
-                        this.logger.error('Missing resource href link');
-                        return;
-                    }
-
-                    const transaction = await this.transactionService.getDwollaByTransferExternalId(id);
-                    if (!transaction) {
-                        throw new Errors.NotFoundError('Transaction not found');
-                    }
-
-                    const updateStatusLogic = new UpdateTransactionStatusLogic(this.getRequestContext());
-                    await updateStatusLogic.execute(transaction, _event.topic);
-                    break;
-                }
-                default:
-                    this.logger.info(_event);
-            }
+            const eventLogic = EventFactory.get(_event, this.getRequestContext());
+            await eventLogic.execute(_event);
         } catch (e) {
             this.logger.error(e.message);
+            throw e;
         }
     }
 }

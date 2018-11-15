@@ -1,6 +1,6 @@
 import {Logic} from '../logic';
 import {AutoWired, Inject} from 'typescript-ioc';
-import {Status} from '../invitation/models';
+import {Invitation, Status} from '../invitation/models';
 import * as dwolla from '../dwolla';
 import {User} from '../user/models';
 import * as models from '../profile/models';
@@ -16,6 +16,9 @@ import {ProfileService} from '../profile/service';
 import {Errors} from 'typescript-rest';
 import {Logger} from '../logger';
 import * as generator from 'generate-password';
+import {MailerService} from '../mailer';
+import {IEvent} from '../dwolla/event';
+import {RequestContext} from '../context';
 
 @AutoWired
 export class AddContractorLogic extends Logic {
@@ -163,5 +166,33 @@ export class AddInvitedContractorLogic extends Logic {
         });
 
         return user;
+    }
+}
+
+@AutoWired
+export class ContractorDocumentEventLogic extends Logic {
+    @Inject private mailer: MailerService;
+    @Inject userService: UserService;
+    @Inject profileService: ProfileService;
+    @Inject logger: Logger;
+
+    async execute(event: IEvent): Promise<any> {
+        const profile = await this.profileService.getByResourceLink(event['_links']['resource']['href']);
+        if (!profile) {
+            throw new Error(`Could not find profile by dwollaUri ${event['_links']['resource']['href']}`);
+        }
+        const user = await this.userService.get(profile.userId);
+
+        if (!user) {
+            throw new Error(`Could not find user by profile ${profile.id}`);
+        }
+
+        user.tenantProfile.dwollaStatus = dwolla.customer.CUSTOMER_STATUS.Document;
+        try {
+            await this.mailer.sendCustomerDocumentRequired(user, user);
+        } catch (error) {
+            this.logger.error(error);
+        }
+        await this.profileService.update(user.tenantProfile);
     }
 }

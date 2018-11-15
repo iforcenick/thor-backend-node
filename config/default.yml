@@ -35,6 +35,7 @@ dwolla:
     webhookUri: https://odin-api.gothor.com/dwolla/events
     masterFunding: https://api-sandbox.dwolla.com/funding-sources/24a53f09-99ae-420d-8adc-2793845714b6
     expirationTime: 3000
+    tenantId: 7bc0447a-ea99-4ba2-93bb-c84f5b325c50
 swagger:
   host: odin-api.gothor.com
   schema: https

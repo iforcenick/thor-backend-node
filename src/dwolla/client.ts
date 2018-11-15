@@ -376,4 +376,20 @@ export class Client {
     public static beneficialOwnerUri(id) {
         return `/beneficial-owners/${id}`;
     }
+
+    public async getEvents(limit?: number, offset?: number) {
+        let eventPath = 'events';
+        let params = '';
+        if (limit) {
+            params += `?limit=${limit}`;
+        }
+        if (offset) {
+            params += `&offset=${offset}`;
+        }
+        if (params) {
+            eventPath += params;
+        }
+
+        return await this.get(eventPath);
+    }
 }

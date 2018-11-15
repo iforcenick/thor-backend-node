@@ -1,13 +1,28 @@
 export const TYPE = {
-    customerTransferCompleted: 'customer_transfer_completed',
-    customerTransferCancelled: 'customer_transfer_cancelled',
-    customerTransferFailed: 'customer_transfer_failed',
-    customerBankTransferCreated: 'customer_bank_transfer_created',
-    transferCompleted: 'transfer_completed',
-    transferCanceled: 'transfer_cancelled',
-    transferFailed: 'transfer_failed',
-    transferReclaimed: 'transfer_reclaimed',
-    transferCreated: 'transfer_created',
+    customerTransfer : {
+        completed : 'customer_transfer_completed',
+        cancelled: 'customer_transfer_cancelled',
+        failed: 'customer_transfer_failed'
+
+    },
+    customerBankTransfer : {
+        created : 'customer_bank_transfer_created'
+    },
+    transfer : {
+        completed: 'transfer_completed',
+        canceled: 'transfer_cancelled',
+        failed: 'transfer_failed',
+        reclaimed: 'transfer_reclaimed',
+        created: 'transfer_created',
+    },
+    customerFundingSource : {
+        added: 'customer_funding_source_added',
+    },
+    customer: {
+        created: 'customer_created',
+        verificationDocumentNeeded : 'customer_verification_document_needed',
+        reverificationNeeded: 'customer_reverification_needed'
+    }
 };
 
 export interface IEvent {

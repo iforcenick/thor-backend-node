@@ -570,5 +570,38 @@ export class MailerService {
     // }
 
 
+    async sendCustomerDocumentRequired(user: users.User, params: any) {
+        return undefined;
+    }
+
+    async sendCustomerVerificationDocumentUploaded(user: users.User, params: any) {
+        const template = new templates.Template();
+        template
+            .setSubject('sendCustomerVerificationDocumentUploaded')
+            .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_UPLOADED_HTML)
+            .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_UPLOADED_TEXT)
+            .setParams(params);
+        return await this.sendTemplate(user, template);
+    }
+
+    async sendCustomerVerificationDocumentApproved(user: users.User, params: any) {
+        const template = new templates.Template();
+        template
+            .setSubject('sendCustomerVerificationDocumentApproved')
+            .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_APPROVED_HTML)
+            .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_APPROVED_TEXT)
+            .setParams(params);
+        return await this.sendTemplate(user, template);
+    }
+
+    async sendCustomerVerificationDocumentFailed(user: users.User, params: any) {
+        const template = new templates.Template();
+        template
+            .setSubject('sendCustomerVerificationDocumentFailed')
+            .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_FAILED_HTML)
+            .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_FAILED_TEXT)
+            .setParams(params);
+        return await this.sendTemplate(user, template);
+    }
 
 }

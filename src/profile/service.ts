@@ -55,4 +55,8 @@ export class ProfileService extends db.ModelService<models.Profile> {
     async addFundingSource(profile: models.Profile, fundingSource: FundingSource, trx: transaction<any>): Promise<any> {
         return await profile.$relatedQuery(models.Relations.fundingSources, trx).relate(fundingSource.id);
     }
+
+    async getByResourceLink(id: string) {
+        return await this.getOneBy('dwollaUri', id);
+    }
 }
