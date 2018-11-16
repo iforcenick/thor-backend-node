@@ -66,8 +66,8 @@ export class CreateUserFundingSourceLogic extends Logic {
 
         const sourceInfo = {
             sourceUri: profile.dwollaSourceUri,
-            routing: profile.dwollaRouting,
-            account: profile.dwollaAccount,
+            routing: data.routing,
+            account: data.account,
         };
 
         const fundingSources = await this.fundingSourceService.getAllFundingSource(user.id);
