@@ -3,7 +3,7 @@ import {Errors} from 'typescript-rest';
 import {FundingSourceService} from './services';
 import {ProfileService} from '../profile/service';
 import {AutoWired, Inject} from 'typescript-ioc';
-import {FundingSource} from './models';
+import {FundingSource, VerificationStatuses} from './models';
 import {transaction} from 'objection';
 import * as dwolla from '../dwolla';
 import {UserService} from '../user/service';
@@ -12,6 +12,7 @@ import {Logger} from '../logger';
 import {User} from '../user/models';
 import {Profile} from '../profile/models';
 import * as profiles from '../profile/models';
+import {TenantService} from "../tenant/service";
 
 @AutoWired
 export class SetDefaultFundingSourceLogic extends Logic {
@@ -133,5 +134,64 @@ export class DeleteFundingSourceLogic extends Logic {
 
         return undefined;
     }
+}
 
+@AutoWired
+export class InitiateContractorFundingSourceVerificationLogic extends Logic {
+    @Inject private fundingService: FundingSourceService;
+    @Inject private client: dwolla.Client;
+
+    async execute(id: string) {
+        const funding = await this.fundingService.get(id);
+        if (!funding) {
+            throw new Errors.NotFoundError('Funding source not found');
+        }
+
+        if (funding.verificationStatus) {
+            throw new Errors.NotAcceptableError('Funding source verification cannot be initiated');
+        }
+
+        if (!await this.client.createFundingSourceMicroDeposit(funding.dwollaUri)) {
+            throw new Errors.NotAcceptableError('Funding source verification initiation failed');
+        }
+
+        funding.verificationStatus = VerificationStatuses.initiated;
+        await this.fundingService.update(funding);
+    }
+}
+
+@AutoWired
+export class VerifyContractorFundingSourceLogic extends Logic {
+    @Inject private fundingService: FundingSourceService;
+    @Inject private client: dwolla.Client;
+
+    async execute(amount1, amount2: number, id: string) {
+        const funding = await this.fundingService.get(id);
+        if (!funding) {
+            throw new Errors.NotFoundError('Funding source not found');
+        }
+
+        if (funding.verificationStatus != VerificationStatuses.initiated) {
+            throw new Errors.NotAcceptableError('Funding source verification not initiated');
+        }
+
+        try {
+            await this.client.verifyFundingSourceMicroDeposit(funding.dwollaUri, amount1, amount2);
+        } catch (e) {
+            if (e instanceof dwolla.DwollaRequestError) {
+                // I HATE DWOLLA SO MUCH SINCE THEY MADE ME DO IT!
+                if (e.message.search('Wrong amount') != -1) {
+                    throw new Errors.ConflictError('Wrong amounts');
+                }
+
+                e.message = e.message.replace(/\/value/g, '');
+                throw e.toValidationError();
+            }
+
+            throw e;
+        }
+
+        funding.verificationStatus = VerificationStatuses.completed;
+        await this.fundingService.update(funding);
+    }
 }

@@ -149,6 +149,15 @@ const verifyFundingSourceMicroDeposit = async (uri, amount1, amount2) => {
     }
 };
 
+const listEvents = async (limit, offset) => {
+    try {
+        const result = await client.listEvents(limit, offset);
+        console.log(JSON.stringify(result.body._embedded.events[0]));
+    } catch (e) {
+        console.log(e);
+    }
+};
+
 // listDocuments(customerId).then();
 // listFundingSources(customerId).then();
 // getBalanceSource(customerId).then();
@@ -166,3 +175,4 @@ const verifyFundingSourceMicroDeposit = async (uri, amount1, amount2) => {
 // certifyBusinessVerifiedBeneficialOwnership('https://dashboard-sandbox.dwolla.com/customers/2604618d-1cae-4d1b-90fb-1ea430623aae').then();
 // createFundingSourceMicroDeposit('https://api-sandbox.dwolla.com/funding-sources/3e886555-2c81-45a3-b0c2-3bb9364ff266').then();
 // verifyFundingSourceMicroDeposit('https://api-sandbox.dwolla.com/funding-sources/3e886555-2c81-45a3-b0c2-3bb9364ff266', 0.02, 0.03).then();
+listEvents(10, 0).then();

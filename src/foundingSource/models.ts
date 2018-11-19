@@ -25,6 +25,7 @@ export class FundingSource extends db.Model {
     tenantId?: string = null;
     profileId?: string = null;
     isDefault?: boolean = null;
+    verificationStatus?: string = null;
 
     get externalUri() {
         return this.dwollaUri;
@@ -61,11 +62,22 @@ export class FundingSourceResponse extends FundingSourceBaseInfo {
     tenantId: string = mapper.FIELD_STR;
     profileId: string = mapper.FIELD_STR;
     isDefault: boolean = mapper.FIELD_BOOLEAN;
+    verificationStatus: string = mapper.FIELD_STR;
+}
+
+export class UserFundingSourceVerificationRequest extends Mapper {
+    amount1: number = mapper.FIELD_NUM;
+    amount2: number = mapper.FIELD_NUM;
 }
 
 export const fundingSourceRequestSchema = Joi.object().keys({
     routing: Joi.string().required(),
     account: Joi.string().required(),
     name: Joi.string().allow(null, '').default('default'),
+});
+
+export const contractorFundingSourceVerificationRequestSchema = Joi.object().keys({
+    amount1: Joi.number().required(),
+    amount2: Joi.number().required(),
 });
 

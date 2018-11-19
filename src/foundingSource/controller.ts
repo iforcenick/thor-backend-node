@@ -1,14 +1,15 @@
 import {BaseController} from '../api';
 import {
-    Context, DELETE, Errors, GET, Path, PathParam, POST, Preprocessor, QueryParam,
+    Context, DELETE, Errors, GET, PATCH, Path, PathParam, POST, Preprocessor, QueryParam,
     ServiceContext
 } from 'typescript-rest';
 import {
+    contractorFundingSourceVerificationRequestSchema,
     FundingSource,
     FundingSourceBaseInfo,
     FundingSourceRequest,
     fundingSourceRequestSchema,
-    FundingSourceResponse
+    FundingSourceResponse, UserFundingSourceVerificationRequest
 } from './models';
 import {MailerService} from '../mailer';
 import * as dwolla from '../dwolla';
@@ -19,7 +20,10 @@ import {AutoWired, Inject} from 'typescript-ioc';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {User} from '../user/models';
 import {Pagination} from '../db';
-import {CreateUserFundingSourceLogic, DeleteFundingSourceLogic, SetDefaultFundingSourceLogic} from './logic';
+import {
+    CreateUserFundingSourceLogic, DeleteFundingSourceLogic, InitiateContractorFundingSourceVerificationLogic,
+    SetDefaultFundingSourceLogic, VerifyContractorFundingSourceLogic
+} from './logic';
 
 @AutoWired
 export abstract class FundingSourceBaseController extends BaseController {
@@ -89,6 +93,30 @@ export abstract class FundingSourceBaseController extends BaseController {
         return this.paginate(new Pagination(page, limit, fundingSources.length), fundingSources.map(fundingSource => {
             return this.map(FundingSourceResponse, fundingSource);
         }));
+    }
+}
+
+@AutoWired
+@Security('api_key')
+@Path('/fundingSources')
+@Tags('fundingSources')
+@Preprocessor(BaseController.requireAdmin)
+export class FundingSourceController extends BaseController {
+    @Context protected context: ServiceContext;
+
+    @POST
+    @Path(':id/verify')
+    async initiateFundingSourceVerification(@PathParam('id') id: string) {
+        const logic = new InitiateContractorFundingSourceVerificationLogic(this.getRequestContext());
+        await logic.execute(id);
+    }
+
+    @PATCH
+    @Path(':id/verify')
+    async verifyFundingSource(@PathParam('id') id: string, data: UserFundingSourceVerificationRequest) {
+        const parsedData: UserFundingSourceVerificationRequest = await this.validate(data, contractorFundingSourceVerificationRequestSchema);
+        const logic = new VerifyContractorFundingSourceLogic(this.getRequestContext());
+        await logic.execute(parsedData.amount1, parsedData.amount2, id);
     }
 }
 
