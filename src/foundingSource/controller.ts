@@ -103,6 +103,7 @@ export abstract class FundingSourceBaseController extends BaseController {
 @Preprocessor(BaseController.requireAdmin)
 export class FundingSourceController extends BaseController {
     @Context protected context: ServiceContext;
+    @Inject protected dwollaClient: dwolla.Client;
 
     @POST
     @Path(':id/verify')
@@ -118,6 +119,7 @@ export class FundingSourceController extends BaseController {
         const logic = new VerifyContractorFundingSourceLogic(this.getRequestContext());
         await logic.execute(parsedData.amount1, parsedData.amount2, id);
     }
+
 }
 
 @AutoWired
@@ -175,6 +177,7 @@ export class UserFundingSourceController extends FundingSourceBaseController {
 @Preprocessor(BaseController.requireContractor)
 export class ContractorFundingSourceController extends FundingSourceBaseController {
     @Context protected context: ServiceContext;
+    @Inject protected dwollaClient: dwolla.Client;
 
     @GET
     @Path('')
@@ -205,6 +208,15 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(this.getRequestContext().getUser().id);
         return await this._createUserFundingSource(user, data);
+    }
+
+    @POST
+    @Path('iavToken')
+    async getIavToken(): Promise<string> {
+        this.userService.setRequestContext(this.getRequestContext());
+        const user = await this.userService.get(this.getRequestContext().getUser().id);
+        const response = await this.dwollaClient.getIavToken(user.tenantProfile.dwollaUri);
+        return response.body.token;
     }
 
     @DELETE

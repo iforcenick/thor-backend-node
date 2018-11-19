@@ -160,6 +160,11 @@ export class Client {
         return customer.beneficialOwnerFactory(response.body).setLocalization(localization);
     }
 
+    public async getIavToken(localization: string): Promise<any> {
+        const response = await this.post(`${localization}/iav-token`, {});
+        return response;
+    }
+
     public async createBusinessVerifiedBeneficialOwner(localization: string, owner: customer.BeneficialOwner) {
         const response = await this.post(`${localization}/beneficial-owners`, owner);
         return response.headers.get('location');
