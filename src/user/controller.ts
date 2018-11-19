@@ -27,6 +27,7 @@ import {MailerService} from '../mailer';
 import * as _ from 'lodash';
 import {DwollaNotifier} from '../dwolla/notifier';
 import {AddContractorLogic, AddContractorOnRetryStatusLogic} from '../contractor/logic';
+import {RatingJobsListLogic, UsersListLogic} from './logic';
 
 
 @Security('api_key')
@@ -61,6 +62,9 @@ export class UserController extends BaseController {
      * @param startDate startDate
      * @param endDate endDate
      * @param status status
+     * @param orderBy - field name
+     * @param order - asc|desc
+     * @param contractor - contractor firstName, lastName or "firstName lastName"
      */
     @GET
     @Path('/rating/jobs')
@@ -69,12 +73,14 @@ export class UserController extends BaseController {
                             @QueryParam('endDate') endDate: Date,
                             @QueryParam('limit') limit?: number,
                             @QueryParam('page') page?: number,
-                            @QueryParam('status') status?: string): Promise<models.PaginatedRankingJobs> {
-        this.service.setRequestContext(this.getRequestContext());
-
+                            @QueryParam('status') status?: string,
+                            @QueryParam('orderBy') orderBy?: string,
+                            @QueryParam('order') order?: string,
+                            @QueryParam('contractor') contractor?: string): Promise<models.PaginatedRankingJobs> {
         const dates: any = await this.validate({startDate, endDate}, models.rankingRequestSchema);
-        const users: any = await this.service.getJobsRanking(dates.startDate, dates.endDate, page, limit, status);
-        console.log('queried data');
+        const logic = new RatingJobsListLogic(this.getRequestContext());
+
+        const users = await logic.execute(dates.startDate, dates.endDate, page, limit, status, orderBy, order, contractor);
 
         return this.paginate(
             users.pagination,
@@ -88,15 +94,21 @@ export class UserController extends BaseController {
 
     /**
      * @param page page to be queried, starting from 0
-     * @param limit transactions per page
+     * @param limit users per page
+     * @param orderBy - field name
+     * @param order - asc|desc
+     * @param contractor - contractor firstName, lastName or "firstName lastName"
      */
     @GET
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async getUsersList(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<models.PaginatedUserResponse> {
-        this.service.setRequestContext(this.getRequestContext());
-
-        const users = await this.service.list(page, limit);
+    async getUsersList(@QueryParam('page') page?: number,
+                       @QueryParam('limit') limit?: number,
+                       @QueryParam('orderBy') orderBy?: string,
+                       @QueryParam('order') order?: string,
+                       @QueryParam('contractor') contractor?: string): Promise<models.PaginatedUserResponse> {
+        const logic = new UsersListLogic(this.getRequestContext());
+        const users = await logic.execute(page, limit, orderBy, order, contractor);
 
         return this.paginate(
             users.pagination,
@@ -220,7 +232,7 @@ export class UserController extends BaseController {
             transactions.Transaction.filter(builder, startDate, endDate, status, userId);
         };
 
-        const transactionsList = await this.transactionService.list(page, limit, filter);
+        const transactionsList = await this.transactionService.listPaginated(page, limit, filter);
 
         return this.paginate(
             transactionsList.pagination,

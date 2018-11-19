@@ -142,20 +142,28 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
         return await this.useTenantContext(this.getOptions(this.modelType.query().findOne({[field]: value})));
     }
 
-    async list(page?: number, limit?: number, filter?: any, options?: any): Promise<Paginated<T>> {
+    listQuery(filter?: any, options?: any): any {
         const query = this.modelType.query();
         if (filter) {
             query.where(filter);
         }
 
         this.getListOptions(query);
-        const pag = this.addPagination(query, page, limit);
 
         if (options) {
             options(query);
         }
 
-        const result = await this.useTenantContext(query);
+        this.useTenantContext(query);
+
+        return query;
+    }
+
+    async listPaginated(page?: number, limit?: number, filter?: any, options?: any): Promise<Paginated<T>> {
+        const query = this.listQuery(filter, options);
+        const pag = this.addPagination(query, page, limit);
+        const result = query;
+
         return new Paginated(new Pagination(pag.page, pag.limit, result.total), result.results);
     }
 

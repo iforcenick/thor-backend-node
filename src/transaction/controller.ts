@@ -71,7 +71,7 @@ export class TransactionController extends BaseController {
             models.Transaction.filter(builder, dateFrom, dateTill, status, userId);
         };
 
-        const transactions = await this.service.list(page, limit, filter);
+        const transactions = await this.service.listPaginated(page, limit, filter);
 
         return this.paginate(
             transactions.pagination,

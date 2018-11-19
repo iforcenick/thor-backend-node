@@ -38,7 +38,7 @@ export class JobController extends BaseController {
     async getJobs(@QueryParam('page') page?: number,
                   @QueryParam('limit') limit?: number): Promise<models.PaginatedJobResponse> {
         this.service.setRequestContext(this.getRequestContext());
-        const jobs = await this.service.list(page, limit);
+        const jobs = await this.service.listPaginated(page, limit);
 
         return this.paginate(
             jobs.pagination,
