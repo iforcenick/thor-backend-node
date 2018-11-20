@@ -24,6 +24,7 @@ import {BaseError} from '../api';
 import {User} from '../user/models';
 import {TenantService} from '../tenant/service';
 import {Tenant} from '../tenant/models';
+import {ContractorDefaultFundingSourcesLogic} from "../foundingSource/logic";
 
 @AutoWired
 export class UpdateTransactionStatusLogic extends Logic {
@@ -173,7 +174,8 @@ export class PrepareTransferLogic extends Logic {
     @Inject private config: Config;
 
     async execute(transactions: Array<models.Transaction>, user, admin: users.User, tenantCharge: Transfer): Promise<any> {
-        const defaultFunding: FundingSource = await this.fundingService.getDefault(user.id);
+        const logic = new ContractorDefaultFundingSourcesLogic(this.context);
+        const defaultFunding: FundingSource = await logic.execute(user.id);
         if (!defaultFunding) {
             throw new models.InvalidTransferDataError('Bank account not configured for recipient');
         }
@@ -392,7 +394,8 @@ export class CreateTransactionLogic extends Logic {
             throw new Errors.NotAcceptableError('User is not a contractor');
         }
 
-        const defaultFunding = await this.fundingService.getDefault(user.id);
+        const logic = new ContractorDefaultFundingSourcesLogic(this.context);
+        const defaultFunding = await logic.execute(user.id);
         if (!defaultFunding) {
             throw new Errors.NotAcceptableError('User does not have a bank account');
         }

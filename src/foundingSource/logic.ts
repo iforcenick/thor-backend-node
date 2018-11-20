@@ -10,9 +10,86 @@ import {UserService} from '../user/service';
 import {MailerService} from '../mailer';
 import {Logger} from '../logger';
 import {User} from '../user/models';
-import {Profile} from '../profile/models';
 import * as profiles from '../profile/models';
-import {TenantService} from "../tenant/service";
+import {Profile} from '../profile/models';
+import * as db from '../db';
+
+// Private logic
+@AutoWired
+class FundingSourceCreateAndNotifyLogic extends Logic {
+    @Inject protected dwollaClient: dwolla.Client;
+    @Inject protected userService: UserService;
+    @Inject protected profileService: ProfileService;
+    @Inject protected fundingSourceService: FundingSourceService;
+    @Inject protected mailer: MailerService;
+    @Inject protected logger: Logger;
+
+    async execute(fundingSource: FundingSource, uri: string, user: User): Promise<any> {
+        const profile = user.tenantProfile;
+        const sourceInfo = {
+            sourceUri: uri,
+            routing: fundingSource.routing,
+            account: fundingSource.account,
+        };
+
+        const logic = new UserFundingSourcesLogic(this.context);
+        const fundingSources = await logic.execute(user.id);
+        if (!fundingSources || fundingSources.length == 0) {
+            fundingSource.isDefault = true;
+        }
+
+        try {
+            await this.mailer.sendFundingSourceCreated(user, sourceInfo);
+        } catch (e) {
+            this.logger.error(e.message);
+        }
+
+        let fundingSourceResult;
+
+        await transaction(this.profileService.transaction(), async trx => {
+            fundingSourceResult = await this.fundingSourceService.insert(fundingSource, trx);
+            await this.profileService.addFundingSource(profile, fundingSource, trx);
+        });
+
+        return fundingSourceResult;
+    }
+}
+
+@AutoWired
+export class UserFundingSourcesLogic extends Logic {
+    @Inject protected userService: UserService;
+    @Inject protected fundingService: FundingSourceService;
+
+    async execute(id: string): Promise<Array<FundingSource>> {
+        const user = await this.userService.get(id);
+        if (!user) {
+            throw new Errors.NotFoundError('User not found');
+        }
+
+        const query = this.fundingService.useTenantContext(this.fundingService.getOptions(FundingSource.query()));
+        query.where(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id);
+        return await query;
+    }
+}
+
+@AutoWired
+export class ContractorDefaultFundingSourcesLogic extends Logic {
+    @Inject protected userService: UserService;
+    @Inject protected fundingService: FundingSourceService;
+
+    async execute(id: string): Promise<FundingSource> {
+        const user = await this.userService.get(id);
+        if (!user) {
+            throw new Errors.NotFoundError('User not found');
+        }
+
+        const query = this.fundingService.useTenantContext(this.fundingService.getOptions(FundingSource.query()));
+        query.where(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id)
+            .andWhere('isDefault', true).first();
+
+        return await query;
+    }
+}
 
 @AutoWired
 export class SetDefaultFundingSourceLogic extends Logic {
@@ -65,31 +142,8 @@ export class CreateUserFundingSourceLogic extends Logic {
             dwollaUri: sourceUri
         });
 
-        const sourceInfo = {
-            sourceUri: profile.dwollaSourceUri,
-            routing: data.routing,
-            account: data.account,
-        };
-
-        const fundingSources = await this.fundingSourceService.getAllFundingSource(user.id);
-        if (!fundingSources || fundingSources.length == 0) {
-            fundingSource.isDefault = true;
-        }
-
-        try {
-            await this.mailer.sendFundingSourceCreated(user, sourceInfo);
-        } catch (e) {
-            this.logger.error(e.message);
-        }
-
-        let fundingSourceResult;
-
-        await transaction(this.profileService.transaction(), async trx => {
-            fundingSourceResult = await this.fundingSourceService.insert(fundingSource, trx);
-            await this.profileService.addFundingSource(profile, fundingSource, trx);
-        });
-
-        return fundingSourceResult;
+        const logic = new FundingSourceCreateAndNotifyLogic(this.context);
+        return await logic.execute(fundingSource, sourceUri, user);
     }
 }
 
@@ -193,5 +247,65 @@ export class VerifyContractorFundingSourceLogic extends Logic {
 
         funding.verificationStatus = VerificationStatuses.completed;
         await this.fundingService.update(funding);
+    }
+}
+
+@AutoWired
+export class GetIavTokenLogic extends Logic {
+    @Inject protected userService: UserService;
+    @Inject private client: dwolla.Client;
+
+    async execute(id: string) {
+        const user = await this.userService.get(id);
+        if (!user) {
+            throw new Errors.NotFoundError('User not found');
+        }
+
+        try {
+            return await this.client.getIavToken(user.tenantProfile.dwollaUri);
+        } catch (e) {
+            if (e instanceof dwolla.DwollaRequestError) {
+                throw e.toValidationError();
+            }
+
+            throw e;
+        }
+    }
+}
+
+@AutoWired
+export class AddIavFundingSourceLogic extends Logic {
+    @Inject private fundingService: FundingSourceService;
+    @Inject protected userService: UserService;
+    @Inject private client: dwolla.Client;
+
+    async execute(id, uri, routing, account: string) {
+        const user = await this.userService.get(id);
+        if (!user) {
+            throw new Errors.NotFoundError('User not found');
+        }
+
+        let dwollaFunding;
+
+        try {
+            dwollaFunding = await this.client.getFundingSource(uri);
+        } catch (e) {
+            throw e.toValidationError();
+        }
+
+        const fundingSource: FundingSource = FundingSource.factory({
+            routing: routing,
+            account: account,
+            type: dwollaFunding.type,
+            name: dwollaFunding.name,
+            profileId: user.tenantProfile.id,
+            tenantId: user.tenantProfile.tenantId,
+            isDefault: false,
+            dwollaUri: uri,
+            verificationStatus: VerificationStatuses.completed,
+        });
+
+        const logic = new FundingSourceCreateAndNotifyLogic(this.context);
+        return await logic.execute(fundingSource, uri, user);
     }
 }

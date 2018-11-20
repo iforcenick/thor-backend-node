@@ -162,7 +162,7 @@ export class Client {
 
     public async getIavToken(localization: string): Promise<any> {
         const response = await this.post(`${localization}/iav-token`, {});
-        return response;
+        return response.body.token;
     }
 
     public async createBusinessVerifiedBeneficialOwner(localization: string, owner: customer.BeneficialOwner) {

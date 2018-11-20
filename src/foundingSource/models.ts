@@ -70,6 +70,22 @@ export class UserFundingSourceVerificationRequest extends Mapper {
     amount2: number = mapper.FIELD_NUM;
 }
 
+export class FundingSourceIavToken extends Mapper {
+    token: string = mapper.FIELD_STR;
+}
+
+export class FundingSourceIavRequest extends Mapper {
+    uri: string = mapper.FIELD_STR;
+    routing: string = mapper.FIELD_STR;
+    account: string = mapper.FIELD_STR;
+}
+
+export const fundingSourceIavRequestSchema = Joi.object().keys({
+    uri: Joi.string().required(),
+    routing: Joi.string().required(),
+    account: Joi.string().required(),
+});
+
 export const fundingSourceRequestSchema = Joi.object().keys({
     routing: Joi.string().required(),
     account: Joi.string().required(),

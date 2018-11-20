@@ -6,7 +6,7 @@ import {
 import {
     contractorFundingSourceVerificationRequestSchema,
     FundingSource,
-    FundingSourceBaseInfo,
+    FundingSourceBaseInfo, FundingSourceIavRequest, fundingSourceIavRequestSchema, FundingSourceIavToken,
     FundingSourceRequest,
     fundingSourceRequestSchema,
     FundingSourceResponse, UserFundingSourceVerificationRequest
@@ -21,8 +21,10 @@ import {Security, Tags} from 'typescript-rest-swagger';
 import {User} from '../user/models';
 import {Pagination} from '../db';
 import {
-    CreateUserFundingSourceLogic, DeleteFundingSourceLogic, InitiateContractorFundingSourceVerificationLogic,
-    SetDefaultFundingSourceLogic, VerifyContractorFundingSourceLogic
+    AddIavFundingSourceLogic, ContractorDefaultFundingSourcesLogic,
+    CreateUserFundingSourceLogic, DeleteFundingSourceLogic, GetIavTokenLogic,
+    InitiateContractorFundingSourceVerificationLogic,
+    SetDefaultFundingSourceLogic, UserFundingSourcesLogic, VerifyContractorFundingSourceLogic
 } from './logic';
 
 @AutoWired
@@ -41,8 +43,8 @@ export abstract class FundingSourceBaseController extends BaseController {
     }
 
     protected async _getDefaultFundingSource(user: User): Promise<FundingSource> {
-        this.fundingSourceService.setRequestContext(this.getRequestContext());
-        const fundingSource = await this.fundingSourceService.getDefault(user.id);
+        const logic = new ContractorDefaultFundingSourcesLogic(this.getRequestContext());
+        const fundingSource = await logic.execute(user.id);
         if (!fundingSource) {
             throw new Errors.NotFoundError();
         }
@@ -87,8 +89,8 @@ export abstract class FundingSourceBaseController extends BaseController {
     }
 
     protected async _getFundingSources(user: User, page: number = 1, limit: number = this.config.get('pagination.limit')) {
-        this.fundingSourceService.setRequestContext(this.getRequestContext());
-        const fundingSources = await this.fundingSourceService.getAllFundingSource(user.id);
+        const logic = new UserFundingSourcesLogic(this.getRequestContext());
+        const fundingSources = await logic.execute(user.id);
 
         return this.paginate(new Pagination(page, limit, fundingSources.length), fundingSources.map(fundingSource => {
             return this.map(FundingSourceResponse, fundingSource);
@@ -103,7 +105,6 @@ export abstract class FundingSourceBaseController extends BaseController {
 @Preprocessor(BaseController.requireAdmin)
 export class FundingSourceController extends BaseController {
     @Context protected context: ServiceContext;
-    @Inject protected dwollaClient: dwolla.Client;
 
     @POST
     @Path(':id/verify')
@@ -210,20 +211,28 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
         return await this._createUserFundingSource(user, data);
     }
 
-    @POST
-    @Path('iavToken')
-    async getIavToken(): Promise<string> {
-        this.userService.setRequestContext(this.getRequestContext());
-        const user = await this.userService.get(this.getRequestContext().getUser().id);
-        const response = await this.dwollaClient.getIavToken(user.tenantProfile.dwollaUri);
-        return response.body.token;
-    }
-
     @DELETE
     @Path(':id')
     async deleteUserFundingSource(@PathParam('id') id: string) {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(this.getRequestContext().getUser().id);
         return await this._deleteUserFundingSource(user, id);
+    }
+
+    @GET
+    @Path('iav')
+    async getIavToken(): Promise<FundingSourceIavToken> {
+        const logic = new GetIavTokenLogic(this.getRequestContext());
+        const token = await logic.execute(this.getRequestContext().getUser().id);
+        return this.map(FundingSourceIavToken, {token});
+    }
+
+    @POST
+    @Path('iav')
+    async addIavFundingSource(data: FundingSourceIavRequest): Promise<FundingSourceResponse> {
+        const parsedData: FundingSourceIavRequest = await this.validate(data, fundingSourceIavRequestSchema);
+        const logic = new AddIavFundingSourceLogic(this.getRequestContext());
+        const token = await logic.execute(this.getRequestContext().getUser().id, parsedData.uri, parsedData.routing, parsedData.account);
+        return this.map(FundingSourceResponse, {token});
     }
 }
