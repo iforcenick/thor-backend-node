@@ -39,6 +39,21 @@ export class Model extends OModel {
     }
 }
 
+export const enum Ordering {
+    asc = 'asc',
+    desc = 'desc',
+}
+
+export const parseOrdering = (ordering) => {
+    if (ordering.toLowerCase() == 'asc' || ordering.toLowerCase() == 'ascend') {
+        return Ordering.asc;
+    } else if (ordering.toLowerCase() == 'desc' || ordering.toLowerCase() == 'descend') {
+        return Ordering.desc;
+    } else {
+        throw new Error('Invalid order, allowed: asc | ascend, desc | descend');
+    }
+};
+
 export const enum Tables {
     users = 'users',
     profiles = 'profiles',

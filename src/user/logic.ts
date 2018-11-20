@@ -28,15 +28,17 @@ export class RatingJobsListLogic extends Logic {
         }
 
         if (!order) {
-            order = 'asc';
+            order = db.Ordering.asc;
         }
 
         if (!RatingJobsListLogic.sortableFields.includes(orderBy)) {
             throw new Errors.ConflictError('Invalid order by field, allowed: ' + RatingJobsListLogic.sortableFields.join(', '));
         }
 
-        if (order != 'asc' && order != 'desc') {
-            throw new Errors.ConflictError('Invalid order, allowed: asc, desc');
+        try {
+            order = db.parseOrdering(order);
+        } catch (e) {
+            throw new Errors.ConflictError(e.message);
         }
 
         const query = this.rankingQuery(start, end, status, orderBy, order, contractor);
@@ -131,15 +133,17 @@ export class UsersListLogic extends Logic {
         }
 
         if (!order) {
-            order = 'asc';
+            order = db.Ordering.asc;
         }
 
         if (!UsersListLogic.sortableFields.includes(orderBy)) {
             throw new Errors.ConflictError('Invalid order by field, allowed: ' + UsersListLogic.sortableFields.join(', '));
         }
 
-        if (order != 'asc' && order != 'desc') {
-            throw new Errors.ConflictError('Invalid order, allowed: asc, desc');
+        try {
+            order = db.parseOrdering(order);
+        } catch (e) {
+            throw new Errors.ConflictError(e.message);
         }
 
         const options = builder => {
