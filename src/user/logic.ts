@@ -64,13 +64,9 @@ export class RatingJobsListLogic extends Logic {
 
     protected allContractorsWithTransactions(start, end: Date, status?) {
         const query = this.userService.useTenantContext(this.userService.getMinOptions(this.userService.filterCustomerRole(User.query())));
-        if (status) {
-            query.joinRelation(models.Relations.transactions);
-        } else {
-            query.leftJoinRelation(models.Relations.transactions);
-        }
+        query.leftJoinRelation(models.Relations.transactions);
         query.leftJoin(db.Tables.jobs, `${db.Tables.transactions}.jobId`, `${db.Tables.jobs}.id`);
-        transactions.Transaction.filter(query, start, end, status, null, true);
+        transactions.Transaction.filter(query, null, null, status);
 
         return query;
     }

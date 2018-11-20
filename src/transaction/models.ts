@@ -92,15 +92,9 @@ export class Transaction extends db.Model {
         };
     }
 
-    static filter(query, startDate?: Date, endDate?: Date, status?: string, userId?: string, emptyDates?: boolean) {
+    static filter(query, startDate?: Date, endDate?: Date, status?: string, userId?: string) {
         if (startDate && endDate) {
-            query.where((builder) => {
-                builder.whereBetween(`${db.Tables.transactions}.createdAt`, [startDate, endDate]);
-
-                if (emptyDates && !status) {
-                    builder.orWhere(`${db.Tables.transactions}.createdAt`, null);
-                }
-            });
+            query.whereBetween(`${db.Tables.transactions}.createdAt`, [startDate, endDate]);
         }
 
         if (status) {
