@@ -24,7 +24,7 @@ import {BaseError} from '../api';
 import {User} from '../user/models';
 import {TenantService} from '../tenant/service';
 import {Tenant} from '../tenant/models';
-import {ContractorDefaultFundingSourcesLogic} from "../foundingSource/logic";
+import {ContractorDefaultFundingSourcesLogic} from '../foundingSource/logic';
 
 @AutoWired
 export class UpdateTransactionStatusLogic extends Logic {
