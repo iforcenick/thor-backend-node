@@ -177,7 +177,7 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
     async listPaginated(page?: number, limit?: number, filter?: any, options?: any): Promise<Paginated<T>> {
         const query = this.listQuery(filter, options);
         const pag = this.addPagination(query, page, limit);
-        const result = query;
+        const result = await query;
 
         return new Paginated(new Pagination(pag.page, pag.limit, result.total), result.results);
     }
