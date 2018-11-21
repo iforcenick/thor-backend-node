@@ -19,6 +19,7 @@ and ```npm run db``` followed by ```npm run start:docker-dev```
 * add server, connect to thor_db
 
 ### Migrations
+Migrations are run based on config files from config directory. In order to use proper configuration set NODE_ENV env variable to desired value before running knex, ie. : ```NODE_ENV=development-pawel npm run db```
 * create: knex migrate:make NAME
 * seed: knex seed:make NAME
 * run seed: knex seed:run
