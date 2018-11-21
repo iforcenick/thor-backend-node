@@ -33,19 +33,11 @@ export class Transaction extends db.Model {
     tenantId?: string = null;
     transferId?: string = null;
     jobId?: string = null;
-    quantity?: number = null;
     status?: string = null;
     user?: user.User;
     job?: job.Job;
     transfer?: transfer.Transfer;
-
-    get value() {
-        if (!this.job) {
-            return null;
-        }
-
-        return this.quantity * this.job.value;
-    }
+    value?: number = null;
 
     static get relationMappings() {
         return {
@@ -112,8 +104,8 @@ export class Transaction extends db.Model {
 }
 
 export class TransactionBaseInfo extends Mapper {
-    quantity: number = mapper.FIELD_NUM;
     userId: string = mapper.FIELD_STR;
+    value: number = mapper.FIELD_NUM;
 }
 
 export class TransactionResponse extends TransactionBaseInfo {
@@ -173,7 +165,10 @@ export const transactionRequestSchema = Joi.object().keys({
     userId: Joi.string().guid(),
     externalId: Joi.string().allow('', null),
     job: job.jobRequestSchema.required(),
-    quantity: Joi.number().required().greater(0).integer().max(MAXINT),
+    value: Joi.number()
+        .greater(0)
+        .precision(2)
+        .strict(),
 }).xor('userId', 'externalId');
 
 export const transactionPatchRequestSchema = Joi.object().keys({

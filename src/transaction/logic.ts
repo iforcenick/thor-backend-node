@@ -413,6 +413,12 @@ export class CreateTransactionLogic extends Logic {
                 throw new Errors.NotFoundError('Job not found');
             }
 
+            // override the base job value if a value was provided in the request
+            const value = data.value;
+            if (!value) {
+                data.value = jobFromDb.value;
+            }
+
             const transactionEntity = models.Transaction.factory(data);
             transactionEntity.adminId = this.context.getUser().id;
             transactionEntity.jobId = jobFromDb.id;
