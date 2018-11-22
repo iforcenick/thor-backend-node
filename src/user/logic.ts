@@ -24,11 +24,21 @@ export class RatingJobsListLogic extends Logic {
 
     async execute(start, end: Date, page, limit, status?, orderBy?, order?, contractor?: string): Promise<db.Paginated<any>> {
         if (!orderBy) {
-            orderBy = 'rank';
+            orderBy = 'total';
         }
 
         if (!order) {
-            order = db.Ordering.asc;
+            order = db.Ordering.desc;
+        }
+
+        // rank is an alias for reverted total set programatically
+        if (orderBy == 'rank') {
+            orderBy = 'total';
+            if (order == db.Ordering.asc) {
+                order = db.Ordering.desc;
+            } else {
+                order = db.Ordering.asc;
+            }
         }
 
         if (!RatingJobsListLogic.sortableFields.includes(orderBy)) {
@@ -45,14 +55,19 @@ export class RatingJobsListLogic extends Logic {
         const pag = this.userService.addPagination(query, page, limit);
         const results = await query;
 
-        return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results);
+        return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results.map((row, index) => {
+            row.ids ? row.transactionsIds = row.ids.split(',') : null;
+            row.jobsCount = row.transactions ? row.transactions.length : 0;
+            row.rank = index + 1;
+            return row;
+        }));
     }
 
     protected rankingQuery(start, end: Date, status?, orderBy?, order?, contractor?: string) {
-        const query = this.allContractorsWithTransactions(start, end, status);
-        this.calculateAndGroupByRanking(query);
+        const query = this.allContractorsAndTheirTransactions(start, end, status);
         this.selectJobs(query, start, end, status);
         this.selectTransactionsIds(query, start, end, status);
+        this.selectTransactionsValue(query, start, end, status);
         this.setOrdering(query, orderBy, order);
 
         if (contractor) {
@@ -62,29 +77,23 @@ export class RatingJobsListLogic extends Logic {
         return query;
     }
 
-    protected allContractorsWithTransactions(start, end: Date, status?) {
-        const query = this.userService.useTenantContext(this.userService.getMinOptions(this.userService.filterCustomerRole(User.query())));
+    protected allContractorsAndTheirTransactions(start, end: Date, status?) {
+        const query = this.userService.query();
+        this.userService.filterCustomerRole(query);
         query.leftJoinRelation(models.Relations.transactions);
         query.leftJoin(db.Tables.jobs, `${db.Tables.transactions}.jobId`, `${db.Tables.jobs}.id`);
-        transactions.Transaction.filter(query, null, null, status);
 
-        return query;
-    }
-
-    protected calculateAndGroupByRanking(query: any) {
         const columns = [
             `${db.Tables.users}.id`,
             `${models.Relations.tenantProfile}.firstName`,
             `${models.Relations.tenantProfile}.lastName`,
         ];
-
-        const totalValue = `sum(${models.Relations.transactions}.quantity * ${db.Tables.jobs}.value)`;
-
-        query.select(columns.concat([
-            raw(`coalesce(${totalValue},0) as total`),
-            raw(`row_number() OVER (ORDER BY coalesce(${totalValue}, 0) desc) AS rank`)
-        ]));
+        query.select(columns);
         query.groupBy(columns);
+
+        transactions.Transaction.filter(query, null, null, status);
+
+        return query;
     }
 
     protected selectJobs(query: any, start, end: Date, status?) {
@@ -92,13 +101,13 @@ export class RatingJobsListLogic extends Logic {
             transactions: builder => {
                 builder.select([
                     'jobId', 'name', 'status', 'transactions.id',
-                    raw('sum(quantity) * value as total'),
-                    raw(`count("${db.Tables.transactions}"."jobId") as jobs`),
+                    raw(`sum("${models.Relations.transactions}".value) as total`),
+                    raw(`count("${models.Relations.transactions}"."jobId") as jobs`),
                 ]);
                 builder.joinRelation(transactions.Relations.job);
                 transactions.Transaction.filter(builder, start, end, status);
 
-                builder.groupBy(['userId', 'jobId', 'value', 'name', 'status', 'transactions.id']);
+                builder.groupBy(['userId', 'jobId', `${models.Relations.transactions}.value`, 'name', 'status', 'transactions.id']);
             },
         });
     }
@@ -113,8 +122,26 @@ export class RatingJobsListLogic extends Logic {
         query.select(transactionsQuery);
     }
 
+    protected selectTransactionsValue(query: any, start, end: Date, status?) {
+        const transactionsQuery = User.relatedQuery(models.Relations.transactions);
+        transactions.Transaction.filter(transactionsQuery, start, end, status);
+        transactionsQuery
+            .select(raw(`coalesce(sum(value),0)`))
+            .groupBy('userId').as('total');
+
+        query.select(transactionsQuery);
+    }
+
     protected setOrdering(query: any, orderBy, order: string) {
-        query.orderBy(orderBy, order);
+        if (orderBy == 'rank' || orderBy == 'total') {
+            if (order == db.Ordering.asc) {
+                query.orderBy(orderBy, raw(`ASC NULLS FIRST`));
+            } else {
+                query.orderBy(orderBy, raw(`DESC NULLS LAST`));
+            }
+        } else {
+            query.orderBy(orderBy, order);
+        }
     }
 }
 

@@ -80,14 +80,12 @@ export class UserController extends BaseController {
         const dates: any = await this.validate({startDate, endDate}, models.rankingRequestSchema);
         const logic = new RatingJobsListLogic(this.getRequestContext());
 
-        const users = await logic.execute(dates.startDate, dates.endDate, page, limit, status, orderBy, order, contractor);
+        const rankings = await logic.execute(dates.startDate, dates.endDate, page, limit, status, orderBy, order, contractor);
 
         return this.paginate(
-            users.pagination,
-            users.rows.map(user => {
-                user.ids ? user.transactionsIds = user.ids.split(',') : null;
-                user.jobsCount = user.transactions.length;
-                return this.map(models.RankingJobs, user);
+            rankings.pagination,
+            rankings.rows.map(ranking => {
+                return this.map(models.RankingJobs, ranking);
             }),
         );
     }

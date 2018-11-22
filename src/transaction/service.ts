@@ -38,7 +38,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         query.joinRelation(models.Relations.job);
         models.Transaction.filter(query, startDate, endDate, status);
         query.select([
-            raw(`sum(${db.Tables.transactions}.quantity * ${models.Relations.job}.value) as total`),
+            raw(`sum(${db.Tables.transactions}.value) as total`),
             raw(`count(distinct "${db.Tables.transactions}"."userId") as users`)
         ]);
         query.groupBy([`${db.Tables.transactions}.tenantId`]).first();

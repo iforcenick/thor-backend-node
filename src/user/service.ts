@@ -195,7 +195,7 @@ export class UserService extends db.ModelService<models.User> {
             `
             select  ranking.rank
 from (select *, row_number() OVER (ORDER BY t.total desc) AS rank
-      from (select "profiles"."userId" as userId, COALESCE(sum(transactions.quantity * jobs.value), 0) as total
+      from (select "profiles"."userId" as userId, COALESCE(sum(transactions.value), 0) as total
             from "profiles"
                    left join "transactions" on "profiles"."userId" = "transactions"."userId" and
                                                "transactions"."createdAt" between ? and (? :: timestamptz + INTERVAL '1 day ')
@@ -215,7 +215,7 @@ where ranking.userId = ?
                 currentEndDate,
             ])
             .count()
-            .select([knex.raw('sum(transactions.quantity * jobs.value) as current')])
+            .select([knex.raw('sum(transactions.value) as current')])
             .groupBy('transactions.userId')
             .first();
 
@@ -249,5 +249,12 @@ where ranking.userId = ?
         const current = queryResult ? queryResult.current : 0;
         const rank = rankResult.rows[0] ? rankResult.rows[0].rank : null;
         return {rank, nJobs, prev, current, ytd};
+    }
+
+    query(trx?: transaction<any>) {
+        const query = this.modelType.query();
+        this.getMinOptions(query);
+        this.useTenantContext(query);
+        return query;
     }
 }

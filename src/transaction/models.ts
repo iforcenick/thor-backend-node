@@ -145,11 +145,12 @@ export class TransactionRequest extends TransactionBaseInfo {
     @mapper.object(job.JobRequest)
     job: job.JobRequest = new job.JobRequest();
     externalId: string = mapper.FIELD_STR;
+    value: number = mapper.FIELD_NUM;
 }
 
 export class TransactionPatchRequest extends Mapper {
     jobId: string = mapper.FIELD_STR;
-    quantity: number = mapper.FIELD_NUM;
+    value: number = mapper.FIELD_NUM;
 }
 
 export class TransactionsTransferRequest extends Mapper {
@@ -173,8 +174,7 @@ export const transactionRequestSchema = Joi.object().keys({
 
 export const transactionPatchRequestSchema = Joi.object().keys({
     jobId: Joi.string().guid(),
-    quantity: Joi.number().greater(0).integer().max(MAXINT),
+    value: Joi.number().greater(0).integer().max(MAXINT),
 });
 
-export class InvalidTransferDataError extends Error {
-}
+export class InvalidTransferDataError extends Error {}

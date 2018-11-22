@@ -234,4 +234,11 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
     setTenantId(id: string) {
         this.tenant = id;
     }
+
+    query(trx?: transaction<any>) {
+        const query = this.modelType.query();
+        this.getOptions(query);
+        this.useTenantContext(query);
+        return query;
+    }
 }
