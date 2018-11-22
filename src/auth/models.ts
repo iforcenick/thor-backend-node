@@ -1,4 +1,4 @@
-import {UserResponse} from '../user/models';
+import {UserResponse} from '../user/dto';
 import Joi = require('joi');
 
 export class AuthUserResponse extends UserResponse {

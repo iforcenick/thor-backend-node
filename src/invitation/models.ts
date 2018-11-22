@@ -11,6 +11,7 @@ export const enum Relations {
 
 export const enum Status {
     pending = 'pending',
+    sent = 'sent',
     used = 'used',
 }
 
@@ -62,6 +63,10 @@ export class InvitationResponse extends InvitationBase {
 
 export interface InvitationPaginatedResponse extends PaginatedResponse {
     items: Array<InvitationResponse>;
+}
+
+export class InvitationsResponse extends Mapper {
+   public items: Array<InvitationResponse> = mapper.FIELD_ARR;
 }
 
 export const requestSchema = Joi.object().keys({

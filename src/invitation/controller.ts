@@ -1,4 +1,15 @@
-import {Errors, GET, Path, PathParam, POST, DELETE, Preprocessor, QueryParam} from 'typescript-rest';
+import {
+    Errors,
+    GET,
+    Path,
+    PathParam,
+    POST,
+    DELETE,
+    Preprocessor,
+    QueryParam,
+    FileParam,
+    ContextRequest, ServiceContext
+} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
@@ -7,6 +18,10 @@ import {Security, Tags} from 'typescript-rest-swagger';
 import {MailerService} from '../mailer';
 import {UserService} from '../user/service';
 import {TenantService} from '../tenant/service';
+import * as _ from 'lodash';
+import * as dwolla from '../dwolla';
+import {BatchInvitationsLogic} from './logic';
+import {InvitationsResponse} from './models';
 
 @Security('api_key')
 @Path('/contractors/invitations')
@@ -140,6 +155,25 @@ export class InvitationController extends BaseController {
             throw new Errors.InternalServerError(e);
         }
     }
+
+    @POST
+    @Path('import')
+    @Preprocessor(BaseController.requireAdmin)
+    async importFromCsv(@FileParam('filepond') file: Express.Multer.File): Promise<models.InvitationsResponse> {
+        if (!file) {
+            throw new Errors.NotAcceptableError('File missing');
+        }
+        const logic = new BatchInvitationsLogic(this.getRequestContext());
+        const invitations = await logic.execute(file.buffer);
+
+        const invitationsResponse = new models.InvitationsResponse();
+
+        invitations.map(invitation =>
+            invitationsResponse.items.push(this.map(models.InvitationResponse, invitation)));
+
+        return invitationsResponse;
+    }
+
 }
 
 @Path('/contractorsInvitations')

@@ -87,13 +87,13 @@ describe('Mailer service', () => {
             expect(sendSpy.getCall(0).args[4]).to.be.a('string');
         });
 
-        it('should send sendTransferProcessed', async () => {
-            expect(await service.sendTransferProcessed(user, {})).to.be.true;
-            expect(sendSpy.calledOnce).to.be.true;
-            expect(sendSpy.getCall(0).args[0]).to.equal(email);
-            expect(sendSpy.getCall(0).args[3]).to.be.a('string');
-            expect(sendSpy.getCall(0).args[4]).to.be.a('string');
-        });
+        // it('should send sendTransferProcessed', async () => {
+        //     expect(await service.sendTransferProcessed(user, {})).to.be.true;
+        //     expect(sendSpy.calledOnce).to.be.true;
+        //     expect(sendSpy.getCall(0).args[0]).to.equal(email);
+        //     expect(sendSpy.getCall(0).args[3]).to.be.a('string');
+        //     expect(sendSpy.getCall(0).args[4]).to.be.a('string');
+        // });
 
         it('should send sendTransferFailed', async () => {
             expect(await service.sendTransferFailed(user, {})).to.be.true;

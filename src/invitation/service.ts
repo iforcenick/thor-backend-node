@@ -2,9 +2,14 @@ import {AutoWired} from 'typescript-ioc';
 import * as models from './models';
 import * as db from '../db';
 import {transaction} from 'objection';
+import {Invitation} from './models';
 
 @AutoWired
 export class InvitationService extends db.ModelService<models.Invitation> {
+    protected setModelType() {
+        this.modelType = models.Invitation;
+    }
+
     useTenantContext(query) {
         return query.where(`${db.Tables.contractorInvitations}.tenantId`, this.getTenantId());
     }
@@ -22,7 +27,17 @@ export class InvitationService extends db.ModelService<models.Invitation> {
         return await this.getOneBy('externalId', externalId);
     }
 
-    protected setModelType() {
-        this.modelType = models.Invitation;
+    async batchInsert(invitations: Array<Invitation>, trx?: transaction<any>) {
+        this.modelType.query(trx).insert(invitations);
+    }
+
+    async getByEmails(emails: Array<string>): Promise<Array<Invitation>> {
+        return this.useTenantContext(Invitation.query())
+            .whereIn('email', emails);
+    }
+
+    getByExternalIds(externalIds: Array<string>): Promise<Array<Invitation>> {
+    return this.useTenantContext(Invitation.query())
+            .whereIn('externalId', externalIds);
     }
 }

@@ -7,6 +7,8 @@ import * as dwolla from '../dwolla';
 import moment from 'moment';
 import {ValidationError} from '../errors';
 import {FundingSource} from '../foundingSource/models';
+import {Invitation} from '../invitation/models';
+import {Profile} from './models';
 
 @AutoWired
 export class ProfileService extends db.ModelService<models.Profile> {
@@ -58,5 +60,15 @@ export class ProfileService extends db.ModelService<models.Profile> {
 
     async getByResourceLink(id: string) {
         return await this.getOneBy('dwollaUri', id);
+    }
+
+    async getByEmails(emails: string[]): Promise<Array<Profile>> {
+        return this.useTenantContext(Profile.query())
+            .whereIn('email', emails);
+    }
+
+    async getByExternalIds(externalIds: Array<string>): Promise<Array<Profile>> {
+    return this.useTenantContext(Profile.query())
+        .whereIn('externalId', externalIds);
     }
 }

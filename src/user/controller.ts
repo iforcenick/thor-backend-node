@@ -9,15 +9,15 @@ import {
     Path,
     PathParam,
     POST,
-    Preprocessor, PUT,
+    Preprocessor,
+    PUT,
     QueryParam,
     ServiceContext,
 } from 'typescript-rest';
 import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
 import {UserService} from './service';
-import * as models from './models';
-import {Profile, ProfileResponse} from '../profile/models';
+import {ProfileResponse} from '../profile/models';
 import {ProfileService} from '../profile/service';
 import {Security, Tags} from 'typescript-rest-swagger';
 import * as dwolla from '../dwolla';
@@ -28,6 +28,15 @@ import * as _ from 'lodash';
 import {DwollaNotifier} from '../dwolla/notifier';
 import {AddContractorLogic, AddContractorOnRetryStatusLogic} from '../contractor/logic';
 import {RatingJobsListLogic, UsersListLogic} from './logic';
+import {
+    ContractorOnRetryRequest, contractorOnRetryRequestSchema, ContractorOnRetryResponse,
+    PaginatedRankingJobs, PaginatedUserResponse,
+    RankingJobs,
+    rankingRequestSchema, UserDocument, UserPatchRequest, userPatchSchema,
+    UserRequest,
+    userRequestSchema,
+    UserResponse, UserStatisticsResponse
+} from './dto';
 
 
 @Security('api_key')
@@ -44,7 +53,7 @@ export class UserController extends BaseController {
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
-    async getUser(@PathParam('id') id: string): Promise<models.UserResponse> {
+    async getUser(@PathParam('id') id: string): Promise<UserResponse> {
         this.service.setRequestContext(this.getRequestContext());
 
         const user = await this.service.get(id);
@@ -53,7 +62,7 @@ export class UserController extends BaseController {
             throw new Errors.NotFoundError();
         }
 
-        return this.map(models.UserResponse, user);
+        return this.map(UserResponse, user);
     }
 
     /**
@@ -76,8 +85,8 @@ export class UserController extends BaseController {
                             @QueryParam('status') status?: string,
                             @QueryParam('orderBy') orderBy?: string,
                             @QueryParam('order') order?: string,
-                            @QueryParam('contractor') contractor?: string): Promise<models.PaginatedRankingJobs> {
-        const dates: any = await this.validate({startDate, endDate}, models.rankingRequestSchema);
+                            @QueryParam('contractor') contractor?: string): Promise<PaginatedRankingJobs> {
+        const dates: any = await this.validate({startDate, endDate}, rankingRequestSchema);
         const logic = new RatingJobsListLogic(this.getRequestContext());
 
         const rankings = await logic.execute(dates.startDate, dates.endDate, page, limit, status, orderBy, order, contractor);
@@ -85,7 +94,7 @@ export class UserController extends BaseController {
         return this.paginate(
             rankings.pagination,
             rankings.rows.map(ranking => {
-                return this.map(models.RankingJobs, ranking);
+                return this.map(RankingJobs, ranking);
             }),
         );
     }
@@ -104,14 +113,14 @@ export class UserController extends BaseController {
                        @QueryParam('limit') limit?: number,
                        @QueryParam('orderBy') orderBy?: string,
                        @QueryParam('order') order?: string,
-                       @QueryParam('contractor') contractor?: string): Promise<models.PaginatedUserResponse> {
+                       @QueryParam('contractor') contractor?: string): Promise<PaginatedUserResponse> {
         const logic = new UsersListLogic(this.getRequestContext());
         const users = await logic.execute(page, limit, orderBy, order, contractor);
 
         return this.paginate(
             users.pagination,
             users.rows.map(user => {
-                return this.map(models.UserResponse, user);
+                return this.map(UserResponse, user);
             }),
         );
     }
@@ -119,10 +128,10 @@ export class UserController extends BaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async createUser(data: models.UserRequest): Promise<models.UserResponse> {
+    async createUser(data: UserRequest): Promise<UserResponse> {
         this.service.setRequestContext(this.getRequestContext());
 
-        const parsedData: models.UserRequest = await this.validate(data, models.userRequestSchema);
+        const parsedData: UserRequest = await this.validate(data, userRequestSchema);
         ProfileService.validateAge(parsedData.profile);
 
         let user = null;
@@ -138,17 +147,17 @@ export class UserController extends BaseController {
             throw err;
         }
 
-        return this.map(models.UserResponse, user);
+        return this.map(UserResponse, user);
     }
 
     @PATCH
     @Path(':id/profile')
     @Preprocessor(BaseController.requireAdmin)
-    async patchAnyUser(@PathParam('id') id: string, data: models.UserPatchRequest): Promise<ProfileResponse> {
+    async patchAnyUser(@PathParam('id') id: string, data: UserPatchRequest): Promise<ProfileResponse> {
         this.service.setRequestContext(this.getRequestContext());
         this.profileService.setRequestContext(this.getRequestContext());
 
-        const parsedData = await this.validate(data, models.userPatchSchema);
+        const parsedData = await this.validate(data, userPatchSchema);
         ProfileService.validateAge(parsedData['profile']);
 
         try {
@@ -248,7 +257,7 @@ export class UserController extends BaseController {
                   @QueryParam('currentStartDate') currentStartDate?: string,
                   @QueryParam('currentEndDate') currentEndDate?: string,
                   @QueryParam('previousStartDate') previousStartDate?: string,
-                  @QueryParam('previousEndDate') previousEndDate?: string): Promise<models.UserStatisticsResponse> {
+                  @QueryParam('previousEndDate') previousEndDate?: string): Promise<UserStatisticsResponse> {
         this.service.setRequestContext(this.getRequestContext());
 
         const statistics = await this.service.statsForUser({
@@ -258,14 +267,14 @@ export class UserController extends BaseController {
             previousStartDate,
             previousEndDate,
         });
-        return this.map(models.UserStatisticsResponse, statistics);
+        return this.map(UserStatisticsResponse, statistics);
     }
 
     @POST
     @Path(':id/documents')
     async createUserDocument(@PathParam('id') userId: string,
                              @QueryParam('type') type: string,
-                             @FileParam('filepond') file, @ContextRequest context: ServiceContext): Promise<models.UserDocument> {
+                             @FileParam('filepond') file, @ContextRequest context: ServiceContext): Promise<UserDocument> {
         this.service.setRequestContext(this.getRequestContext());
 
         if (!file) {
@@ -288,7 +297,7 @@ export class UserController extends BaseController {
 
             const location = await this.dwollaClient.createDocument(user.tenantProfile.dwollaUri, file.buffer, file.originalname, type);
             const doc = await this.dwollaClient.getDocument(location);
-            return this.map(models.UserDocument, doc);
+            return this.map(UserDocument, doc);
         } catch (e) {
             throw new Errors.InternalServerError(e);
         }
@@ -296,7 +305,7 @@ export class UserController extends BaseController {
 
     @GET
     @Path(':id/documents')
-    async getUserDocuments(@PathParam('id') userId: string): Promise<Array<models.UserDocument>> {
+    async getUserDocuments(@PathParam('id') userId: string): Promise<Array<UserDocument>> {
         this.service.setRequestContext(this.getRequestContext());
 
         try {
@@ -308,7 +317,7 @@ export class UserController extends BaseController {
             const docs = await this.dwollaClient.listDocuments(user.tenantProfile.dwollaUri);
 
             return docs.map((doc) => {
-                return this.map(models.UserDocument, doc);
+                return this.map(UserDocument, doc);
             });
         } catch (e) {
             throw new Errors.InternalServerError(e);
@@ -317,16 +326,16 @@ export class UserController extends BaseController {
 
     @PUT
     @Path('/:userId')
-    async addContractorOnRetry(@PathParam('userId') userId: string, data: models.ContractorOnRetryRequest): Promise<models.ContractorOnRetryResponse> {
+    async addContractorOnRetry(@PathParam('userId') userId: string, data: ContractorOnRetryRequest): Promise<ContractorOnRetryResponse> {
         this.service.setRequestContext(this.getRequestContext());
-        const parsedData = await this.validate(data, models.contractorOnRetryRequestSchema);
+        const parsedData = await this.validate(data, contractorOnRetryRequestSchema);
         const profile = parsedData['profile'];
         ProfileService.validateAge(profile);
         try {
             const logic = new AddContractorOnRetryStatusLogic(this.getRequestContext());
             const tenantId = this.getRequestContext().getTenantId();
             const user = await logic.execute(profile, tenantId, userId);
-            const contractorResponse = this.map(models.ContractorOnRetryResponse, user);
+            const contractorResponse = this.map(ContractorOnRetryResponse, user);
 
             return contractorResponse;
         } catch (err) {

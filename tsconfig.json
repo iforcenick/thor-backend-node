@@ -13,11 +13,10 @@
     "outDir": "dist"
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "node_modules/typescript-ioc/src/index.ts"
   ],
   "exclude": [
-    "src/**/*.spec.unit.ts",
-    "src/**/*.spec.ts",
     "node_modules/**",
     "test/**"
   ]

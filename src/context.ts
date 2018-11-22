@@ -7,11 +7,13 @@ export class RequestContext {
 
     constructor(context: ServiceContext) {
         this.context = context;
-        this._tenantId = this.context.request['tenantId'];
     }
 
     getTenantId(): string {
-        return this._tenantId;
+        if (this._tenantId) {
+            return this._tenantId;
+        }
+        return this.context.request['tenantId'];
     }
 
     setForceTenantId(id: string) {

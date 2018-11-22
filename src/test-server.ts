@@ -1,4 +1,4 @@
-import {ApiServer} from '../src/server';
+import {ApiServer} from './server';
 
 const server = new ApiServer();
 export let app = null;
