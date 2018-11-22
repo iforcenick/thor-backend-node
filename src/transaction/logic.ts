@@ -12,13 +12,13 @@ import {transaction} from 'objection';
 import * as dwolla from '../dwolla';
 import {DwollaRequestError, event} from '../dwolla';
 import * as models from './models';
-import {Statuses, Transaction, TransactionRequest, TransactionPatchRequest} from './models';
+import {Statuses, Transaction, TransactionExistingJobRequest, TransactionPatchRequest} from './models';
 import {MailerService} from '../mailer';
 import {Logger} from '../logger';
 import {FundingSource, VerificationStatuses} from '../foundingSource/models';
 import {Config} from '../config';
 import {JobService} from '../job/service';
-import {Job} from '../job/models';
+import {Job, JobRequest} from '../job/models';
 import * as _ from 'lodash';
 import {BaseError} from '../api';
 import {User} from '../user/models';
@@ -201,7 +201,9 @@ export class PrepareTransferLogic extends Logic {
 }
 
 const calculateTransactionsValue = (transactions: Array<models.Transaction>) => {
-    return transactions.reduce((total, trans) => { return total + Number(trans.value); }, 0);
+    return transactions.reduce((total, trans) => {
+        return total + Number(trans.value);
+    }, 0);
 };
 
 @AutoWired
@@ -366,24 +368,57 @@ export class CreateTransactionsTransferLogic extends Logic {
 }
 
 @AutoWired
+export class CreateTransactionWithExistingJobLogic extends Logic {
+    @Inject private userService: UserService;
+    @Inject private fundingService: FundingSourceService;
+    @Inject private jobService: JobService;
+    @Inject private transactionService: TransactionService;
+
+    async execute(userId, jobId: string, value: number, externalId?: string): Promise<any> {
+        const job = await this.jobService.get(jobId);
+        if (!job) {
+            throw new Errors.NotFoundError('Job not found');
+        }
+
+        const logic = new CreateTransactionLogic(this.context);
+        return await logic.execute(userId, value, job, externalId);
+    }
+}
+
+@AutoWired
+export class CreateTransactionWithCustomJobLogic extends Logic {
+    @Inject private userService: UserService;
+    @Inject private fundingService: FundingSourceService;
+    @Inject private jobService: JobService;
+    @Inject private transactionService: TransactionService;
+
+    async execute(userId: string, jobData: JobRequest, value: number, externalId?: string): Promise<any> {
+        const job = Job.factory(jobData);
+
+        const logic = new CreateTransactionLogic(this.context);
+        return await logic.execute(userId, value, job, externalId);
+    }
+}
+
+@AutoWired
 export class CreateTransactionLogic extends Logic {
     @Inject private userService: UserService;
     @Inject private fundingService: FundingSourceService;
     @Inject private jobService: JobService;
     @Inject private transactionService: TransactionService;
 
-    async execute(data: TransactionRequest): Promise<any> {
+    async execute(userId: string, value: number, job: Job, externalId?: string): Promise<any> {
         // was an user id or external id provided
         let user: users.User = null;
-        if (data.externalId) {
-            user = await this.userService.findByExternalIdAndTenant(data.externalId, this.context.getTenantId());
+        if (externalId) {
+            user = await this.userService.findByExternalIdAndTenant(externalId, this.context.getTenantId());
             if (!user) {
                 throw new Errors.NotFoundError('External Id not found');
             }
 
-            data.userId = user.id;
+            userId = user.id;
         } else {
-            user = await this.userService.get(data.userId);
+            user = await this.userService.get(userId);
         }
 
         if (!user) {
@@ -401,29 +436,22 @@ export class CreateTransactionLogic extends Logic {
         }
 
         return await transaction(models.Transaction.knex(), async trx => {
-            const {job: jobRequest} = data;
-            let jobFromDb;
-            if (!jobRequest.id) {
-                const jobEntity = Job.factory(jobRequest);
-                jobFromDb = await this.jobService.insert(jobEntity, trx);
-            } else {
-                jobFromDb = await this.jobService.get(jobRequest.id);
-            }
-            if (!jobFromDb) {
-                throw new Errors.NotFoundError('Job not found');
-            }
-
             // override the base job value if a value was provided in the request
-            const value = data.value;
             if (!value) {
-                data.value = jobFromDb.value;
+                value = job.value;
             }
 
-            const transactionEntity = models.Transaction.factory(data);
+            if (!job.id) {
+                job = await this.jobService.insert(job, trx);
+            }
+
+            const transactionEntity = models.Transaction.factory({});
             transactionEntity.adminId = this.context.getUser().id;
-            transactionEntity.jobId = jobFromDb.id;
+            transactionEntity.userId = userId;
+            transactionEntity.jobId = job.id;
+            transactionEntity.value = value;
             const transactionFromDb = await this.transactionService.insert(transactionEntity, trx);
-            transactionFromDb.job = jobFromDb;
+            transactionFromDb.job = job;
             return transactionFromDb;
         });
     }
@@ -440,7 +468,7 @@ export class UpdateTransactionLogic extends Logic {
             throw new Errors.NotFoundError('Transaction not found');
         }
 
-        if (transactionFromDb.status !==  Statuses.new) {
+        if (transactionFromDb.status !== Statuses.new) {
             throw new Errors.ConflictError('Transaction cannot be updated');
         }
 
@@ -476,7 +504,7 @@ export class DeleteTransactionLogic extends Logic {
             throw new Errors.NotFoundError('Transaction not found');
         }
 
-        if (transaction.status !==  Statuses.new) {
+        if (transaction.status !== Statuses.new) {
             throw new Errors.ConflictError('Transaction cannot be deleted');
         }
 

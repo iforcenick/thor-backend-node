@@ -14,9 +14,10 @@ import {
     UpdateTransactionLogic,
     DeleteTransactionLogic,
     CreateTransactionsTransferLogic,
-    CreateTransactionTransferLogic
+    CreateTransactionTransferLogic, CreateTransactionWithExistingJobLogic, CreateTransactionWithCustomJobLogic
 } from './logic';
 import * as dwolla from '../dwolla';
+import {TransactionCustomJobRequest} from "./models";
 
 const validate = require('uuid-validate');
 
@@ -84,17 +85,35 @@ export class TransactionController extends BaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async createTransaction(data: models.TransactionRequest): Promise<models.TransactionResponse> {
-        this.service.setRequestContext(this.getRequestContext());
-        this.jobService.setRequestContext(this.getRequestContext());
-        this.userService.setRequestContext(this.getRequestContext());
-        this.fundingService.setRequestContext(this.getRequestContext());
-
-        const parsedData: models.TransactionRequest = await this.validate(data, models.transactionRequestSchema);
+    async createTransactionWithExistingJob(data: models.TransactionExistingJobRequest): Promise<models.TransactionResponse> {
+        const parsedData: models.TransactionExistingJobRequest = await this.validate(data, models.transactionExistingJobRequestSchema);
 
         try {
-            const logic = new CreateTransactionLogic(this.getRequestContext());
-            const transaction = await logic.execute(parsedData);
+            const logic = new CreateTransactionWithExistingJobLogic(this.getRequestContext());
+            const transaction = await logic.execute(parsedData.userId, parsedData.jobId, parsedData.value, parsedData.externalId);
+            return this.map(models.TransactionResponse, transaction);
+        } catch (err) {
+            if (err instanceof HttpError) {
+                throw err;
+            }
+
+            if (err instanceof dwolla.DwollaRequestError) {
+                throw err.toValidationError();
+            }
+
+            throw new Errors.InternalServerError(err.message);
+        }
+    }
+
+    @POST
+    @Path('/custom')
+    @Preprocessor(BaseController.requireAdmin)
+    async createTransactionWithCustomJob(data: models.TransactionCustomJobRequest): Promise<models.TransactionResponse> {
+        const parsedData: models.TransactionCustomJobRequest = await this.validate(data, models.transactionCustomJobRequestSchema);
+
+        try {
+            const logic = new CreateTransactionWithCustomJobLogic(this.getRequestContext());
+            const transaction = await logic.execute(parsedData.userId, parsedData.job, parsedData.value, parsedData.externalId);
             return this.map(models.TransactionResponse, transaction);
         } catch (err) {
             if (err instanceof HttpError) {

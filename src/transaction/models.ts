@@ -7,7 +7,8 @@ import * as tenant from '../tenant/models';
 import * as user from '../user/models';
 import * as job from '../job/models';
 import * as transfer from './transfer/models';
-import {number} from 'joi';
+import {MAX_VALUE} from '../validation/constants';
+import {JobRequest, jobRequestSchema} from '../job/models';
 
 export const enum Relations {
     user = 'user',
@@ -141,11 +142,15 @@ export class PeriodsStatsResponse extends Mapper {
     current: PeriodStatsResponse = new PeriodStatsResponse();
 }
 
-export class TransactionRequest extends TransactionBaseInfo {
-    @mapper.object(job.JobRequest)
-    job: job.JobRequest = new job.JobRequest();
+export class TransactionExistingJobRequest extends TransactionBaseInfo {
+    jobId: string = mapper.FIELD_STR;
     externalId: string = mapper.FIELD_STR;
-    value: number = mapper.FIELD_NUM;
+}
+
+export class TransactionCustomJobRequest extends TransactionBaseInfo {
+    @mapper.object(JobRequest)
+    job: JobRequest = new JobRequest();
+    externalId: string = mapper.FIELD_STR;
 }
 
 export class TransactionPatchRequest extends Mapper {
@@ -161,20 +166,31 @@ export interface PaginatedTransactionResponse extends PaginatedResponse {
     items: Array<TransactionResponse>;
 }
 
-export const MAXINT = 2147483647;
-export const transactionRequestSchema = Joi.object().keys({
+export const transactionExistingJobRequestSchema = Joi.object().keys({
     userId: Joi.string().guid(),
+    jobId: Joi.string().guid().required(),
     externalId: Joi.string().allow('', null),
-    job: job.jobRequestSchema.required(),
     value: Joi.number()
+        .max(MAX_VALUE)
         .greater(0)
         .precision(2)
-        .strict(),
+        .strict().allow('', null),
+}).xor('userId', 'externalId');
+
+export const transactionCustomJobRequestSchema = Joi.object().keys({
+    userId: Joi.string().guid(),
+    job: jobRequestSchema.required(),
+    externalId: Joi.string().allow('', null),
+    value: Joi.number()
+        .max(MAX_VALUE)
+        .greater(0)
+        .precision(2)
+        .strict().allow('', null),
 }).xor('userId', 'externalId');
 
 export const transactionPatchRequestSchema = Joi.object().keys({
     jobId: Joi.string().guid(),
-    value: Joi.number().greater(0).integer().max(MAXINT),
+    value: Joi.number().greater(0).integer().max(MAX_VALUE),
 });
 
 export class InvalidTransferDataError extends Error {}

@@ -31,7 +31,6 @@ export class Job extends db.Model {
 }
 
 export class JobBaseInfo extends Mapper {
-    id: string = mapper.FIELD_STR;
     value: number = mapper.FIELD_NUM;
     name: string = mapper.FIELD_STR;
     description: string = mapper.FIELD_STR;
@@ -51,9 +50,6 @@ export interface PaginatedJobResponse extends PaginatedResponse {
 }
 
 export const jobRequestSchema = Joi.object().keys({
-    id: Joi.string()
-        .guid()
-        .allow(null),
     value: Joi.number()
         .greater(0)
         .precision(2)
