@@ -59,6 +59,7 @@ export class RatingJobsListLogic extends Logic {
             row.ids ? row.transactionsIds = row.ids.split(',') : null;
             row.jobsCount = row.transactions ? row.transactions.length : 0;
             row.rank = index + 1;
+            row.total = row.total ? row.total : 0;
             return row;
         }));
     }
