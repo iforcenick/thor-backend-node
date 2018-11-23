@@ -47,4 +47,7 @@ mailer:
     user: api
 build:
   version: 0.0.5
+invitations:
+  csv:
+    rows: 20
 
