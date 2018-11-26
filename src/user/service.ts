@@ -130,10 +130,6 @@ export class UserService extends db.ModelService<models.User> {
         return await query;
     }
 
-    async getRole(role: role.models.Types): Promise<role.models.Role> {
-        return await this.rolesService.find(role);
-    }
-
     async checkPassword(password: string, userPassword: string) {
         return await bcrypt.compare(password, userPassword);
     }
@@ -173,82 +169,6 @@ export class UserService extends db.ModelService<models.User> {
 
     async hashPassword(password) {
         return await bcrypt.hash(password, 10);
-    }
-
-    async statsForUser({
-                           userId,
-                           currentStartDate,
-                           currentEndDate,
-                           previousStartDate,
-                           previousEndDate,
-                       }: {
-        userId: string;
-        currentStartDate: string;
-        currentEndDate: string;
-        previousStartDate: string;
-        previousEndDate: string;
-    }) {
-        const tenantId = this.getTenantId();
-        const knex = ApiServer.db;
-
-        const rankQuery = knex.raw(
-            `
-            select  ranking.rank
-from (select *, row_number() OVER (ORDER BY t.total desc) AS rank
-      from (select "profiles"."userId" as userId, COALESCE(sum(transactions.value), 0) as total
-            from "profiles"
-                   left join "transactions" on "profiles"."userId" = "transactions"."userId" and
-                                               "transactions"."createdAt" between ? and (? :: timestamptz + INTERVAL '1 day ')
-                   left join "jobs" on "transactions"."jobId" = "jobs"."id"
-            where "profiles"."tenantId" = ?
-            group by "profiles"."userId") as t)as ranking
-where ranking.userId = ?
-`,
-            [currentStartDate, currentEndDate, tenantId, userId],
-        );
-        const query = ApiServer.db
-            .from('transactions')
-            .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
-            .leftJoin('jobs', 'transactions.jobId', 'jobs.id')
-            .whereRaw('"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')', [
-                currentStartDate,
-                currentEndDate,
-            ])
-            .count()
-            .select([knex.raw('sum(transactions.value) as current')])
-            .groupBy('transactions.userId')
-            .first();
-
-        const ytdQuery = ApiServer.db
-            .from('transactions')
-            .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
-            .join('transfers', 'transactions.transferId', 'transfers.id')
-            .groupBy('transactions.userId')
-            .sum('transfers.value as ytd')
-            .first();
-        const prevQuery = ApiServer.db
-            .from('transactions')
-            .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
-            .whereRaw('"transactions"."createdAt" between ? and ( ? :: timestamptz + INTERVAL \'1 day\')', [
-                previousStartDate,
-                previousEndDate,
-            ])
-            .join('transfers', 'transactions.transferId', 'transfers.id')
-            .orderBy('transfers.createdAt', 'desc')
-            .select(['value as prev'])
-            .first();
-        const [queryResult, rankResult, ytdResult, prevResult] = await Promise.all([
-            query,
-            rankQuery,
-            ytdQuery,
-            prevQuery,
-        ]);
-        const prev = prevResult ? prevResult.prev : 0;
-        const ytd = ytdResult ? ytdResult.ytd : 0;
-        const nJobs = queryResult ? queryResult.count : 0;
-        const current = queryResult ? queryResult.current : 0;
-        const rank = rankResult.rows[0] ? rankResult.rows[0].rank : null;
-        return {rank, nJobs, prev, current, ytd};
     }
 
     query(trx?: transaction<any>) {

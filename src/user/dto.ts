@@ -105,3 +105,10 @@ export class ContractorOnRetryResponse extends UserBaseInfo {
 export const contractorOnRetryRequestSchema = Joi.object().keys({
     profile: profile.profileRequestSchema.required(),
 });
+
+export const statisticsRequestSchema = Joi.object().keys({
+    currentStartDate: Joi.date().required(),
+    currentEndDate: Joi.date().required(),
+    previousStartDate: Joi.date().required(),
+    previousEndDate: Joi.date().required(),
+});

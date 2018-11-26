@@ -7,6 +7,7 @@ import {User} from './models';
 import {raw} from 'objection';
 import * as db from '../db';
 import {Errors} from 'typescript-rest';
+import {ApiServer} from "../server";
 
 const filterByContractor = (query, contractor) => {
     const likeContractor = `%${contractor}%`;
@@ -183,5 +184,78 @@ export class UsersListLogic extends Logic {
         const results = await query;
 
         return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results);
+    }
+}
+
+@AutoWired
+export class UserStatisticsLogic extends Logic {
+    @Inject private userService: UserService;
+
+    async execute(userId: string,
+                  currentStartDate,
+                  currentEndDate,
+                  previousStartDate,
+                  previousEndDate: Date): Promise<any> {
+        const tenantId = this.context.getTenantId();
+        const knex = ApiServer.db;
+
+        const rankQuery = knex.raw(
+            `
+            select  ranking.rank
+from (select *, row_number() OVER (ORDER BY t.total desc) AS rank
+      from (select "profiles"."userId" as userId, COALESCE(sum(transactions.value), 0) as total
+            from "profiles"
+                   left join "transactions" on "profiles"."userId" = "transactions"."userId" and
+                                               "transactions"."createdAt" between ? and ?
+                   left join "jobs" on "transactions"."jobId" = "jobs"."id"
+            where "profiles"."tenantId" = ?
+            group by "profiles"."userId") as t)as ranking
+where ranking.userId = ?
+`,
+            [currentStartDate, currentEndDate, tenantId, userId],
+        );
+        const query = ApiServer.db
+            .from('transactions')
+            .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
+            .leftJoin('jobs', 'transactions.jobId', 'jobs.id')
+            .whereRaw('"transactions"."createdAt" between ? and ?', [
+                currentStartDate,
+                currentEndDate,
+            ])
+            .count()
+            .select([knex.raw('sum(transactions.value) as current')])
+            .groupBy('transactions.userId')
+            .first();
+
+        const ytdQuery = ApiServer.db
+            .from('transactions')
+            .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
+            .join('transfers', 'transactions.transferId', 'transfers.id')
+            .groupBy('transactions.userId')
+            .sum('transfers.value as ytd')
+            .first();
+        const prevQuery = ApiServer.db
+            .from('transactions')
+            .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
+            .whereRaw('"transactions"."createdAt" between ? and ?', [
+                previousStartDate,
+                previousEndDate,
+            ])
+            .join('transfers', 'transactions.transferId', 'transfers.id')
+            .orderBy('transfers.createdAt', 'desc')
+            .select(['transfers.value as prev'])
+            .first();
+        const [queryResult, rankResult, ytdResult, prevResult] = await Promise.all([
+            query,
+            rankQuery,
+            ytdQuery,
+            prevQuery,
+        ]);
+        const prev = prevResult ? prevResult.prev : 0;
+        const ytd = ytdResult ? ytdResult.ytd : 0;
+        const nJobs = queryResult ? queryResult.count : 0;
+        const current = queryResult ? queryResult.current : 0;
+        const rank = rankResult.rows[0] ? rankResult.rows[0].rank : null;
+        return {rank, nJobs, prev, current, ytd};
     }
 }

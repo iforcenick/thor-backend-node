@@ -27,12 +27,12 @@ import {MailerService} from '../mailer';
 import * as _ from 'lodash';
 import {DwollaNotifier} from '../dwolla/notifier';
 import {AddContractorLogic, AddContractorOnRetryStatusLogic} from '../contractor/logic';
-import {RatingJobsListLogic, UsersListLogic} from './logic';
+import {RatingJobsListLogic, UsersListLogic, UserStatisticsLogic} from './logic';
 import {
     ContractorOnRetryRequest, contractorOnRetryRequestSchema, ContractorOnRetryResponse,
     PaginatedRankingJobs, PaginatedUserResponse,
     RankingJobs,
-    rankingRequestSchema, UserDocument, UserPatchRequest, userPatchSchema,
+    rankingRequestSchema, statisticsRequestSchema, UserDocument, UserPatchRequest, userPatchSchema,
     UserRequest,
     userRequestSchema,
     UserResponse, UserStatisticsResponse
@@ -134,11 +134,10 @@ export class UserController extends BaseController {
         const parsedData: UserRequest = await this.validate(data, userRequestSchema);
         ProfileService.validateAge(parsedData.profile);
 
-        let user = null;
-
         try {
             const logic = new AddContractorLogic(this.getRequestContext());
-            user = await logic.execute(parsedData.profile, this.getRequestContext().getTenantId(), parsedData.password);
+            const user = await logic.execute(parsedData.profile, this.getRequestContext().getTenantId(), parsedData.password);
+            return this.map(UserResponse, user);
         } catch (err) {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError('profile');
@@ -146,8 +145,6 @@ export class UserController extends BaseController {
 
             throw err;
         }
-
-        return this.map(UserResponse, user);
     }
 
     @PATCH
@@ -254,19 +251,25 @@ export class UserController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     @Tags('statistics')
     async getJobs(@PathParam('id') userId: string,
-                  @QueryParam('currentStartDate') currentStartDate?: string,
-                  @QueryParam('currentEndDate') currentEndDate?: string,
-                  @QueryParam('previousStartDate') previousStartDate?: string,
-                  @QueryParam('previousEndDate') previousEndDate?: string): Promise<UserStatisticsResponse> {
-        this.service.setRequestContext(this.getRequestContext());
-
-        const statistics = await this.service.statsForUser({
-            userId,
+                  @QueryParam('currentStartDate') currentStartDate: string,
+                  @QueryParam('currentEndDate') currentEndDate: string,
+                  @QueryParam('previousStartDate') previousStartDate: string,
+                  @QueryParam('previousEndDate') previousEndDate: string): Promise<UserStatisticsResponse> {
+        const logic = new UserStatisticsLogic(this.getRequestContext());
+        const parsed = await this.validate({
             currentStartDate,
             currentEndDate,
             previousStartDate,
-            previousEndDate,
-        });
+            previousEndDate
+        }, statisticsRequestSchema);
+
+        const statistics = await logic.execute(
+            userId,
+            parsed.currentStartDate,
+            parsed.currentEndDate,
+            parsed.previousStartDate,
+            parsed.previousEndDate,
+        );
         return this.map(UserStatisticsResponse, statistics);
     }
 
@@ -335,9 +338,8 @@ export class UserController extends BaseController {
             const logic = new AddContractorOnRetryStatusLogic(this.getRequestContext());
             const tenantId = this.getRequestContext().getTenantId();
             const user = await logic.execute(profile, tenantId, userId);
-            const contractorResponse = this.map(ContractorOnRetryResponse, user);
 
-            return contractorResponse;
+            return this.map(ContractorOnRetryResponse, user);
         } catch (err) {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError('profile');
