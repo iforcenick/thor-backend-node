@@ -3,20 +3,32 @@ import {Container} from 'typescript-ioc';
 import {AddTenantLogic} from '../../tenant/logic';
 import {Config} from '../../config';
 import {Model} from 'objection';
+import Joi = require('joi');
 
 const logic: AddTenantLogic = Container.get(AddTenantLogic);
 const config: Config = Container.get(Config);
 const knex = require('knex');
 
 const addTenant = async (name, email) => {
-    if (!name) {
-        console.log('Name is empty');
+    const emailSchema = Joi.object().keys({
+        email: Joi.string().required().email()
+    });
+
+    const nameSchema = Joi.object().keys({
+        name: Joi.string().required()
+    });
+
+    const validationNameResult = Joi.validate(name, Joi.string().required());
+    if (validationNameResult.error) {
+        console.log('name', validationNameResult.error);
         process.exit(1);
     }
-    if (!email) {
-        console.log('Email is empty');
+    const validationEmailResult = Joi.validate(email, Joi.string().required().email());
+    if (validationEmailResult.error) {
+        console.log('email', validationEmailResult.error);
         process.exit(1);
     }
+
     const _knex = knex(config.get('db'));
     Model.knex(_knex);
     try {
