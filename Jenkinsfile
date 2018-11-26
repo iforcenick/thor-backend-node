@@ -45,7 +45,7 @@ node('docker') {
         stage('Install packages') {
             dir("./") {
                 docker.image("node:carbon").inside('') {
-                    sh 'npm install'
+                    sh 'yarn install'
                 }
             }
         }
@@ -53,7 +53,7 @@ node('docker') {
         stage('Test') {
             dir("./") {
                 docker.image("node:carbon").inside('') {
-                    sh 'npm run test'
+                    sh 'yarn run test'
                 }
             }
         }
@@ -61,8 +61,8 @@ node('docker') {
         stage('Build modules') {
             dir("./") {
                 docker.image("node:carbon").inside('') {
-                    sh 'npm run build'
-                    sh 'npm run swagger'
+                    sh 'yarn run build'
+                    sh 'yarn run swagger'
                 }
             }
         }
