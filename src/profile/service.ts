@@ -9,6 +9,7 @@ import {ValidationError} from '../errors';
 import {FundingSource} from '../foundingSource/models';
 import {Invitation} from '../invitation/models';
 import {Profile} from './models';
+import * as objection from 'objection';
 
 @AutoWired
 export class ProfileService extends db.ModelService<models.Profile> {
@@ -27,7 +28,7 @@ export class ProfileService extends db.ModelService<models.Profile> {
         throw new ValidationError('users is too young');
     }
 
-    async createProfile(profile: models.Profile, roles: Array<any>, trx: transaction<any>, baseProfile?: boolean, tenantId?) {
+    async createProfile(profile: models.Profile, roles: Array<any>, trx: objection.Transaction, baseProfile?: boolean, tenantId?) {
         if (!baseProfile) {
             profile.tenantId = tenantId || this.getTenantId();
         }
@@ -42,7 +43,7 @@ export class ProfileService extends db.ModelService<models.Profile> {
         return profile;
     }
 
-    async updateWithDwolla(profile: models.Profile, trx?: transaction<any>): Promise<any> {
+    async updateWithDwolla(profile: models.Profile, trx?: objection.Transaction): Promise<any> {
         try {
             const customer = dwolla.customer.factory(profile);
             customer.status = profile.dwollaStatus;
@@ -54,7 +55,7 @@ export class ProfileService extends db.ModelService<models.Profile> {
         }
     }
 
-    async addFundingSource(profile: models.Profile, fundingSource: FundingSource, trx: transaction<any>): Promise<any> {
+    async addFundingSource(profile: models.Profile, fundingSource: FundingSource, trx: objection.Transaction): Promise<any> {
         return await profile.$relatedQuery(models.Relations.fundingSources, trx).relate(fundingSource.id);
     }
 
@@ -62,7 +63,7 @@ export class ProfileService extends db.ModelService<models.Profile> {
         return await this.getOneBy('dwollaUri', id);
     }
 
-    async setRoleForProfile(profile: Profile, roleId: string, trx: transaction<any>) {
+    async setRoleForProfile(profile: Profile, roleId: string, trx: objection.Transaction) {
         await profile.$relatedQuery(models.Relations.roles, trx).relate(roleId);
     }
 

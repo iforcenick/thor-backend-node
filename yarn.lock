@@ -121,6 +121,11 @@
   resolved "https://registry.yarnpkg.com/@types/bcrypt/-/bcrypt-1.0.0.tgz#2c523da191db7d41c06d17de235335c985effe9b"
   integrity sha1-LFI9oZHbfUHAbRfeI1M1yYXv/ps=
 
+"@types/bluebird@*":
+  version "3.5.24"
+  resolved "https://registry.yarnpkg.com/@types/bluebird/-/bluebird-3.5.24.tgz#11f76812531c14f793b8ecbf1de96f672905de8a"
+  integrity sha512-YeQoDpq4Lm8ppSBqAnAeF/xy1cYp/dMTif2JFcvmAbETMRlvKHT2iLcWu+WyYiJO3b3Ivokwo7EQca/xfLVJmg==
+
 "@types/body-parser@*", "@types/body-parser@^1.16.8":
   version "1.17.0"
   resolved "https://registry.yarnpkg.com/@types/body-parser/-/body-parser-1.17.0.tgz#9f5c9d9bd04bb54be32d5eb9fc0d8c974e6cf58c"
@@ -217,6 +222,14 @@
   resolved "https://registry.yarnpkg.com/@types/joi/-/joi-13.6.3.tgz#79364839a9cc2c6d4d915ef8822e1f703e28648f"
   integrity sha512-n5tDa0/3MUtHsA2fVH+emDfGQkPramIpWaOvWS+7C/Yq7bn2j979RAIy9pbl4F4hSE5lwjgBXhJN019DP+3ofg==
 
+"@types/knex@*":
+  version "0.15.1"
+  resolved "https://registry.yarnpkg.com/@types/knex/-/knex-0.15.1.tgz#349a1c25d481b338549df2cf4fce685676092523"
+  integrity sha512-eMXYxl8Jhg5tBYLtSGTF4acCGHeKO+0HYDocAM5jpYBsKC8w0HwQPF8eqi8TAzex5I4JkVK27p/phvY0wg09aQ==
+  dependencies:
+    "@types/bluebird" "*"
+    "@types/node" "*"
+
 "@types/lodash@^4.14.107":
   version "4.14.118"
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.118.tgz#247bab39bfcc6d910d4927c6e06cbc70ec376f27"
@@ -243,6 +256,15 @@
   version "5.2.5"
   resolved "https://registry.yarnpkg.com/@types/mocha/-/mocha-5.2.5.tgz#8a4accfc403c124a0bafe8a9fc61a05ec1032073"
   integrity sha512-lAVp+Kj54ui/vLUFxsJTMtWvZraZxum3w3Nwkble2dNuV5VnPA+Mi2oGX9XYJAaIvZi3tn3cbjS/qcJXRb6Bww==
+
+"@types/mock-knex@^0.3.4":
+  version "0.3.4"
+  resolved "https://registry.yarnpkg.com/@types/mock-knex/-/mock-knex-0.3.4.tgz#97be5db1b2bbe6ec700c7fb6178de312639b2b77"
+  integrity sha512-P10EP5KXuhTnoucGdHMhW29fPJhL0CCqbo4DNwotBe5VXElIdTuRR2QdrrBE360KQJhqthFV1lJRjqdqEB6t4Q==
+  dependencies:
+    "@types/events" "*"
+    "@types/knex" "*"
+    "@types/node" "*"
 
 "@types/multer@0.0.32":
   version "0.0.32"
@@ -503,9 +525,9 @@ assign-symbols@^1.0.0:
   integrity sha1-WWZ/QfrdTyDMvCu5a41Pf3jsA2c=
 
 ast-types@0.x.x:
-  version "0.11.6"
-  resolved "https://registry.yarnpkg.com/ast-types/-/ast-types-0.11.6.tgz#4e2266c2658829aef3b40cc33ad599c4e9eb89ef"
-  integrity sha512-nHiuV14upVGl7MWwFUYbzJ6YlfwWS084CU9EA8HajfYQjMSli5TQi3UTRygGF58LFWVkXxS1rbgRhROEqlQkXg==
+  version "0.11.7"
+  resolved "https://registry.yarnpkg.com/ast-types/-/ast-types-0.11.7.tgz#f318bf44e339db6a320be0009ded64ec1471f46c"
+  integrity sha512-2mP3TwtkY/aTv5X3ZsMpNAbOnyoC/aMJwJSoaELPkHId0nSQgFcnU4dRW3isxiz7+zBexk0ym3WNVjMiQBnJSw==
 
 async-each@^1.0.0:
   version "1.0.1"
@@ -607,7 +629,7 @@ bluebird@3.4.1:
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.4.1.tgz#b731ddf48e2dd3bedac2e75e1215a11bcb91fa07"
   integrity sha1-tzHd9I4t077awudeEhWhG8uR+gc=
 
-bluebird@^3.5.1:
+bluebird@^3.4.1, bluebird@^3.5.1:
   version "3.5.3"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.5.3.tgz#7d01c6f9616c9a51ab0f8c549a79dfe6ec33efa7"
   integrity sha512-/qKPUQlaW1OyR51WeCPBvRnAlnZFUJkCSG5HzGnuIqhgyJtF+T94lFnn33eiazjRm2LAHVy2guNnaq48X9SJuw==
@@ -2099,9 +2121,9 @@ he@1.1.1:
   integrity sha1-k0EP0hsAlzUVH4howvJx80J+I/0=
 
 hoek@6.x.x:
-  version "6.0.3"
-  resolved "https://registry.yarnpkg.com/hoek/-/hoek-6.0.3.tgz#7884360426d927865a0a1251fc9c59313af5b798"
-  integrity sha512-TU6RyZ/XaQCTWRLrdqZZtZqwxUVr6PDMfi6MlWNURZ7A6czanQqX4pFE1mdOUQR9FdPCsZ0UzL8jI/izZ+eBSQ==
+  version "6.0.4"
+  resolved "https://registry.yarnpkg.com/hoek/-/hoek-6.0.4.tgz#8db638130825534575e8e4e80f97ca66108e6382"
+  integrity sha512-9D47elppcwrTx2x9B6TrovxnUtlTBYFcHGgo0+LRA1+YfUkCecT//41ovdh6zbl7whB9Hc2whRO1c6lzPoTgww==
 
 homedir-polyfill@^1.0.1:
   version "1.0.1"
@@ -2609,9 +2631,9 @@ joi-date-extensions@^1.2.0:
     moment "2.x.x"
 
 joi@latest:
-  version "14.1.0"
-  resolved "https://registry.yarnpkg.com/joi/-/joi-14.1.0.tgz#98a7923108a9f361192551b29f538488d07953cc"
-  integrity sha512-oJDBwllD6VjSMquuv56W0fQlegJdsr8+905zuEQhnE/eTSh5GYUHlwn/UATnlDepuXZF8BnxggdxqQTYrtit6Q==
+  version "14.3.0"
+  resolved "https://registry.yarnpkg.com/joi/-/joi-14.3.0.tgz#55f7c5caa8256de74ccb12eb22ab1c19eea02db3"
+  integrity sha512-0HKd1z8MWogez4GaU0LkY1FgW30vR2Kwy414GISfCU41OYgUC2GWpNe5amsvBZtDqPtt7DohykfOOMIw1Z5hvQ==
   dependencies:
     hoek "6.x.x"
     isemail "3.x.x"
@@ -2901,7 +2923,7 @@ lodash@4.17.10:
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.10.tgz#1b7793cf7259ea38fb3661d4d38b3260af8ae4e7"
   integrity sha512-UejweD1pDoXu+AD825lWwp4ZGtSwgnpZxb3JDViD7StjQz+Nb/6l093lx4OQ0foGWNRoc19mWy7BzL+UAK2iVg==
 
-lodash@^4.17.10, lodash@^4.17.4, lodash@^4.17.5:
+lodash@^4.14.2, lodash@^4.17.10, lodash@^4.17.4, lodash@^4.17.5:
   version "4.17.11"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.11.tgz#b39ea6229ef607ecd89e2c8df12536891cac9b8d"
   integrity sha512-cQKh8igo5QUhZ7lg38DYWAxMvjSAKG0A8wGSVimP07SIUEK2UO+arSRKbRZWtelMtN5V0Hkwh5ryOto/SshYIg==
@@ -3182,6 +3204,15 @@ mocha@^5.2.0:
     minimatch "3.0.4"
     mkdirp "0.5.1"
     supports-color "5.4.0"
+
+mock-knex@^0.4.2:
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/mock-knex/-/mock-knex-0.4.2.tgz#6a7c1941908dd6b9761c24a071c392b56c20bb5f"
+  integrity sha512-s6MeSLMA/nicxnALq6NZCHAegFOgSI3+bbb9I0lmC248+G5lcU/GxX6e49+rPB9U3KyygLmwMSYB3xYXrcTweA==
+  dependencies:
+    bluebird "^3.4.1"
+    lodash "^4.14.2"
+    semver "^5.3.0"
 
 moment@2.x.x, moment@^2.22.2:
   version "2.22.2"
@@ -4020,10 +4051,15 @@ punycode@^1.4.1:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-1.4.1.tgz#c0d5a63b2718800ad8e1eb0fa5269c84dd41845e"
   integrity sha1-wNWmOycYgArY4esPpSachN1BhF4=
 
-qs@6.5.2, qs@^6.5.1, qs@~6.5.2:
+qs@6.5.2, qs@~6.5.2:
   version "6.5.2"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.5.2.tgz#cb3ae806e8740444584ef154ce8ee98d403f3e36"
   integrity sha512-N5ZAX4/LxJmF+7wN74pUD6qAh9/wnvdQcjq9TZjevvXzSUo7bfmw91saqMjzGS2xq91/odN2dW/WOl7qQHNDGA==
+
+qs@^6.5.1:
+  version "6.6.0"
+  resolved "https://registry.yarnpkg.com/qs/-/qs-6.6.0.tgz#a99c0f69a8d26bf7ef012f871cdabb0aee4424c2"
+  integrity sha512-KIJqT9jQJDQx5h5uAVPimw6yVg2SekOKu959OCtktD3FjzbpvaPr8i4zzg07DOMz+igA4W/aNM7OV8H37pFYfA==
 
 randomatic@^3.0.0:
   version "3.1.1"

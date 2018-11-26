@@ -12,6 +12,7 @@ import {ProfileService} from '../profile/service';
 import {Profile} from '../profile/models';
 import {RoleService} from '../user/role/service';
 import {Role, Types} from '../user/role/models';
+import * as objection from 'objection';
 
 @AutoWired
 export class GetTenantLogic extends Logic {
@@ -247,7 +248,7 @@ export class AddTenantLogic extends Logic {
         return await this.tenantService.get(tenant.id);
     }
 
-    private async addTenantEntity(name: string, trx: transaction<any>): Promise<Tenant> {
+    private async addTenantEntity(name: string, trx: objection.Transaction): Promise<Tenant> {
         const tenant: Tenant = Tenant.factory({name: name});
         tenant.createdAt = new Date();
         tenant.updatedAt = new Date();
@@ -256,7 +257,7 @@ export class AddTenantLogic extends Logic {
         return result;
     }
 
-    private async addAdminUser(trx: transaction<any>): Promise<User> {
+    private async addAdminUser(trx: objection.Transaction): Promise<User> {
         const user: User = User.factory({});
         user.createdAt = new Date();
         user.updatedAt = new Date();
@@ -264,7 +265,7 @@ export class AddTenantLogic extends Logic {
         return await this.userService.insert(user, trx);
     }
 
-    private async addAdminUserProfile(adminUserId: string, tenantId: string, tenantName: string, email: string, trx: transaction<any>) {
+    private async addAdminUserProfile(adminUserId: string, tenantId: string, tenantName: string, email: string, trx: objection.Transaction) {
         const profile: Profile = Profile.factory({});
 
         profile.createdAt = new Date();
@@ -282,7 +283,7 @@ export class AddTenantLogic extends Logic {
         return await this.profileService.insert(profile, trx);
     }
 
-    private async addRoleForAdminProfile(profile: Profile, adminRole: Role, trx: transaction<any>) {
+    private async addRoleForAdminProfile(profile: Profile, adminRole: Role, trx: objection.Transaction) {
         await this.profileService.setRoleForProfile(profile, adminRole.id, trx);
     }
 }

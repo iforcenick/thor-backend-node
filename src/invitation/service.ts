@@ -3,6 +3,7 @@ import * as models from './models';
 import * as db from '../db';
 import {transaction} from 'objection';
 import {Invitation} from './models';
+import * as objection from 'objection';
 
 @AutoWired
 export class InvitationService extends db.ModelService<models.Invitation> {
@@ -14,7 +15,7 @@ export class InvitationService extends db.ModelService<models.Invitation> {
         return query.where(`${db.Tables.contractorInvitations}.tenantId`, this.getTenantId());
     }
 
-    async insert(transaction: models.Invitation, trx?: transaction<any>): Promise<models.Invitation> {
+    async insert(transaction: models.Invitation, trx?: objection.Transaction): Promise<models.Invitation> {
         transaction.tenantId = this.getTenantId();
         return await super.insert(transaction, trx);
     }

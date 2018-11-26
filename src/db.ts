@@ -5,6 +5,7 @@ import {Errors} from '../node_modules/typescript-rest';
 import * as _ from 'lodash';
 import {ContextAwareInterface, RequestContext, RequestContextMissingError} from './context';
 import {Inject} from 'typescript-ioc';
+import * as objection from 'objection';
 
 const validate = require('uuid-validate');
 const uuid = require('uuid');
@@ -182,7 +183,7 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
         return new Paginated(new Pagination(pag.page, pag.limit, result.total), result.results);
     }
 
-    transaction(trx?: transaction<any>) {
+    transaction(trx?: objection.Transaction) {
         if (!trx) {
             return this.modelType.knex();
         }
@@ -194,7 +195,7 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
         return query;
     }
 
-    async insert(entity: OModel, trx?: transaction<any>): Promise<T> {
+    async insert(entity: OModel, trx?: objection.Transaction): Promise<T> {
         const response = await this.modelType
             .query(this.transaction(trx))
             .insert(entity)
@@ -207,7 +208,7 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
         }
     }
 
-    async update(entity: OModel, trx?: transaction<any>): Promise<any> {
+    async update(entity: OModel, trx?: objection.Transaction): Promise<any> {
         return await entity
             .$query(this.transaction(trx))
             .patch(entity)
@@ -215,7 +216,7 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
             .first();
     }
 
-    async delete(entity: Model, trx?: transaction<any>): Promise<any> {
+    async delete(entity: Model, trx?: objection.Transaction): Promise<any> {
         return await entity
             .$query(this.transaction(trx))
             .delete()

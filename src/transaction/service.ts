@@ -2,6 +2,7 @@ import {AutoWired} from 'typescript-ioc';
 import * as models from './models';
 import * as db from '../db';
 import {raw, transaction} from 'objection';
+import * as objection from 'objection';
 
 @AutoWired
 export class TransactionService extends db.ModelService<models.Transaction> {
@@ -21,14 +22,14 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         return query;
     }
 
-    async insert(transaction: models.Transaction, trx?: transaction<any>): Promise<models.Transaction> {
+    async insert(transaction: models.Transaction, trx?: objection.Transaction): Promise<models.Transaction> {
         delete transaction.job;
         transaction.tenantId = this.getTenantId();
         transaction.status = models.Statuses.new;
         return await super.insert(transaction, trx);
     }
 
-    async update(transaction: models.Transaction, trx?: transaction<any>): Promise<models.Transaction> {
+    async update(transaction: models.Transaction, trx?: objection.Transaction): Promise<models.Transaction> {
         delete transaction.job;
         return await super.update(transaction, trx);
     }

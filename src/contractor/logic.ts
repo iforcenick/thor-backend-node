@@ -11,7 +11,7 @@ import {InvitationService} from '../invitation/service';
 import * as role from '../user/role';
 import {RoleService} from '../user/role/service';
 import * as _ from 'lodash';
-import {transaction} from 'objection';
+import * as objection from 'objection';
 import {ProfileService} from '../profile/service';
 import {Errors} from 'typescript-rest';
 import {Logger} from '../logger';
@@ -51,7 +51,7 @@ export class AddContractorLogic extends Logic {
 
         user.password = await this.userService.hashPassword(password);
 
-        await transaction(trx, async _trx => {
+        await objection.transaction(trx, async _trx => {
             user = await this.userService.insert(user, _trx);
             profile.userId = user.id;
             profile.externalId = externalId;
@@ -70,14 +70,14 @@ export class AddContractorLogic extends Logic {
         return user;
     }
 
-    private async createTenantProfile(profile: Profile, roles: Array<role.models.Role>, tenantId: string, trx: transaction<any>) {
+    private async createTenantProfile(profile: Profile, roles: Array<role.models.Role>, tenantId: string, trx: objection.Transaction) {
         profile.tenantId = tenantId;
         profile = await this.profileService.insert(profile, trx);
         await this.addRoles(profile, roles, trx);
         return profile;
     }
 
-    private async createBaseProfile(profile: Profile, roles: Array<role.models.Role>, trx: transaction<any>) {
+    private async createBaseProfile(profile: Profile, roles: Array<role.models.Role>, trx: objection.Transaction) {
         let baseProfile = _.clone(profile);
         baseProfile.dwollaUri = undefined;
         baseProfile.dwollaStatus = undefined;
@@ -87,7 +87,7 @@ export class AddContractorLogic extends Logic {
         return baseProfile;
     }
 
-    private async addRoles(profile: Profile, roles: Array<role.models.Role>, trx: transaction<any>) {
+    private async addRoles(profile: Profile, roles: Array<role.models.Role>, trx: objection.Transaction) {
         profile.roles = [];
         for (const role of roles) {
             await profile.$relatedQuery(models.Relations.roles, trx).relate(role.id);
@@ -157,7 +157,7 @@ export class AddInvitedContractorLogic extends Logic {
             throw new Errors.ConflictError('Contractor and invitation emails do not match.');
         }
 
-        await transaction(this.invitationService.transaction(), async trx => {
+        await objection.transaction(this.invitationService.transaction(), async trx => {
             const logic = new AddContractorLogic(this.context);
             user = await logic.execute(profileData, tenantId, password, invitation.externalId, trx);
 

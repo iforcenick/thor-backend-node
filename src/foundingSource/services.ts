@@ -1,14 +1,12 @@
 import * as db from '../db';
 import {FundingSource} from './models';
+import * as objection from 'objection';
 import {transaction} from 'objection';
-import {AutoWired, Inject} from 'typescript-ioc';
-import {UserService} from '../user/service';
-import {ProfileService} from '../profile/service';
-import {RequestContext} from '../context';
+import {AutoWired} from 'typescript-ioc';
 
 @AutoWired
 export class FundingSourceService extends db.ModelService<FundingSource> {
-    async insert(entity: FundingSource, trx?: transaction<any>): Promise<FundingSource> {
+    async insert(entity: FundingSource, trx?: objection.Transaction): Promise<FundingSource> {
         entity.tenantId = this.getTenantId();
         return super.insert(entity, trx);
     }
