@@ -62,6 +62,10 @@ export class ProfileService extends db.ModelService<models.Profile> {
         return await this.getOneBy('dwollaUri', id);
     }
 
+    async setRoleForProfile(profile: Profile, roleId: string, trx: transaction<any>) {
+        await profile.$relatedQuery(models.Relations.roles, trx).relate(roleId);
+    }
+
     async getByEmails(emails: string[]): Promise<Array<Profile>> {
         return this.useTenantContext(Profile.query())
             .whereIn('email', emails);

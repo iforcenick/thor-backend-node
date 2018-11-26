@@ -12,32 +12,34 @@ export const enum Relations {
 
 export class User extends db.Model {
     static tableName = db.Tables.users;
-    static relationMappings = {
-        [Relations.profile]: {
-            relation: db.Model.HasManyRelation,
-            modelClass: profile.Profile,
-            join: {
-                from: `${db.Tables.users}.id`,
-                to: `${db.Tables.profiles}.userId`,
+    static get relationMappings() {
+        return {
+            [Relations.profile]: {
+                relation: db.Model.HasManyRelation,
+                modelClass: profile.Profile,
+                join: {
+                    from: `${db.Tables.users}.id`,
+                    to: `${db.Tables.profiles}.userId`,
+                },
             },
-        },
-        [Relations.tenantProfile]: {
-            relation: db.Model.HasOneRelation,
-            modelClass: profile.Profile,
-            join: {
-                from: `${db.Tables.users}.id`,
-                to: `${db.Tables.profiles}.userId`,
+            [Relations.tenantProfile]: {
+                relation: db.Model.HasOneRelation,
+                modelClass: profile.Profile,
+                join: {
+                    from: `${db.Tables.users}.id`,
+                    to: `${db.Tables.profiles}.userId`,
+                },
             },
-        },
-        [Relations.transactions]: {
-            relation: db.Model.HasManyRelation,
-            modelClass: Transaction,
-            join: {
-                from: `${db.Tables.users}.id`,
-                to: `${db.Tables.transactions}.userId`,
-            },
-        },
-    };
+            [Relations.transactions]: {
+                relation: db.Model.HasManyRelation,
+                modelClass: Transaction,
+                join: {
+                    from: `${db.Tables.users}.id`,
+                    to: `${db.Tables.transactions}.userId`,
+                },
+            }
+        };
+    }
     password?: string = null;
     deletedAt?: Date = null;
     profiles?: Array<profile.Profile>;

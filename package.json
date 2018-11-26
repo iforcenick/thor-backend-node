@@ -26,6 +26,7 @@
   "license": "ISC",
   "homepage": "https://github.com/thortoken/thor-backend#readme",
   "dependencies": {
+    "@types/mock-knex": "^0.3.4",
     "axios": "^0.18.0",
     "bcrypt": "^2.0.1",
     "body-parser": "^1.18.2",
@@ -47,6 +48,7 @@
     "lodash": "^4.17.5",
     "mailgun-js": "^0.21.0",
     "method-override": "^2.3.10",
+    "mock-knex": "^0.4.2",
     "moment": "^2.22.2",
     "objection": "^1.2.6",
     "objection-guid": "^3.0.1",

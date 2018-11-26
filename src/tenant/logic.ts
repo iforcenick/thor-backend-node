@@ -5,6 +5,13 @@ import {Errors} from 'typescript-rest';
 import * as dwolla from '../dwolla';
 import {Logger} from '../logger';
 import {Tenant} from './models';
+import {transaction} from 'objection';
+import {User} from '../user/models';
+import {UserService} from '../user/service';
+import {ProfileService} from '../profile/service';
+import {Profile} from '../profile/models';
+import {RoleService} from '../user/role/service';
+import {Role, Types} from '../user/role/models';
 
 @AutoWired
 export class GetTenantLogic extends Logic {
@@ -210,5 +217,72 @@ export class AddTenantCompanyDocumentsLogic extends Logic {
 
         const location = await this.dwollaClient.createDocument(tenant.dwollaUri, file.buffer, file.originalname, type);
         return await this.dwollaClient.getDocument(location);
+    }
+}
+
+@AutoWired
+export class AddTenantLogic extends Logic {
+    @Inject tenantService: TenantService;
+    @Inject userService: UserService;
+    @Inject profileService: ProfileService;
+    @Inject roleService: RoleService;
+
+    async execute(name: string, email: string): Promise<Tenant> {
+
+        const tenantEntity: Tenant = await this.tenantService.getOneBy('name', name);
+        if (tenantEntity) {
+            throw new Error(`Name ${name} for tenant already used`);
+        }
+
+        const adminRole: Role = await this.roleService.find(Types.admin);
+        const tenant = await transaction(this.tenantService.transaction(), async (trx) => {
+            const tenant = await this.addTenantEntity(name, trx);
+            const user = await this.addAdminUser(trx);
+            const profile = await this.addAdminUserProfile(user.id, tenant.id, name, email, trx);
+            await this.addRoleForAdminProfile(profile, adminRole, trx);
+
+            return tenant;
+        });
+
+        return await this.tenantService.get(tenant.id);
+    }
+
+    private async addTenantEntity(name: string, trx: transaction<any>): Promise<Tenant> {
+        const tenant: Tenant = Tenant.factory({name: name});
+        tenant.createdAt = new Date();
+        tenant.updatedAt = new Date();
+        const result = await this.tenantService.insert(tenant, trx);
+
+        return result;
+    }
+
+    private async addAdminUser(trx: transaction<any>): Promise<User> {
+        const user: User = User.factory({});
+        user.createdAt = new Date();
+        user.updatedAt = new Date();
+
+        return await this.userService.insert(user, trx);
+    }
+
+    private async addAdminUserProfile(adminUserId: string, tenantId: string, tenantName: string, email: string, trx: transaction<any>) {
+        const profile: Profile = Profile.factory({});
+
+        profile.createdAt = new Date();
+        profile.updatedAt = new Date();
+
+        profile.tenantId = tenantId;
+        profile.userId = adminUserId;
+
+        profile.firstName = `admin_${tenantName}`;
+        profile.lastName = `admin_${tenantName}`;
+
+        profile.email = email;
+        profile.phone = '0123456789';
+
+        return await this.profileService.insert(profile, trx);
+    }
+
+    private async addRoleForAdminProfile(profile: Profile, adminRole: Role, trx: transaction<any>) {
+        await this.profileService.setRoleForProfile(profile, adminRole.id, trx);
     }
 }
