@@ -178,6 +178,10 @@ export class Client {
         const response = await this.post(Client.beneficialOwnerUri(id), owner);
         return response.headers.get('location');
     }
+    public async retryBusinessVerifiedBeneficialOwner(id: string, owner: customer.BeneficialOwner) {
+        const response = await this.post(Client.beneficialOwnerUri(id), owner);
+        return response.body;
+    }
 
     public async checkBeneficialOwnerVerificationStatus(id: string, owner: customer.BeneficialOwner) {
         const response = await this.get(Client.beneficialOwnerUri(id));

@@ -54,7 +54,9 @@ export const addBeneficialOwnerRequestSchema = Joi.object().keys({
 export class EditBeneficialOwnerRequest extends AddBeneficialOwnerRequest {
     id: string = mapper.FIELD_STR;
 }
+export class RetryBeneficialOwnerRequest extends EditBeneficialOwnerRequest {
 
+}
 export class EditBeneficialOwnerResponse extends BeneficialOwnerBaseModel {
     dateOfBirth: string = mapper.FIELD_STR;
     ssn: string = mapper.FIELD_STR;
@@ -70,3 +72,4 @@ export const editBeneficialOwnerRequestSchema = Joi.object().keys({
     address: beneficialOwnerAddressSchema.required()
 });
 
+export const retryBeneficialOwnerRequestSchema = editBeneficialOwnerRequestSchema;

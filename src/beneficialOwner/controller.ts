@@ -1,7 +1,7 @@
 import {BaseController} from '../api';
 import {AutoWired} from 'typescript-ioc';
 import {Security, Tags} from 'typescript-rest-swagger';
-import {DELETE, GET, PATCH, Path, PathParam, POST, Preprocessor, QueryParam, HttpError} from 'typescript-rest';
+import {DELETE, GET, PATCH, Path, PathParam, POST, Preprocessor, QueryParam, HttpError, PUT} from 'typescript-rest';
 import {
     AddBeneficialOwnerRequest,
     addBeneficialOwnerRequestSchema,
@@ -9,10 +9,10 @@ import {
     EditBeneficialOwnerRequest,
     editBeneficialOwnerRequestSchema,
     EditBeneficialOwnerResponse,
-    PaginatedBeneficialOwnerResponse
+    PaginatedBeneficialOwnerResponse, RetryBeneficialOwnerRequest, retryBeneficialOwnerRequestSchema
 } from './models';
 import {
-    AddBeneficialOwnerLogic,
+    AddBeneficialOwnerLogic, AddBeneficialOwnerRetryLogic,
     DeleteBeneficialOwnerLogic,
     EditBeneficialOwnerLogic,
     GetBeneficialOwnerLogic,
@@ -46,6 +46,26 @@ export abstract class BeneficialOwnerController extends BaseController {
                 throw err;
             }
 
+            throw new Errors.InternalServerError(err.message);
+        }
+    }
+
+    @PUT
+    @Path('beneficialOwners')
+    async retryBeneficialOwner(request: RetryBeneficialOwnerRequest): Promise<any> {
+        const validateResult: RetryBeneficialOwnerRequest = await this.validate(request, retryBeneficialOwnerRequestSchema);
+        try {
+            const retryLogic = new AddBeneficialOwnerRetryLogic(this.getRequestContext());
+            const beneficialOwner = await retryLogic.execute(validateResult, this.getRequestContext().getTenantId());
+            return this.map(BeneficialOwnerResponse, beneficialOwner);
+        } catch (err) {
+            if (err instanceof dwolla.DwollaRequestError) {
+                throw err.toValidationError(null, null);
+            }
+
+            if (err instanceof HttpError) {
+                throw err;
+            }
             throw new Errors.InternalServerError(err.message);
         }
     }

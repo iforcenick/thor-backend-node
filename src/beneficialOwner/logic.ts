@@ -1,10 +1,11 @@
-import {AddBeneficialOwnerRequest, EditBeneficialOwnerRequest} from './models';
+import {AddBeneficialOwnerRequest, EditBeneficialOwnerRequest, RetryBeneficialOwnerRequest} from './models';
 import * as dwolla from '../dwolla/index';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {Errors} from 'typescript-rest';
 import {BeneficialOwner} from '../dwolla/customer';
 import {TenantService} from '../tenant/service';
 import {Logic} from '../logic';
+import {Tenant} from '../tenant/models';
 
 @AutoWired
 export class AddBeneficialOwnerLogic extends Logic {
@@ -77,5 +78,27 @@ export class EditBeneficialOwnerLogic extends Logic {
 export class BeneficialOwnerError extends Error {
     constructor(message: string) {
         super(message);
+    }
+}
+
+@AutoWired
+export class AddBeneficialOwnerRetryLogic extends Logic {
+    @Inject private tenantService: TenantService;
+    @Inject private dwollaClient: dwolla.Client;
+
+    async execute(request: RetryBeneficialOwnerRequest, tenantId: string): Promise<any> {
+        const tenant = await this.tenantService.get(tenantId);
+        if (!tenant) {
+            throw new Errors.NotFoundError('Tenant not found');
+        }
+        if (!tenant.dwollaUri) {
+            throw new Errors.ConflictError('Could not add beneficial owner for tenant, no tenant company');
+        }
+        if (tenant.businessType == dwolla.customer.BUSINESS_TYPE.Sole) {
+            throw new Errors.ConflictError('soleProprietorship company cannot have beneficial owners');
+        }
+        const beneficialOwner = new BeneficialOwner(request);
+        const response = await this.dwollaClient.retryBusinessVerifiedBeneficialOwner(request.id, beneficialOwner);
+        return await this.dwollaClient.getBusinessVerifiedBeneficialOwner(response);
     }
 }
