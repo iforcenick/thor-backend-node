@@ -26,7 +26,9 @@ export class DwollaController extends BaseController {
             this.getRequestContext().setForceTenantId(this.config.get('dwolla.tenantId'));
 
             const eventLogic = EventFactory.get(_event, this.getRequestContext());
-            await eventLogic.execute(_event);
+            if (eventLogic) {
+                await eventLogic.execute(_event);
+            }
         } catch (e) {
             this.logger.error(e.message);
             throw e;
