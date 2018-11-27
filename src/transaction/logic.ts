@@ -281,9 +281,7 @@ export class CreateTransactionsTransferLogic extends Logic {
         let userId;
 
         for (const transId of data) {
-            console.log('attempting transfer');
             const trans = await this.transactionService.get(transId);
-            console.log('got transaction');
             if (!trans) {
                 continue;
             }
@@ -309,12 +307,9 @@ export class CreateTransactionsTransferLogic extends Logic {
             const admin = await this.userService.get(this.context.getUser().id);
             const user = await this.userService.get(userId);
             const tenantLogic = new ChargeTenantLogic(this.context);
-            console.log('tenant charge attempt');
             const tenantCharge = await tenantLogic.execute(calculateTransactionsValue(transactions), admin);
             const logic = new PrepareTransferLogic(this.context);
-            console.log('executing transfer');
             const transfer = await logic.execute(transactions, user, admin, tenantCharge);
-            console.log('creating external transfer');
             await this.createExternalTransfer(transfer, transactions);
             // TODO: send email
             return transfer;
@@ -336,11 +331,9 @@ export class CreateTransactionsTransferLogic extends Logic {
 
         // TODO: better error handling
         try {
-            console.log('creating dwolla transfer');
             _transfer.externalId = await this.dwollaClient.createTransfer(transfer);
             const _dwollaTransfer = await this.dwollaClient.getTransfer(_transfer.externalId);
             _transfer.status = _dwollaTransfer.status;
-            console.log('sending transaction');
             await transaction(this.transactionService.transaction(), async trx => {
                 await this.transferService.update(_transfer, trx);
 
@@ -351,8 +344,6 @@ export class CreateTransactionsTransferLogic extends Logic {
             });
         } catch (e) {
             _transfer.status = Statuses.failed;
-            console.log('transfer failed');
-            console.log(e);
             await transaction(this.transactionService.transaction(), async trx => {
                 await this.transferService.update(_transfer, trx);
 

@@ -52,6 +52,10 @@ export class GetTenantFundingSourceLogic extends Logic {
             throw new Errors.NotFoundError('Tenant not found');
         }
 
+        if (!tenant.fundingSourceUri) {
+            throw new Errors.NotFoundError('Tenant funding source not found');
+        }
+
         return tenant;
     }
 }
