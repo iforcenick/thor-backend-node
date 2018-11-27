@@ -7,7 +7,7 @@ import {User} from './models';
 import {raw} from 'objection';
 import * as db from '../db';
 import {Errors} from 'typescript-rest';
-import {ApiServer} from "../server";
+import {ApiServer} from '../server';
 
 const filterByContractor = (query, contractor) => {
     const likeContractor = `%${contractor}%`;
@@ -59,10 +59,22 @@ export class RatingJobsListLogic extends Logic {
         return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results.map((row, index) => {
             row.ids ? row.transactionsIds = row.ids.split(',') : null;
             row.jobsCount = row.transactions ? row.transactions.length : 0;
-            row.rank = index + 1;
+            row.rank = this.calcRating(index, pag.page, pag.limit, results.total, orderBy, order, contractor);
             row.total = row.total ? row.total : 0;
             return row;
         }));
+    }
+
+    protected calcRating(index, page, limit, total, orderBy, order, contractor) {
+        if (!(['rank', 'total'].includes(orderBy)) || contractor) {
+            return '-';
+        }
+
+        if (order == db.Ordering.desc) {
+            return index + 1 + ((page - 1) * limit);
+        } else {
+            return total - index - ((page - 1) * limit);
+        }
     }
 
     protected rankingQuery(start, end: Date, status?, orderBy?, order?, contractor?: string) {
@@ -85,11 +97,12 @@ export class RatingJobsListLogic extends Logic {
         query.leftJoinRelation(models.Relations.transactions);
         query.leftJoin(db.Tables.jobs, `${db.Tables.transactions}.jobId`, `${db.Tables.jobs}.id`);
 
-        const columns = [
+        const columns: Array<any> = [
             `${db.Tables.users}.id`,
             `${models.Relations.tenantProfile}.firstName`,
             `${models.Relations.tenantProfile}.lastName`,
         ];
+
         query.select(columns);
         query.groupBy(columns);
 
