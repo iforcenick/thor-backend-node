@@ -31,10 +31,7 @@ Migrations are run based on config files from config directory. In order to use 
 * Install and initialize the gcloud command line tool along with the kubectl command line tool
 * Select the desired active project ```gcloud set project [PROJECT_ID]```
 * Get the credentials for the desired cluster ```gcloud container clusters get-credentials [CLUSTER_NAME]```
-* Create a secret from a yaml file
-  ```sh
-  kubectl create -f [FILE_NAME].yaml
-  ```
+* Create a secret from a yaml file ```kubectl create -f [FILE_NAME].yaml```
 
   Here is an example yaml file:
   ```yaml
@@ -51,13 +48,7 @@ Migrations are run based on config files from config directory. In order to use 
     mailer_mailgun_key: XXXXXXXXXXX
   ```
   Where the data field is a map. Its keys must consist of alphanumeric characters, ‘-’, ‘_’ or ‘.’. The values are arbitrary data, encoded using base64.
-* Updating a secret
-  ```sh
-  kubectl apply -f [FILE_NAME].yaml
-  ```
-* Retrieving a secret
-  ```sh
-  kubectl get secret [SECRET_NAME] -o yaml --namespace=[NAMESPACE]
-  ```
+* Updating a secret ```kubectl apply -f [FILE_NAME].yaml```
+* Retrieving a secret ```kubectl get secret [SECRET_NAME] -o yaml --namespace=[NAMESPACE]```
 
  
