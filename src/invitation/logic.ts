@@ -11,8 +11,7 @@ import {ProfileService} from '../profile/service';
 import * as _ from 'lodash';
 import {Errors} from 'typescript-rest';
 import Joi = require('joi');
-
-const parse = require('csv-parse/lib/sync');
+import * as parserAsync from 'csv-parse';
 
 @AutoWired
 export class BatchInvitationsLogic extends Logic {
@@ -22,48 +21,53 @@ export class BatchInvitationsLogic extends Logic {
     @Inject profiles: ProfileService;
     @Inject config: Config;
     @Inject logger: Logger;
-    private emailSchema = Joi.string().email();
+    private maxRows = this.config.get('invitations.csv.rows');
 
     async execute(buffer: Buffer): Promise<Array<Invitation>> {
-        const maxRows = this.config.get('invitations.csv.rows');
-        let parsed;
+        const parserAsync1 = new parserAsync.Parser({
+            skip_empty_lines: true,
+            skip_lines_with_empty_values: true,
+            trim: true,
+            delimiter: ';',
+            from: 2,
+            columns: ['email', 'externalId'],
+            relax_column_count: true,
+            to: this.maxRows,
+        });
 
-        try {
-            parsed = parse(buffer, {
-                skip_empty_lines: true,
-                skip_lines_with_empty_values: true,
-                trim: true,
-                cast: true,
-                delimiter: ';',
-                from: 1,
-                to: maxRows
-            });
-        } catch (e) {
-            if (_.isNumber(e)) { // to many lines in file, crappy reporting
-                throw new Errors.ConflictError(`CSV file has to many rows, max allowed: ${maxRows}`);
-            }
-
-            throw e;
+        parserAsync1.write(buffer);
+        parserAsync1.end();
+        if (parserAsync1.lines > this.maxRows) {
+            throw new Errors.ConflictError(`CSV file has to many rows, max allowed: ${this.maxRows}`);
         }
 
-        const invitations = parsed.map((row) => {
-            const invitation = {
-                email: row[0],
-                status: models.Status.pending,
-                externalId: ''
-            };
-
-            if (row[1]) {
-                invitation.externalId = row[1];
-            }
-
-            return invitation;
+        const invitations = await new Promise<Array<Invitation>>((resolve, reject) => {
+            const invitations = new Array<Invitation>();
+            parserAsync1.on('readable', function () {
+                let record = null;
+                while (record = parserAsync1.read()) {
+                    invitations.push(Invitation.factory({
+                        email: record.email,
+                        externalId: record.externalId
+                    }));
+                }
+            });
+            parserAsync1.on('error', function (err) {
+                console.error(err.message);
+                reject(err.message);
+            });
+            parserAsync1.on('end', function () {
+                resolve(invitations);
+            });
         });
 
         const emails = invitations.map((invitation) => {
             return invitation.email;
         }).filter((email) => {
-            return Joi.validate(email, this.emailSchema).error === null;
+            if (Joi.validate(email, Joi.string().required().email()).error) {
+                return false;
+            }
+            return true;
         });
 
         if (_.isEmpty(emails)) {
@@ -84,9 +88,8 @@ export class BatchInvitationsLogic extends Logic {
         const tenant = await this.tenants.get(this.context.getTenantId());
 
         try {
-            for (const invitation of invitations) {
-                invitation.status = models.Status.sent;
-                await this.invitations.insert(invitation);
+            for (let invitation of invitations) {
+                invitation = await this.invitations.insert(invitation);
 
                 this.mailer.sendInvitation(invitation.email, {
                     link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`,
@@ -148,4 +151,5 @@ export class BatchInvitationsLogic extends Logic {
 
         throw e;
     }
+
 }
