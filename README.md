@@ -51,4 +51,33 @@ Migrations are run based on config files from config directory. In order to use 
 * Updating a secret ```kubectl apply -f [FILE_NAME].yaml```
 * Retrieving a secret ```kubectl get secret [SECRET_NAME] -o yaml --namespace=[NAMESPACE]```
 
+ ### DevScripts
+ Dev scripts are run from console. The required program for executing scripts is NodeJS.
+ 
+ Dev scripts are stored in path ~/dist/dev/console 
+ 
+ List of scripts are below:
+ * Certify business verified customer : 
+    * certify-bvc.js {{businessVerifiedCustomerId}}
+ * Create tenant:
+     * create-events.js {{tenantName}} {{tenantEmail}}
+     
+            tenantName can not contain spaces or white space
+            tenantEmail has to be validate email
+ * Get dwolla events:
+    * get-events.js {{limit}} {{offset}}
+    
+            limit can not be greater than 200
+            offset is optional  
+ * Transfer to Thor:
+    * transfer-to-thor.js {{withdrawalFundingSourceId}} {{amount}}
+ * Verify funding source:
+    * verify-fs.js {{fundingSourceId}}
+    
+ 
+ example usage:
+ ```
+ .> node /dist/dev/console create-tenant.js thor godOfThunder@thor.com
+ ```
+ 
  
