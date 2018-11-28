@@ -1,17 +1,17 @@
 ### Installation
-* npm i
-* npm install knex -g
+* yarn
+* yarn install knex -g
 
 ### Build
-* npm run build
-* npm run swagger
+* yarn run build
+* yarn run swagger
 
 ### Running containers
 * build
-* npm run build:docker
-* npm run start:docker-dev
+* yarn run build:docker
+* yarn run start:docker-dev
 * if run for the first time check ```docker logs thor_api``` and if there are any connection errors run ```docker stop thor_api```
-and ```npm run db``` followed by ```npm run start:docker-dev```
+and ```yarn run db``` followed by ```yarn run start:docker-dev```
 
 ### Configuring PostgreSQL
 * connect to http://localhost:5400/browser/
@@ -19,7 +19,7 @@ and ```npm run db``` followed by ```npm run start:docker-dev```
 * add server, connect to thor_db
 
 ### Migrations
-Migrations are run based on config files from config directory. In order to use proper configuration set NODE_ENV env variable to desired value before running knex, ie. : ```NODE_ENV=development-pawel npm run db```
+Migrations are run based on config files from config directory. In order to use proper configuration set NODE_ENV env variable to desired value before running knex, ie. : ```NODE_ENV=development-pawel yarn run db```
 * create: knex migrate:make NAME
 * seed: knex seed:make NAME
 * run seed: knex seed:run
