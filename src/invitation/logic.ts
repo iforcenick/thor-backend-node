@@ -24,7 +24,7 @@ export class BatchInvitationsLogic extends Logic {
     private maxRows = this.config.get('invitations.csv.rows');
 
     async execute(buffer: Buffer): Promise<Array<Invitation>> {
-        const parserAsync1 = new parserAsync.Parser({
+        const parser = new parserAsync.Parser({
             skip_empty_lines: true,
             skip_lines_with_empty_values: true,
             trim: true,
@@ -35,28 +35,28 @@ export class BatchInvitationsLogic extends Logic {
             to: this.maxRows,
         });
 
-        parserAsync1.write(buffer);
-        parserAsync1.end();
-        if (parserAsync1.lines > this.maxRows) {
+        parser.write(buffer);
+        parser.end();
+        if (parser.lines > this.maxRows) {
             throw new Errors.ConflictError(`CSV file has to many rows, max allowed: ${this.maxRows}`);
         }
 
         const invitations = await new Promise<Array<Invitation>>((resolve, reject) => {
             const invitations = new Array<Invitation>();
-            parserAsync1.on('readable', function () {
+            parser.on('readable', function () {
                 let record = null;
-                while (record = parserAsync1.read()) {
+                while (record = parser.read()) {
                     invitations.push(Invitation.factory({
                         email: record.email,
                         externalId: record.externalId
                     }));
                 }
             });
-            parserAsync1.on('error', function (err) {
+            parser.on('error', function (err) {
                 console.error(err.message);
                 reject(err.message);
             });
-            parserAsync1.on('end', function () {
+            parser.on('end', function () {
                 resolve(invitations);
             });
         });
