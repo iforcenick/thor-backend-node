@@ -149,20 +149,6 @@ export class UserService extends db.ModelService<models.User> {
         return user.$query().patch({password: newPasswordHash});
     }
 
-    async authenticate(login: string, password: string, tenant: string) {
-        const user = await this.findByEmailAndTenant(login, tenant);
-        if (!user) {
-            return null;
-        }
-
-        const check = await this.checkPassword(password, user.password);
-
-        if (check !== true) {
-            return null;
-        }
-        return user;
-    }
-
     async generateJwt(user: models.User) {
         return this.jwtTokenProvider.generateJwt(user);
     }

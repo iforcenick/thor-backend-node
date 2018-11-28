@@ -250,27 +250,18 @@ export class AddTenantLogic extends Logic {
 
     private async addTenantEntity(name: string, trx: objection.Transaction): Promise<Tenant> {
         const tenant: Tenant = Tenant.factory({name: name});
-        tenant.createdAt = new Date();
-        tenant.updatedAt = new Date();
-        const result = await this.tenantService.insert(tenant, trx);
-
-        return result;
+        return await this.tenantService.insert(tenant, trx);
     }
 
     private async addAdminUser(trx: objection.Transaction): Promise<User> {
         const user: User = User.factory({});
-        user.createdAt = new Date();
-        user.updatedAt = new Date();
+        user.password = '$2b$10$TscOBpPG51MVLUtsmTkMnuOsdxMKGOHVUnj4kwmyI2ldF5uerGxx2'; // 123
 
         return await this.userService.insert(user, trx);
     }
 
     private async addAdminUserProfile(adminUserId: string, tenantId: string, tenantName: string, email: string, trx: objection.Transaction) {
         const profile: Profile = Profile.factory({});
-
-        profile.createdAt = new Date();
-        profile.updatedAt = new Date();
-
         profile.tenantId = tenantId;
         profile.userId = adminUserId;
 

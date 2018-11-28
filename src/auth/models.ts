@@ -8,7 +8,6 @@ export class AuthUserResponse extends UserResponse {
 export interface LoginRequest {
     login: string;
     password: string;
-    tenant: string;
 }
 
 export interface PasswordRequest {
@@ -20,7 +19,6 @@ export interface PasswordRequest {
 export const loginRequestSchema = Joi.object().keys({
     login: Joi.string().required(),
     password: Joi.string().required(),
-    tenant: Joi.string().required(),
 });
 export const passwordRequestSchema = Joi.object().keys({
     oldPassword: Joi.string().required(),
