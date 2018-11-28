@@ -153,8 +153,13 @@ export class ChargeTenantLogic extends Logic {
                     message = 'Tenant company is in restricted mode, finish verification';
                 } else if (e.message.search('Invalid funding source') != -1) {
                     message = 'Funding source is not verified';
+                } else if (e.message.search('Invalid amount') != -1) {
+                    message = 'Tenant cannot be currently charged by that amount';
                 } else {
                     message = e.toValidationError().message;
+                    if (message instanceof Object) {
+                        message = JSON.stringify(message);
+                    }
                 }
 
                 throw new ChargeTenantError(message);
