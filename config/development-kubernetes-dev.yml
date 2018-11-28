@@ -13,8 +13,8 @@ swagger:
   host: odin-api.dev.gothor.com
   schema: https
 mailer:
-  # override:
-  #   to: test.acsft@gmail.com
+  override:
+    to: test.acsft@gmail.com
   #   override settings
     #   test settings
   mailgun:
