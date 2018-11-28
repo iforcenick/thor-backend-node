@@ -47,10 +47,11 @@ export class BatchInvitationsLogic extends Logic {
             parser.on('readable', function () {
                 let record = null;
                 while (record = parser.read()) {
-                    invitations.push(Invitation.factory({
-                        email: record.email,
-                        externalId: record.externalId
-                    }));
+                    if (BatchInvitationsLogic.validateEmail(record.email))
+                        invitations.push(Invitation.factory({
+                            email: record.email,
+                            externalId: record.externalId
+                        }));
                 }
             });
             parser.on('error', function (err) {
@@ -65,10 +66,7 @@ export class BatchInvitationsLogic extends Logic {
         const emails = invitations.map((invitation) => {
             return invitation.email;
         }).filter((email) => {
-            if (Joi.validate(email, Joi.string().required().email()).error) {
-                return false;
-            }
-            return true;
+            return BatchInvitationsLogic.validateEmail(email);
         });
 
         if (_.isEmpty(emails)) {
@@ -157,6 +155,13 @@ export class BatchInvitationsLogic extends Logic {
         };
 
         throw e;
+    }
+
+    private static validateEmail(email: string): boolean {
+        if (Joi.validate(email, Joi.string().required().email()).error) {
+            return false;
+        }
+        return true;
     }
 
 }

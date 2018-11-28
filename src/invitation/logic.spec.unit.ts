@@ -48,7 +48,6 @@ describe('InvitationLogic', () => {
             sandbox.stub(mailerServiceStub, 'sendInvitation').returns(Promise.resolve(true));
             sut.mailer = mailerServiceStub;
         });
-
         it('with external id should send emails for all email addresses in file', async () => {
             const csv = 'email;externalId\n' +
                 'test00@test.com;e2c84d30-0e13-483b-9b42-3b4d9a1dfa90\n' +
@@ -75,6 +74,14 @@ describe('InvitationLogic', () => {
             const invitations = await sut.execute(buffer);
             expect(invitations).not.empty;
             expect(invitations.length).equals(2);
+        });
+        it('on incorrect email in file should import validate emails', async () => {
+            const csv = 'email;externalId\n' +
+                'test00@test.com\n' +
+                'test01';
+            const buffer = Buffer.from(csv, 'utf-8');
+            const invitations = await sut.execute(buffer);
+            expect(invitations.length).equals(1);
         });
     });
 });
