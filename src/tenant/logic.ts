@@ -256,7 +256,6 @@ export class AddTenantLogic extends Logic {
     private async addAdminUser(trx: objection.Transaction): Promise<User> {
         const user: User = User.factory({});
         user.password = '$2b$10$TscOBpPG51MVLUtsmTkMnuOsdxMKGOHVUnj4kwmyI2ldF5uerGxx2'; // 123
-
         return await this.userService.insert(user, trx);
     }
 

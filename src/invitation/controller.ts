@@ -167,7 +167,7 @@ export class InvitationController extends BaseController {
         const invitations = await logic.execute(file.buffer);
 
         const invitationsResponse = new models.InvitationsResponse();
-
+        invitationsResponse.items = [];
         invitations.map(invitation =>
             invitationsResponse.items.push(this.map(models.InvitationResponse, invitation)));
 

@@ -37,12 +37,13 @@ export class BatchInvitationsLogic extends Logic {
 
         parser.write(buffer);
         parser.end();
+
         if (parser.lines > this.maxRows) {
             throw new Errors.ConflictError(`CSV file has to many rows, max allowed: ${this.maxRows}`);
         }
 
         const invitations = await new Promise<Array<Invitation>>((resolve, reject) => {
-            const invitations = new Array<Invitation>();
+            const invitations: Array<Invitation> = [];
             parser.on('readable', function () {
                 let record = null;
                 while (record = parser.read()) {
@@ -76,36 +77,42 @@ export class BatchInvitationsLogic extends Logic {
 
         await this.checkEmailsDuplicates(emails);
         await this.checkExistingUsers(emails);
-        if (invitations.some(invitation => invitation.externalId !== '')) {
-            const externalIds = invitations.map(invitation => {
-                return invitation.externalId;
-            });
 
+        const externalIds = new Array<string>();
+        for (const invitation of invitations) {
+            if (invitation.externalId) {
+                externalIds.push(invitation.externalId);
+            }
+        }
+        if (externalIds.length > 0) {
             await this.checkExternalIdsDuplicates(externalIds);
             await this.checkRegisteredUsersDuplicates(externalIds);
         }
 
         const tenant = await this.tenants.get(this.context.getTenantId());
-
+        for (let invitation of invitations) {
+            invitation.status = models.Status.sent;
+            invitation.tenantId = tenant.id;
+            invitation = await this.invitations.insert(invitation);
+        }
         try {
-            for (let invitation of invitations) {
-                invitation = await this.invitations.insert(invitation);
-
+            for (const invitation of invitations) {
                 this.mailer.sendInvitation(invitation.email, {
                     link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`,
                     companyName: tenant.businessName
                 });
             }
-            return invitations;
         } catch (error) {
             this.logger.error(error.message);
         }
+        return invitations;
+
     }
 
     private async checkEmailsDuplicates(emails: Array<string>) {
         const result = await this.invitations.getByEmails(emails);
 
-        if (result.length > 0) {
+        if (!_.isEmpty(result)) {
             return this.parseError('Emails already invited', result.map((inv) => {
                 return inv.email;
             }));
@@ -115,7 +122,7 @@ export class BatchInvitationsLogic extends Logic {
     private async checkExistingUsers(emails: Array<string>) {
         const profiles = await this.profiles.getByEmails(emails);
 
-        if (profiles.length > 0) {
+        if (!_.isEmpty(profiles)) {
             return this.parseError('Emails already registered', profiles.map((prof) => {
                 return prof.email;
             }));
@@ -125,7 +132,7 @@ export class BatchInvitationsLogic extends Logic {
     private async checkExternalIdsDuplicates(externalIds: Array<string>) {
         const duplicates = await this.invitations.getByExternalIds(externalIds);
 
-        if (duplicates.length > 0) {
+        if (!_.isEmpty(duplicates)) {
             return this.parseError('ExternalIds already invited', duplicates.map((inv) => {
                 return inv.email;
             }));
@@ -135,7 +142,7 @@ export class BatchInvitationsLogic extends Logic {
     private async checkRegisteredUsersDuplicates(externalIds: Array<string>) {
         const profiles = await this.profiles.getByExternalIds(externalIds);
 
-        if (profiles.length > 0) {
+        if (!_.isEmpty(profiles)) {
             return this.parseError('ExternalIds already registered', profiles.map((prof) => {
                 return prof.email;
             }));
