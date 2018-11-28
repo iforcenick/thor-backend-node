@@ -32,6 +32,8 @@ export class RatingJobsListLogic extends Logic {
             order = db.Ordering.desc;
         }
 
+        order = db.parseOrdering(order);
+
         // rank is an alias for reverted total set programatically
         if (orderBy == 'rank') {
             orderBy = 'total';
@@ -55,6 +57,7 @@ export class RatingJobsListLogic extends Logic {
         const query = this.rankingQuery(start, end, status, orderBy, order, contractor);
         const pag = this.userService.addPagination(query, page, limit);
         const results = await query;
+        console.log(query.toString());
 
         return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results.map((row, index) => {
             row.ids ? row.transactionsIds = row.ids.split(',') : null;
