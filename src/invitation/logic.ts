@@ -94,17 +94,17 @@ export class BatchInvitationsLogic extends Logic {
             invitation.status = models.Status.sent;
             invitation.tenantId = tenant.id;
             invitation = await this.invitations.insert(invitation);
-        }
-        try {
-            for (const invitation of invitations) {
+
+            try {
                 this.mailer.sendInvitation(invitation.email, {
                     link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`,
                     companyName: tenant.businessName
                 });
+            } catch (error) {
+                this.logger.error(error.message);
             }
-        } catch (error) {
-            this.logger.error(error.message);
         }
+
         return invitations;
 
     }
