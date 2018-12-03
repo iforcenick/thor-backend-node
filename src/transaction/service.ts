@@ -6,17 +6,13 @@ import * as objection from 'objection';
 
 @AutoWired
 export class TransactionService extends db.ModelService<models.Transaction> {
-    useTenantContext(query) {
-        return query.where(`${db.Tables.transactions}.tenantId`, this.getTenantId());
-    }
-
-    getOptions(query) {
+    setConditions(query) {
         query.eager({[models.Relations.job]: true, [models.Relations.transfer]: true});
 
         return query;
     }
 
-    getListOptions(query) {
+    setListConditions(query) {
         query.eager({[models.Relations.job]: true});
 
         return query;
@@ -24,7 +20,6 @@ export class TransactionService extends db.ModelService<models.Transaction> {
 
     async insert(transaction: models.Transaction, trx?: objection.Transaction): Promise<models.Transaction> {
         delete transaction.job;
-        transaction.tenantId = this.getTenantId();
         transaction.status = models.Statuses.new;
         return await super.insert(transaction, trx);
     }
@@ -35,7 +30,8 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     }
 
     async getPeriodStats(startDate: Date, endDate: Date, page?: number, limit?: number, status?: string) {
-        const query = this.useTenantContext(this.modelType.query());
+        const query = this.modelType.query();
+        this.useTenantContext(query);
         query.joinRelation(models.Relations.job);
         models.Transaction.filter(query, startDate, endDate, status);
         query.select([
@@ -49,7 +45,8 @@ export class TransactionService extends db.ModelService<models.Transaction> {
 
     async getDwollaByTransferExternalId(id: string) {
         // no tenat context for Dwolla
-        const query = this.getOptions(this.modelType.query());
+        const query = this.modelType.query();
+        this.setConditions(query);
         query.rightJoinRelation(models.Relations.transfer).where(`${models.Relations.transfer}.externalId`, id);
         return await query.first();
     }

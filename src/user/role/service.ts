@@ -11,4 +11,8 @@ export class RoleService extends db.ModelService<models.Role> {
     protected setModelType() {
         this.modelType = models.Role;
     }
+
+    useTenantContext(query) { // roles are not tenant specific
+        return query;
+    }
 }

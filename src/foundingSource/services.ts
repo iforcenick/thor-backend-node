@@ -7,7 +7,6 @@ import {AutoWired} from 'typescript-ioc';
 @AutoWired
 export class FundingSourceService extends db.ModelService<FundingSource> {
     async insert(entity: FundingSource, trx?: objection.Transaction): Promise<FundingSource> {
-        entity.tenantId = this.getTenantId();
         return super.insert(entity, trx);
     }
 
@@ -16,8 +15,7 @@ export class FundingSourceService extends db.ModelService<FundingSource> {
     }
 
     async setDefault(fundingSource: FundingSource) {
-        const query = this.useTenantContext(this.getListOptions(this.modelType.query()));
-
+        const query = this.listQuery();
         query.where(`${db.Tables.fundingSources}.profileId`, fundingSource.profileId);
         const fundingSources = await query;
 

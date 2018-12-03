@@ -66,7 +66,7 @@ export class UserFundingSourcesLogic extends Logic {
             throw new Errors.NotFoundError('User not found');
         }
 
-        const query = this.fundingService.useTenantContext(this.fundingService.getOptions(FundingSource.query()));
+        const query = this.fundingService.query();
         query.where(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id);
         return await query;
     }
@@ -83,11 +83,11 @@ export class ContractorDefaultFundingSourcesLogic extends Logic {
             throw new Errors.NotFoundError('User not found');
         }
 
-        const query = this.fundingService.useTenantContext(this.fundingService.getOptions(FundingSource.query()));
+        const query = this.fundingService.query();
         query.where(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id)
             .andWhere('isDefault', true).first();
 
-        return await query;
+        return <FundingSource><any>await query;
     }
 }
 

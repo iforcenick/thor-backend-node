@@ -10,10 +10,6 @@ export class TransferService extends db.ModelService<models.Transfer> {
         return await this.insert(transfer, trx);
     }
 
-    async getByExternalId(id: string) {
-        return await this.getOneBy('externalId', id);
-    }
-
     protected setModelType() {
         this.modelType = models.Transfer;
     }

@@ -17,7 +17,6 @@ import {
     CreateTransactionTransferLogic, CreateTransactionWithExistingJobLogic, CreateTransactionWithCustomJobLogic
 } from './logic';
 import * as dwolla from '../dwolla';
-import {TransactionCustomJobRequest} from "./models";
 
 const validate = require('uuid-validate');
 

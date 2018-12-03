@@ -11,12 +11,7 @@ export class InvitationService extends db.ModelService<models.Invitation> {
         this.modelType = models.Invitation;
     }
 
-    useTenantContext(query) {
-        return query.where(`${db.Tables.contractorInvitations}.tenantId`, this.getTenantId());
-    }
-
     async insert(transaction: models.Invitation, trx?: objection.Transaction): Promise<models.Invitation> {
-        transaction.tenantId = this.getTenantId();
         return await super.insert(transaction, trx);
     }
 
@@ -33,12 +28,13 @@ export class InvitationService extends db.ModelService<models.Invitation> {
     }
 
     async getByEmails(emails: Array<string>): Promise<Array<Invitation>> {
-        return this.useTenantContext(Invitation.query())
-            .whereIn('email', emails);
+        const query = this.query();
+
+        return query.whereIn('email', emails);
     }
 
     getByExternalIds(externalIds: Array<string>): Promise<Array<Invitation>> {
-    return this.useTenantContext(Invitation.query())
-            .whereIn('externalId', externalIds);
+        const query = this.query();
+        return query.whereIn('externalId', externalIds);
     }
 }

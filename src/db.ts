@@ -108,12 +108,10 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
         this.setModelType();
     }
 
-    getOptions(query) {
-        return query;
+    setConditions(query) {
     }
 
-    getListOptions(query) {
-        return query;
+    setListConditions(query) {
     }
 
     paginationLimit(limit?: number) {
@@ -140,10 +138,10 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
         }
 
         const query = this.modelType.query(trx).findById(id);
+        this.setConditions(query);
+        this.useTenantContext(query);
 
-        this.getOptions(query);
-
-        return await this.useTenantContext(query);
+        return await query;
     }
 
     async getForAllTenants(id: string): Promise<T> {
@@ -151,11 +149,15 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
             return undefined;
         }
         const query = this.modelType.query().findById(id);
-        return await this.getOptions(query);
+        this.setConditions(query);
+        return await query;
     }
 
     async getOneBy(field: string, value: any) {
-        return await this.useTenantContext(this.getOptions(this.modelType.query().findOne({[field]: value})));
+        const query = this.modelType.query().findOne({[field]: value});
+        this.setConditions(query);
+        this.useTenantContext(query);
+        return await query;
     }
 
     listQuery(filter?: any, options?: any): any {
@@ -164,7 +166,7 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
             query.where(filter);
         }
 
-        this.getListOptions(query);
+        this.setListConditions(query);
 
         if (options) {
             options(query);
@@ -192,10 +194,18 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
     }
 
     useTenantContext(query) {
-        return query;
+        if (this.getTenantId()) {
+            query.where(`${this.modelType.tableName}.tenantId`, this.getTenantId());
+        }
     }
 
     async insert(entity: OModel, trx?: objection.Transaction): Promise<T> {
+        if (_.has(entity, 'tenantId')) {
+            if (!entity['tenantId'] && this.getTenantId()) {
+                entity['tenantId'] = this.getTenantId();
+            }
+        }
+
         const response = await this.modelType
             .query(this.transaction(trx))
             .insert(entity)
@@ -220,7 +230,6 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
         return await entity
             .$query(this.transaction(trx))
             .delete()
-            .debug()
             .where(`${this.modelType.tableName}.id`, entity.id);
     }
 
@@ -236,9 +245,13 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
         this.tenant = id;
     }
 
+    clearTenantId() {
+        this.tenant = null;
+    }
+
     query(trx?: transaction<any>) {
         const query = this.modelType.query();
-        this.getOptions(query);
+        this.setConditions(query);
         this.useTenantContext(query);
         return query;
     }

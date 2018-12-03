@@ -28,17 +28,13 @@ export class UserService extends db.ModelService<models.User> {
         this.modelType = models.User;
     }
 
-    getMinOptions(query) {
+    setBasicConditions(query) {
         query
             .whereNull(`${this.modelType.tableName}.deletedAt`)
             .joinRelation(`${models.Relations.tenantProfile}.${profile.Relations.roles}`);
-
-        return query;
     }
 
-    getOptions(query) {
-        const tenantId = this.getTenantId();
-        query = this.getMinOptions(query);
+    selectProfileForTenant(query, tenantId) {
         query.mergeEager(`${models.Relations.tenantProfile}(tenantProfile).[${profile.Relations.roles}]`, {
             tenantProfile: builder => {
                 builder.where(function () {
@@ -46,29 +42,38 @@ export class UserService extends db.ModelService<models.User> {
                 });
             },
         });
+    }
 
+    selectLastActivity(query) {
         query.select([
             `${db.Tables.users}.*`,
             this.modelType.relatedQuery(models.Relations.transactions)
                 .select('createdAt').orderBy('createdAt', 'desc').limit(1).as('lastActivity')
         ]);
+    }
 
-        return query;
+    setConditions(query) {
+        const tenantId = this.getTenantId();
+        this.setBasicConditions(query);
+        this.selectProfileForTenant(query, tenantId);
+        this.selectLastActivity(query);
     }
 
     filterCustomerRole(query) {
-        return query.where(`${models.Relations.tenantProfile}:roles.name`, role.models.Types.contractor);
+        query.where(`${models.Relations.tenantProfile}:roles.name`, role.models.Types.contractor);
     }
 
-    getListOptions(query) {
-        return this.getOptions(this.filterCustomerRole(query));
+    setListConditions(query) {
+        this.filterCustomerRole(query);
+        this.setConditions(query);
     }
 
     useTenantContext(query) {
-        return query
-            .where({
+        if (this.getTenantId()) {
+            query.where({
                 [`${models.Relations.tenantProfile}.tenantId`]: this.getTenantId()
             });
+        }
     }
 
     async deleteFull(id: string) {
@@ -90,7 +95,10 @@ export class UserService extends db.ModelService<models.User> {
             .whereNot({[`${db.Tables.transactions}.status`]: transactions.Statuses.processed})
             .joinRelation(`${models.Relations.transactions}`)
             .count().first();
-        const {count} = await this.getMinOptions(this.useTenantContext(this.filterCustomerRole(query)));
+        this.filterCustomerRole(query);
+        this.useTenantContext(query);
+        this.setBasicConditions(query);
+        const {count} = await query;
         return parseInt(count) > 0;
     }
 
@@ -105,28 +113,20 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async findByEmailAndTenant(email: string, tenantId: string): Promise<models.User> {
-        let tmpTenant;
-        try {
-            tmpTenant = this.getTenantId();
-        } catch (e) {
-            tmpTenant = null;
-        }
-
         this.setTenantId(tenantId);
-        const query = this.useTenantContext(this.getOptions(this.modelType.query()));
+        const query = super.query();
         query.where(`${models.Relations.tenantProfile}.email`, email);
         query.first();
-        this.setTenantId(tmpTenant);
+        this.clearTenantId();
         return await query;
     }
 
     async findByExternalIdAndTenant(externalId: string, tenantId: string): Promise<models.User> {
-        const tmpTenant = this.getTenantId();
         this.setTenantId(tenantId);
-        const query = this.useTenantContext(this.getOptions(this.modelType.query()));
+        const query = super.query();
         query.where(`${models.Relations.tenantProfile}.externalId`, externalId);
         query.first();
-        this.setTenantId(tmpTenant);
+        this.clearTenantId();
         return await query;
     }
 
@@ -159,7 +159,7 @@ export class UserService extends db.ModelService<models.User> {
 
     query(trx?: transaction<any>) {
         const query = this.modelType.query();
-        this.getMinOptions(query);
+        this.setBasicConditions(query);
         this.useTenantContext(query);
         return query;
     }

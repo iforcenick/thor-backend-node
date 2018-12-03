@@ -28,21 +28,6 @@ export class ProfileService extends db.ModelService<models.Profile> {
         throw new ValidationError('users is too young');
     }
 
-    async createProfile(profile: models.Profile, roles: Array<any>, trx: objection.Transaction, baseProfile?: boolean, tenantId?) {
-        if (!baseProfile) {
-            profile.tenantId = tenantId || this.getTenantId();
-        }
-
-        profile = await this.insert(profile, trx);
-        if (!baseProfile) {
-            for (const role of roles) {
-                await profile.$relatedQuery(models.Relations.roles, trx).relate(role.id);
-            }
-        }
-
-        return profile;
-    }
-
     async updateWithDwolla(profile: models.Profile, trx?: objection.Transaction): Promise<any> {
         try {
             const customer = dwolla.customer.factory(profile);
@@ -68,12 +53,12 @@ export class ProfileService extends db.ModelService<models.Profile> {
     }
 
     async getByEmails(emails: string[]): Promise<Array<Profile>> {
-        return this.useTenantContext(Profile.query())
-            .whereIn('email', emails);
+        const query = this.listQuery();
+        return query.whereIn('email', emails);
     }
 
     async getByExternalIds(externalIds: Array<string>): Promise<Array<Profile>> {
-    return this.useTenantContext(Profile.query())
-        .whereIn('externalId', externalIds);
+        const query = this.listQuery();
+        return query.whereIn('externalId', externalIds);
     }
 }

@@ -145,6 +145,7 @@ export class ChargeTenantLogic extends Logic {
             transfer.externalId = await this.dwollaClient.createTransfer(dwollaTransfer);
             const _transfer = await this.dwollaClient.getTransfer(transfer.externalId);
             transfer.status = _transfer.status;
+            transfer.tenantId = tenant.id;
             return await this.transferService.createTransfer(transfer);
         } catch (e) {
             if (e instanceof DwollaRequestError) {
@@ -192,6 +193,7 @@ export class PrepareTransferLogic extends Logic {
         transfer.sourceUri = this.config.get('dwolla.masterFunding');
         transfer.value = tenantCharge.value;
         transfer.tenantChargeId = tenantCharge.id;
+        transfer.tenantId = this.context.getTenantId();
 
         await transaction(this.transactionService.transaction(), async trx => {
             transfer = await this.transferService.createTransfer(transfer, trx);
