@@ -27,7 +27,7 @@ import {MailerService} from '../mailer';
 import * as _ from 'lodash';
 import {DwollaNotifier} from '../dwolla/notifier';
 import {AddContractorLogic, AddContractorOnRetryStatusLogic} from '../contractor/logic';
-import {RatingJobsListLogic, UsersListLogic, UserStatisticsLogic} from './logic';
+import {RatingJobsListLogic, SearchCriteria, UsersListLogic, UserStatisticsLogic} from './logic';
 import {
     ContractorOnRetryRequest, contractorOnRetryRequestSchema, ContractorOnRetryResponse,
     PaginatedRankingJobs, PaginatedUserResponse,
@@ -105,6 +105,8 @@ export class UserController extends BaseController {
      * @param orderBy - field name
      * @param order - asc|desc
      * @param contractor - contractor firstName, lastName or "firstName lastName"
+     * @param filterColumnName - profile state or city
+     * @param filterValue - profile state value or city value
      */
     @GET
     @Path('')
@@ -113,9 +115,21 @@ export class UserController extends BaseController {
                        @QueryParam('limit') limit?: number,
                        @QueryParam('orderBy') orderBy?: string,
                        @QueryParam('order') order?: string,
-                       @QueryParam('contractor') contractor?: string): Promise<PaginatedUserResponse> {
+                       @QueryParam('contractor') contractor?: string,
+                       @QueryParam('filterColumnName') filterColumnName?: string,
+                       @QueryParam('filterValue') filterValue?: string,
+        ): Promise<PaginatedUserResponse> {
         const logic = new UsersListLogic(this.getRequestContext());
-        const users = await logic.execute(page, limit, orderBy, order, contractor);
+        const searchCriteria = new SearchCriteria();
+        searchCriteria.page = page;
+        searchCriteria.limit = limit;
+        searchCriteria.orderBy = orderBy;
+        searchCriteria.order = order;
+        searchCriteria.contractor = contractor;
+        searchCriteria.filterColumnName = filterColumnName;
+        searchCriteria.filterValue = filterValue;
+
+        const users = await logic.execute(searchCriteria);
 
         return this.paginate(
             users.pagination,

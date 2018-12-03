@@ -163,40 +163,63 @@ export class RatingJobsListLogic extends Logic {
     }
 }
 
+export class SearchCriteria {
+    public page: number;
+    public limit: number;
+    public orderBy?: string;
+    public order?: string;
+    public contractor?: string;
+    public filterColumnName?: string;
+    public filterValue?: any;
+}
+
 @AutoWired
 export class UsersListLogic extends Logic {
     @Inject private userService: UserService;
+    private static stateFilterName: string = 'state';
+    private static cityFilterName: string = 'city';
     static sortableFields = ['firstName', 'lastName', 'createdAt', 'lastActivity'];
+    static availableFilters = [UsersListLogic.stateFilterName, UsersListLogic.cityFilterName];
 
-    async execute(page, limit, orderBy?, order?, contractor?: string): Promise<db.Paginated<User>> {
-        if (!orderBy) {
-            orderBy = 'lastName';
+    async execute(searchCriteria: SearchCriteria): Promise<db.Paginated<User>> {
+        if (!searchCriteria.orderBy) {
+            searchCriteria.orderBy = 'lastName';
         }
 
-        if (!order) {
-            order = db.Ordering.asc;
+        if (!searchCriteria.order) {
+            searchCriteria.order = db.Ordering.asc;
         }
 
-        if (!UsersListLogic.sortableFields.includes(orderBy)) {
+        if (searchCriteria.filterColumnName) {
+            if (!UsersListLogic.availableFilters.includes(searchCriteria.filterColumnName)) {
+                throw new Errors.ConflictError('Invalid filter by field, allowed: ' + UsersListLogic.availableFilters.join(', '));
+            }
+        }
+
+        if (!UsersListLogic.sortableFields.includes(searchCriteria.orderBy)) {
             throw new Errors.ConflictError('Invalid order by field, allowed: ' + UsersListLogic.sortableFields.join(', '));
         }
 
         try {
-            order = db.parseOrdering(order);
+            searchCriteria.order = db.parseOrdering(searchCriteria.order);
         } catch (e) {
             throw new Errors.ConflictError(e.message);
         }
 
         const options = builder => {
-            builder.orderBy(`${orderBy}`, order);
+            builder.orderBy(`${searchCriteria.orderBy}`, searchCriteria.order);
         };
 
         const query = this.userService.listQuery(null, options);
-        if (contractor) {
-            filterByContractor(query, contractor);
+        if (searchCriteria.contractor) {
+            filterByContractor(query, searchCriteria.contractor);
+        }
+        if (searchCriteria.filterColumnName) {
+            query.where(`${models.Relations.tenantProfile}.${searchCriteria.filterColumnName}`,
+                'ilike', `%${searchCriteria.filterValue}%`);
         }
 
-        const pag = this.userService.addPagination(query, page, limit);
+        const pag = this.userService.addPagination(query, searchCriteria.page, searchCriteria.limit);
         const results = await query;
 
         return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results);
