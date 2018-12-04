@@ -9,6 +9,33 @@ import {VerificationStatuses} from '../../foundingSource/models';
 
 
 @AutoWired
+export class CreateTenantFundingSourceLogic extends Logic {
+    @Inject private dwollaClient: dwolla.Client;
+    @Inject private tenantService: TenantService;
+
+    async execute(request: CreateTenantFundingSourceRequest, tenantId: string): Promise<Tenant> {
+        const tenant = await this.tenantService.get(tenantId);
+        if (!tenant) {
+            throw new Errors.NotFoundError('Tenant not found');
+        }
+
+        if (tenant.fundingSourceUri) {
+            throw new Errors.NotAcceptableError('Could not add more funding sources');
+        }
+
+        tenant.fundingSourceUri = await this.dwollaClient.createFundingSource(
+            tenant.dwollaUri, request.routing,
+            request.account, request.bankAccountType, request.name
+        );
+
+        tenant.fundingSourceName = request.name;
+        await this.tenantService.update(tenant);
+
+        return tenant;
+    }
+}
+
+@AutoWired
 export class GetTenantFundingSourceLogic extends Logic {
     @Inject private tenantService: TenantService;
 
@@ -44,6 +71,7 @@ export class DeleteTenantFundingSourcesLogic extends Logic {
         await this.client.deleteFundingSource(tenant.fundingSourceUri);
 
         tenant.fundingSourceUri = null;
+        tenant.fundingSourceName = null;
         tenant.fundingSourceVerificationStatus = null;
 
         await this.tenantService.update(tenant);
