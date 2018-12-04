@@ -156,7 +156,7 @@ export class UserFundingSourceController extends FundingSourceBaseController {
         if (!user) {
             throw new Errors.NotFoundError();
         }
-        const token = this._addIavFundingSource(user, data);
+        const token =  await this._addIavFundingSource(user, data);
         return this.map(models.FundingSourceResponse, {token});
     }
 
@@ -168,7 +168,7 @@ export class UserFundingSourceController extends FundingSourceBaseController {
         if (!user) {
             throw new Errors.NotFoundError();
         }
-        const token = this._getIavToken(user);
+        const token =  await  this._getIavToken(user);
         return this.map(models.FundingSourceIavToken, {token});
     }
 }
@@ -227,7 +227,7 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
         if (!user) {
             throw new Errors.NotFoundError();
         }
-        const token = this._getIavToken(user);
+        const token = await this._getIavToken(user);
         return this.map(models.FundingSourceIavToken, {token});
     }
 
@@ -239,7 +239,7 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
         if (!user) {
             throw new Errors.NotFoundError();
         }
-        const token = this._addIavFundingSource(user, data);
+        const token = await this._addIavFundingSource(user, data);
         return this.map(models.FundingSourceResponse, {token});
     }
 }
