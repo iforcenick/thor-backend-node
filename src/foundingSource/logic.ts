@@ -103,6 +103,41 @@ export class SetDefaultFundingSourceLogic extends Logic {
 }
 
 @AutoWired
+export class CreateUserFundingSourceLogic extends Logic {
+    @Inject protected dwollaClient: dwolla.Client;
+    @Inject protected userService: UserService;
+    @Inject protected profileService: ProfileService;
+    @Inject protected fundingSourceService: FundingSourceService;
+    @Inject protected mailer: MailerService;
+    @Inject protected logger: Logger;
+
+    async execute(data: any, user: User): Promise<any> {
+        const profile = user.tenantProfile;
+        const sourceUri = await this.dwollaClient.createFundingSource(
+            profile.dwollaUri,
+            data.routing,
+            data.account,
+            'checking',
+            data.name,
+        );
+
+        const fundingSource: FundingSource = FundingSource.factory({
+            routing: data.routing,
+            account: data.account,
+            type: 'checking',
+            name: data.name,
+            profileId: profile.id,
+            tenantId: profile.tenantId,
+            isDefault: false,
+            dwollaUri: sourceUri
+        });
+
+        const logic = new FundingSourceCreateAndNotifyLogic(this.context);
+        return await logic.execute(fundingSource, sourceUri, user);
+    }
+}
+
+@AutoWired
 export class DeleteFundingSourceLogic extends Logic {
     @Inject protected dwollaClient: dwolla.Client;
     @Inject protected profileService: ProfileService;
@@ -222,17 +257,21 @@ export class GetIavTokenLogic extends Logic {
 }
 
 @AutoWired
-export class AddIavFundingSourceLogic extends Logic {
+export class AddVerifyingFundingSourceLogic extends Logic {
     @Inject private fundingService: FundingSourceService;
     @Inject protected userService: UserService;
     @Inject private client: dwolla.Client;
 
     async execute(user: User, uri: string) {
+        if (await this.fundingService.getByDwollaUri(uri)) {
+            throw new Errors.NotAcceptableError('Funding source with provided uri is already registered');
+        }
+
         let dwollaFunding;
         try {
             dwollaFunding = await this.client.getFundingSource(uri);
         } catch (e) {
-            throw e.toValidationError();
+            throw new Errors.NotFoundError(e.toValidationError().message);
         }
 
         const fundingSource: FundingSource = FundingSource.factory({
@@ -242,7 +281,7 @@ export class AddIavFundingSourceLogic extends Logic {
             tenantId: user.tenantProfile.tenantId,
             isDefault: false,
             dwollaUri: uri,
-            verificationStatus: VerificationStatuses.completed,
+            verificationStatus: dwollaFunding.verificationStatus(),
         });
 
         const logic = new FundingSourceCreateAndNotifyLogic(this.context);

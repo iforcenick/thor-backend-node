@@ -28,4 +28,8 @@ export class FundingSourceService extends db.ModelService<FundingSource> {
             return await this.update(fundingSource, trx);
         });
     }
+
+    async getByDwollaUri(uri: string) {
+        return await this.getOneBy('dwollaUri', uri);
+    }
 }

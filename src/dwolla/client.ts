@@ -205,10 +205,28 @@ export class Client {
         return owners;
     }
 
+    public async createFundingSource(localization, routing, account, accountType, name: string): Promise<string> {
+        const response = await this.post(`${localization}/funding-sources`, {
+            routingNumber: routing,
+            accountNumber: account,
+            bankAccountType: accountType,
+            name,
+        });
+        return response.headers.get('location');
+    }
+
     public async deleteFundingSource(localization: string): Promise<string> {
         return await this.post(localization, {
             removed: true,
         });
+    }
+
+    public async createPlaidFundingSource(localization, plaidToken, accountName: string): Promise<string> {
+        const response = await this.post(`${localization}/funding-sources`, {
+            plaidToken,
+            name: accountName,
+        });
+        return response.headers.get('location');
     }
 
     public async listFundingSource(localization: string): Promise<any> {

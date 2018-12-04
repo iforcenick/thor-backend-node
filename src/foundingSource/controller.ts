@@ -14,6 +14,8 @@ import {Security, Tags} from 'typescript-rest-swagger';
 import {User} from '../user/models';
 import {Pagination} from '../db';
 import * as logicLayer from './logic';
+import {FundingSourceRequest, fundingSourceRequestSchema, FundingSourceResponse} from './models';
+import {CreateUserFundingSourceLogic} from './logic';
 
 
 @AutoWired
@@ -87,9 +89,9 @@ export abstract class FundingSourceBaseController extends BaseController {
         }));
     }
 
-    protected async _addIavFundingSource(user: User, data: models.FundingSourceIavRequest) {
+    protected async _addVerifyingFundingSource(user: User, data: models.FundingSourceIavRequest) {
         const parsedData: models.FundingSourceIavRequest = await this.validate(data, models.fundingSourceIavRequestSchema);
-        const logic = new logicLayer.AddIavFundingSourceLogic(this.getRequestContext());
+        const logic = new logicLayer.AddVerifyingFundingSourceLogic(this.getRequestContext());
         return await logic.execute(user, parsedData.uri);
     }
 
@@ -125,6 +127,33 @@ export class UserFundingSourceController extends FundingSourceBaseController {
         return await super._setDefaultFundingSource(fundingId, userId);
     }
 
+    @POST
+    @Path('')
+    async createUserFundingSource(@PathParam('userId') userId: string, data: FundingSourceRequest): Promise<FundingSourceResponse> {
+        this.userService.setRequestContext(this.getRequestContext());
+        const user = await this.userService.get(userId);
+        const parsedData: FundingSourceRequest = await this.validate(data, fundingSourceRequestSchema);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+
+        try {
+            const logic = new CreateUserFundingSourceLogic(this.getRequestContext());
+            const fundingSource = await logic.execute(parsedData, user);
+
+            return this.map(FundingSourceResponse, fundingSource);
+        } catch (err) {
+            if (err instanceof dwolla.DwollaRequestError) {
+                throw err.toValidationError(null, {
+                    accountNumber: 'account',
+                    routingNumber: 'routing',
+                });
+            }
+
+            throw new Errors.InternalServerError(err.message);
+        }
+    }
+
     @DELETE
     @Path(':fundingId')
     async deleteUserFundingSource(@PathParam('userId') userId: string, @PathParam('fundingId') fundingId: string) {
@@ -150,14 +179,14 @@ export class UserFundingSourceController extends FundingSourceBaseController {
 
     @POST
     @Path('iav')
-    async addIavFundingSource(@PathParam('userId') userId: string, data: models.FundingSourceIavRequest): Promise<models.FundingSourceResponse> {
+    async addVerifyingFundingSource(@PathParam('userId') userId: string, data: models.FundingSourceIavRequest): Promise<models.FundingSourceResponse> {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
         if (!user) {
             throw new Errors.NotFoundError();
         }
-        const token =  await this._addIavFundingSource(user, data);
-        return this.map(models.FundingSourceResponse, {token});
+        const token =  await this._addVerifyingFundingSource(user, data);
+        return this.map(models.FundingSourceResponse, token);
     }
 
     @GET
@@ -233,13 +262,13 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
 
     @POST
     @Path('iav')
-    async addIavFundingSource(data: models.FundingSourceIavRequest): Promise<models.FundingSourceResponse> {
+    async addVerifyingFundingSource(data: models.FundingSourceIavRequest): Promise<models.FundingSourceResponse> {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(this.getRequestContext().getUserId());
         if (!user) {
             throw new Errors.NotFoundError();
         }
-        const token = await this._addIavFundingSource(user, data);
-        return this.map(models.FundingSourceResponse, {token});
+        const source = await this._addVerifyingFundingSource(user, data);
+        return this.map(models.FundingSourceResponse, source);
     }
 }

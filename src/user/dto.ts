@@ -61,13 +61,11 @@ export const userRequestSchema = Joi.object().keys({
     password: Joi.string().allow('', null),
     profile: profile.profileRequestSchema.required(),
 });
+
 export const userPatchSchema = Joi.object().keys({
     profile: profile.profilePatchSchema.required(),
 });
-export const fundingSourceRequestSchema = Joi.object().keys({
-    routingNumber: Joi.string().required(),
-    accountNumber: Joi.string().required(),
-});
+
 export const rankingRequestSchema = Joi.object().keys({
     startDate: Joi.date().required(),
     endDate: Joi.date().required(),

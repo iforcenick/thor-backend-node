@@ -44,7 +44,14 @@ export class FundingSource extends db.Model {
 }
 
 
-export class FundingSourceResponse extends Mapper {
+export class FundingSourceBaseInfo extends Mapper {
+    name: string = mapper.FIELD_STR;
+}
+
+export class FundingSourceRequest extends FundingSourceBaseInfo {
+}
+
+export class FundingSourceResponse extends FundingSourceBaseInfo {
     id: string = mapper.FIELD_STR;
     type: string = mapper.FIELD_STR;
     externalUri: string = mapper.FIELD_STR;
@@ -69,6 +76,12 @@ export class FundingSourceIavRequest extends Mapper {
 
 export const fundingSourceIavRequestSchema = Joi.object().keys({
     uri: Joi.string().required(),
+});
+
+export const fundingSourceRequestSchema = Joi.object().keys({
+    routing: Joi.string().required(),
+    account: Joi.string().required(),
+    name: Joi.string().allow(null, '').default('default'),
 });
 
 export const contractorFundingSourceVerificationRequestSchema = Joi.object().keys({
