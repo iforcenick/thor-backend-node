@@ -378,6 +378,10 @@ export class CreateTransactionWithExistingJobLogic extends Logic {
             throw new Errors.NotFoundError('Job not found');
         }
 
+        if (!job.isActive) {
+            throw new Errors.NotAcceptableError('Job is not active');
+        }
+
         const logic = new CreateTransactionLogic(this.context);
         return await logic.execute(userId, value, job, externalId);
     }
@@ -392,6 +396,7 @@ export class CreateTransactionWithCustomJobLogic extends Logic {
 
     async execute(userId: string, jobData: JobRequest, value: number, externalId?: string): Promise<any> {
         const job = Job.factory(jobData);
+        job.isActive = true;
 
         const logic = new CreateTransactionLogic(this.context);
         return await logic.execute(userId, value, job, externalId);
@@ -406,7 +411,6 @@ export class CreateTransactionLogic extends Logic {
     @Inject private transactionService: TransactionService;
 
     async execute(userId: string, value: number, job: Job, externalId?: string): Promise<any> {
-        // was an user id or external id provided
         let user: users.User = null;
         if (externalId) {
             user = await this.userService.findByExternalIdAndTenant(externalId, this.context.getTenantId());
@@ -470,23 +474,19 @@ export class UpdateTransactionLogic extends Logic {
             throw new Errors.ConflictError('Transaction cannot be updated');
         }
 
-        // check if a new job id was provided and validate it
         let jobFromDb: Job;
         if (data.jobId) {
             jobFromDb = await this.jobService.get(data.jobId);
             if (!jobFromDb) {
-                throw new Errors.InternalServerError('Job not found');
+                throw new Errors.NotFoundError('Job not found');
             }
         } else {
             jobFromDb = await this.jobService.get(transactionFromDb.jobId);
         }
 
-        try {
-            transactionFromDb.merge(data);
-            await this.transactionService.update(transactionFromDb);
-        } catch (e) {
-            throw new Errors.InternalServerError(e);
-        }
+        transactionFromDb.merge(data);
+        await this.transactionService.update(transactionFromDb);
+
         transactionFromDb.job = jobFromDb;
         return transactionFromDb;
     }
@@ -497,20 +497,16 @@ export class DeleteTransactionLogic extends Logic {
     @Inject private transactionService: TransactionService;
 
     async execute(id: string): Promise<any> {
-        const transaction = await this.transactionService.get(id);
-        if (!transaction) {
+        const _transaction = await this.transactionService.get(id);
+        if (!_transaction) {
             throw new Errors.NotFoundError('Transaction not found');
         }
 
-        if (transaction.status !== Statuses.new) {
+        if (_transaction.status !== Statuses.new) {
             throw new Errors.ConflictError('Transaction cannot be deleted');
         }
 
-        try {
-            await this.transactionService.delete(transaction);
-        } catch (e) {
-            throw new Errors.InternalServerError(e);
-        }
+        await this.transactionService.delete(_transaction);
     }
 }
 

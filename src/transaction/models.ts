@@ -85,7 +85,7 @@ export class Transaction extends db.Model {
         };
     }
 
-    static filter(query, startDate?: Date, endDate?: Date, status?: string, userId?: string) {
+    static filter(query, startDate?: Date, endDate?: Date, status?: string, userId?: string, jobId?: string) {
         if (startDate && endDate) {
             query.whereBetween(`${db.Tables.transactions}.createdAt`, [startDate, endDate]);
         }
@@ -96,6 +96,10 @@ export class Transaction extends db.Model {
 
         if (userId) {
             query.where(`${db.Tables.transactions}.userId`, userId);
+        }
+
+        if (jobId) {
+            query.where(`${db.Tables.transactions}.jobId`, jobId);
         }
     }
 

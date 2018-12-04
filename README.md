@@ -23,6 +23,7 @@ Migrations are run based on config files from config directory. In order to use 
 * create: knex migrate:make NAME
 * seed: knex seed:make NAME
 * run seed: knex seed:run
+* rollback: knex migrate:rollback
 
 ### OpenAPI
 * http://localhost:8081/api-docs/

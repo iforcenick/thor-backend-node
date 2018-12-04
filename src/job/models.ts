@@ -15,6 +15,7 @@ export class Job extends db.Model {
     value?: number = null;
     name?: string = null;
     description?: string = null;
+    isActive?: boolean = null;
 
     static get relationMappings() {
         return {
@@ -28,6 +29,12 @@ export class Job extends db.Model {
             },
         };
     }
+
+    static filter(query, isActive?: boolean) {
+        if (isActive) {
+            query.where(`${db.Tables.jobs}.isActive`, isActive);
+        }
+    }
 }
 
 export class JobBaseInfo extends Mapper {
@@ -40,9 +47,14 @@ export class JobResponse extends JobBaseInfo {
     id: string = mapper.FIELD_STR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
+    isActive: boolean = mapper.FIELD_BOOLEAN;
 }
 
 export class JobRequest extends JobBaseInfo {
+}
+
+export class JobPatchRequest extends JobBaseInfo {
+    isActive: boolean = mapper.FIELD_BOOLEAN;
 }
 
 export interface PaginatedJobResponse extends PaginatedResponse {
@@ -57,4 +69,15 @@ export const jobRequestSchema = Joi.object().keys({
         .required(),
     name: Joi.string().required(),
     description: Joi.string().required(),
+    isActive: Joi.boolean(),
+});
+
+export const jobPatchRequestSchema = Joi.object().keys({
+    value: Joi.number()
+        .greater(0)
+        .precision(2)
+        .strict(),
+    name: Joi.string(),
+    description: Joi.string(),
+    isActive: Joi.boolean(),
 });

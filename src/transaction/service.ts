@@ -54,4 +54,13 @@ export class TransactionService extends db.ModelService<models.Transaction> {
     protected setModelType() {
         this.modelType = models.Transaction;
     }
+
+    async hasTransaction(jobId: string) {
+        const query = this.modelType.query()
+            .where({[`${db.Tables.transactions}.jobId`]: jobId})
+            .joinRelation(`${models.Relations.job}`)
+            .count().first();
+        const {count} = await query;
+        return parseInt(count) > 0;
+    }
 }
