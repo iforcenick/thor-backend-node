@@ -1,6 +1,6 @@
 import {Logic} from '../logic';
 import {AutoWired, Inject} from 'typescript-ioc';
-import {Invitation, Status} from '../invitation/models';
+import {Status} from '../invitation/models';
 import * as dwolla from '../dwolla';
 import {User} from '../user/models';
 import * as models from '../profile/models';
@@ -18,7 +18,7 @@ import {Logger} from '../logger';
 import * as generator from 'generate-password';
 import {MailerService} from '../mailer';
 import {IEvent} from '../dwolla/event';
-import {RequestContext} from '../context';
+import {GenerateJwtLogic} from '../auth/logic';
 
 @AutoWired
 export class AddContractorLogic extends Logic {
@@ -58,6 +58,7 @@ export class AddContractorLogic extends Logic {
             const contractorRole = await this.getRole(role.models.Types.contractor);
             const roles = [contractorRole];
 
+            await this.createBaseProfile(profile, roles, _trx);
             user.tenantProfile = await this.createTenantProfile(profile, roles, tenantId, _trx);
         });
 
@@ -82,7 +83,7 @@ export class AddContractorLogic extends Logic {
         baseProfile.dwollaUri = undefined;
         baseProfile.dwollaStatus = undefined;
         baseProfile.dwollaSourceUri = undefined;
-        baseProfile = await this.profileService.insert(baseProfile, trx);
+        baseProfile = await this.profileService.insert(baseProfile, trx, false);
         await this.addRoles(baseProfile, roles, trx);
         return baseProfile;
     }
@@ -147,7 +148,7 @@ export class AddInvitedContractorLogic extends Logic {
         }
 
         const tenantId = invitation.tenantId;
-        let user: User;
+        let user;
 
         if (!invitation.isPending()) {
             throw new Errors.NotAcceptableError('Invitation already used');
@@ -164,6 +165,8 @@ export class AddInvitedContractorLogic extends Logic {
             invitation.status = Status.used;
             await this.invitationService.update(invitation, trx);
         });
+
+        user.token = await new GenerateJwtLogic().execute(user);
 
         return user;
     }

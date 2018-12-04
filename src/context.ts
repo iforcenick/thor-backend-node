@@ -1,28 +1,31 @@
 import {ServiceContext} from 'typescript-rest';
 import {User} from './user/models';
+import {Auth} from './auth/models';
 
 export class RequestContext {
     private context: ServiceContext;
+    private auth: Auth;
     private _tenantId: string;
 
     constructor(context: ServiceContext) {
         this.context = context;
+        this.auth = context.request['auth'];
     }
 
     getTenantId(): string {
         if (this._tenantId) {
             return this._tenantId;
         }
-        return this.context.request['tenantId'];
+        return this.auth.tenantId;
     }
 
     setForceTenantId(id: string) {
         this._tenantId = id;
     }
 
-    getUser(): User {
-        if (this.context.request['user']) {
-            return this.context.request['user'];
+    getUserId(): string {
+        if (this.auth.userId) {
+            return this.auth.userId;
         }
         throw new RequestContextMissingUserError();
     }

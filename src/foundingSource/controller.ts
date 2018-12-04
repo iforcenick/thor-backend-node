@@ -185,7 +185,7 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
     async getFundingSources(@QueryParam('page') page?: number,
                             @QueryParam('limit') limit?: number) {
         this.userService.setRequestContext(this.getRequestContext());
-        const user = await this.userService.get(this.getRequestContext().getUser().id);
+        const user = await this.userService.get(this.getRequestContext().getUserId());
         return await super._getFundingSources(user, page, limit);
     }
 
@@ -193,21 +193,21 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
     @Path('default')
     async getDefaultFundingSource() {
         this.userService.setRequestContext(this.getRequestContext());
-        const user = await this.userService.get(this.getRequestContext().getUser().id);
+        const user = await this.userService.get(this.getRequestContext().getUserId());
         return await super._getDefaultFundingSource(user);
     }
 
     @POST
     @Path(':id/default')
     async setDefaultFundingSource(@PathParam('id') id: string) {
-        return await super._setDefaultFundingSource(id, this.getRequestContext().getUser().id);
+        return await super._setDefaultFundingSource(id, this.getRequestContext().getUserId());
     }
 
     @POST
     @Path('')
     async createUserFundingSource(data: FundingSourceRequest): Promise<FundingSourceResponse> {
         this.userService.setRequestContext(this.getRequestContext());
-        const user = await this.userService.get(this.getRequestContext().getUser().id);
+        const user = await this.userService.get(this.getRequestContext().getUserId());
         return await this._createUserFundingSource(user, data);
     }
 
@@ -215,7 +215,7 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
     @Path(':id')
     async deleteUserFundingSource(@PathParam('id') id: string) {
         this.userService.setRequestContext(this.getRequestContext());
-        const user = await this.userService.get(this.getRequestContext().getUser().id);
+        const user = await this.userService.get(this.getRequestContext().getUserId());
         return await this._deleteUserFundingSource(user, id);
     }
 
@@ -223,7 +223,7 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
     @Path('iav')
     async getIavToken(): Promise<FundingSourceIavToken> {
         const logic = new GetIavTokenLogic(this.getRequestContext());
-        const token = await logic.execute(this.getRequestContext().getUser().id);
+        const token = await logic.execute(this.getRequestContext().getUserId());
         return this.map(FundingSourceIavToken, {token});
     }
 
@@ -232,7 +232,7 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
     async addIavFundingSource(data: FundingSourceIavRequest): Promise<FundingSourceResponse> {
         const parsedData: FundingSourceIavRequest = await this.validate(data, fundingSourceIavRequestSchema);
         const logic = new AddIavFundingSourceLogic(this.getRequestContext());
-        const token = await logic.execute(this.getRequestContext().getUser().id, parsedData.uri, parsedData.routing, parsedData.account);
+        const token = await logic.execute(this.getRequestContext().getUserId(), parsedData.uri, parsedData.routing, parsedData.account);
         return this.map(FundingSourceResponse, {token});
     }
 }

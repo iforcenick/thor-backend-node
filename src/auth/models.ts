@@ -1,27 +1,39 @@
-import {UserResponse} from '../user/dto';
-import Joi = require('joi');
+import * as role from '../user/role';
 
-export class AuthUserResponse extends UserResponse {
-    token: string;
+export enum AuthType {
+    SYSTEM = 'SYSTEM',
+    TENANT = 'TENANT',
+    NONE = 'NONE',
 }
 
-export interface LoginRequest {
-    login: string;
-    password: string;
+export class Auth {
+    tenantId: string;
+    userId: string;
+    roles: Array<string>;
+    type: AuthType;
+
+    hasRole(role: role.models.Types) {
+        return this.roles.includes(role);
+    }
+
+    toJwt() {
+        return {
+            aty: this.type,
+            uid: this.userId,
+            tid: this.tenantId,
+            rol: this.roles.join(','),
+        };
+    }
+
+    static fromJwt(payload: any) {
+        const auth = new Auth();
+        auth.type = payload.aty;
+        auth.userId = payload.uid;
+        auth.tenantId = payload.tid;
+        auth.roles = payload.rol.split(',');
+        return auth;
+    }
 }
 
-export interface PasswordRequest {
-    oldPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-}
 
-export const loginRequestSchema = Joi.object().keys({
-    login: Joi.string().required(),
-    password: Joi.string().required(),
-});
-export const passwordRequestSchema = Joi.object().keys({
-    oldPassword: Joi.string().required(),
-    newPassword: Joi.string().required(),
-    confirmPassword: Joi.string().required(),
-});
+

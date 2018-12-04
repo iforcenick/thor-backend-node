@@ -1,10 +1,12 @@
+import {Auth, AuthType} from './auth/models';
+
 const uuidv4 = require('uuid/v4');
 
 export const tokenExtractor = (req, res, next): void => {
     const header = req.header('Authorization');
 
     if (header) {
-        req.userToken = header.replace('Bearer ', '');
+        req.authToken = header.replace('Bearer ', '');
     }
 
     next();
@@ -12,7 +14,11 @@ export const tokenExtractor = (req, res, next): void => {
 
 export const authExtractor = (req, res, next): void => {
     if (req.user) {
-        req.tenantId = req.user.tenantProfile.tenantId;
+        req.auth = req.user;
+    } else {
+        const auth = new Auth();
+        auth.type = AuthType.NONE;
+        req.auth = auth;
     }
 
     next();

@@ -5,10 +5,7 @@ import * as role from './role';
 import * as profile from '../profile/models';
 import * as transactions from '../transaction/models';
 import {ProfileService} from '../profile/service';
-import {raw, transaction} from 'objection';
-import * as _ from 'lodash';
-import {ApiServer} from '../server';
-import {JWTTokenProvider} from '../auth/encryption';
+import {transaction} from 'objection';
 import {RequestContext} from '../context';
 
 const bcrypt = require('bcrypt');
@@ -17,7 +14,6 @@ const bcrypt = require('bcrypt');
 export class UserService extends db.ModelService<models.User> {
     @Inject protected rolesService: role.service.RoleService;
     @Inject public profileService: ProfileService;
-    @Inject private jwtTokenProvider: JWTTokenProvider;
 
     setRequestContext(requestContext: RequestContext) {
         this.requestContext = requestContext;
@@ -132,25 +128,6 @@ export class UserService extends db.ModelService<models.User> {
 
     async checkPassword(password: string, userPassword: string) {
         return await bcrypt.compare(password, userPassword);
-    }
-
-    async changePassword(user: models.User, newPassword, oldPassword: string) {
-        const isOldPasswordValid = await this.checkPassword(oldPassword, user.password);
-        if (!isOldPasswordValid) {
-            throw Error('Invalid old password');
-        }
-
-        const isNewOldPasswordSame = await this.checkPassword(newPassword, user.password);
-        if (isNewOldPasswordSame) {
-            throw Error('New password is the same as the old one');
-        }
-
-        const newPasswordHash = await this.hashPassword(newPassword);
-        return user.$query().patch({password: newPasswordHash});
-    }
-
-    async generateJwt(user: models.User) {
-        return this.jwtTokenProvider.generateJwt(user);
     }
 
     async hashPassword(password) {

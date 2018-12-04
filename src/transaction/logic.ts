@@ -229,7 +229,7 @@ export class CreateTransactionTransferLogic extends Logic {
 
         try {
             if (!transaction.transferId) {
-                const admin = await this.userService.get(this.context.getUser().id);
+                const admin = await this.userService.get(this.context.getUserId());
                 const user = await this.userService.get(transaction.userId);
                 const tenantLogic = new ChargeTenantLogic(this.context);
                 const tenantCharge = await tenantLogic.execute(calculateTransactionsValue([transaction]), admin);
@@ -311,7 +311,7 @@ export class CreateTransactionsTransferLogic extends Logic {
         }
 
         try {
-            const admin = await this.userService.get(this.context.getUser().id);
+            const admin = await this.userService.get(this.context.getUserId());
             const user = await this.userService.get(userId);
             const tenantLogic = new ChargeTenantLogic(this.context);
             const tenantCharge = await tenantLogic.execute(calculateTransactionsValue(transactions), admin);
@@ -444,7 +444,7 @@ export class CreateTransactionLogic extends Logic {
             }
 
             const transactionEntity = models.Transaction.factory({});
-            transactionEntity.adminId = this.context.getUser().id;
+            transactionEntity.adminId = this.context.getUserId();
             transactionEntity.userId = userId;
             transactionEntity.jobId = job.id;
             transactionEntity.value = value;

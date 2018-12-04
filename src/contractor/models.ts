@@ -21,7 +21,7 @@ export class ContractorResponse extends ContractorBaseModel {
     lastActivity: Date = mapper.FIELD_DATE;
     @mapper.object(profile.ProfileResponse)
     tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
-    token: string = null;
+    token: string = mapper.FIELD_STR;
 }
 
 export const contractorRequestSchema = Joi.object().keys({
@@ -29,8 +29,6 @@ export const contractorRequestSchema = Joi.object().keys({
     profile: profile.profileRequestSchema.required(),
     invitationToken: Joi.string().required(),
 });
-
-
 
 export interface PasswordRequest {
     oldPassword: string;

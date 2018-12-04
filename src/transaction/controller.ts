@@ -211,7 +211,7 @@ export class TransactionController extends BaseController {
         }
 
         try {
-            const user = await this.userService.get(this.getRequestContext().getUser().id);
+            const user = await this.userService.get(this.getRequestContext().getUserId());
 
             if (!_transaction.transferId || _transaction.canBeCancelled()) {
                 throw new Errors.NotAcceptableError('Transfer cannot be cancelled');

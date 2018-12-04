@@ -72,6 +72,14 @@ class BooleanField extends Mapper {
     field: boolean = mapper.FIELD_BOOLEAN;
 }
 
+class ExtendingBooleanField extends BooleanField {
+    field2: boolean = mapper.FIELD_BOOLEAN;
+}
+
+class ExtendingExtendedBooleanField extends ExtendingBooleanField {
+    field3: boolean = mapper.FIELD_BOOLEAN;
+}
+
 const map = (mapper, data) => {
     return new mapper().map(data);
 };
@@ -197,6 +205,30 @@ describe('Mapper', () => {
             const input = _.cloneDeep(expected);
             const output = map(BooleanField, input);
             expect(output.field).to.be.false;
+        });
+
+        it('should map fields after extending', async () => {
+            const expected = {
+                field: false,
+                field2: true,
+            };
+
+            const output = map(ExtendingBooleanField, expected);
+            expect(output.field).to.be.false;
+            expect(output.field2).to.be.true;
+        });
+
+        it('should map fields after extending extended', async () => {
+            const expected = {
+                field: false,
+                field2: true,
+                field3: false,
+            };
+
+            const output = map(ExtendingExtendedBooleanField, expected);
+            expect(output.field).to.be.false;
+            expect(output.field2).to.be.true;
+            expect(output.field3).to.be.false;
         });
     });
 });

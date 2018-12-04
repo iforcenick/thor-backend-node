@@ -10,6 +10,7 @@ import {Inject} from 'typescript-ioc';
 import {Logger} from './logger';
 import {Config} from './config';
 import {RequestContext} from './context';
+import {Auth} from "./auth/models";
 
 export {mapper};
 
@@ -37,8 +38,8 @@ export class BaseController {
     private requestContext: context.RequestContext;
 
     static _requireRole(req: any, role: role.models.Types) {
-        const user: user.User = req.user;
-        if (!user || !user.hasRole(role)) {
+        const auth: Auth = req.auth;
+        if (!auth.hasRole(role)) {
             throw new Errors.ForbiddenError();
         }
 

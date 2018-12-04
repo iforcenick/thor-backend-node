@@ -66,7 +66,7 @@ export class InvitationController extends BaseController {
         this.userService.setRequestContext(this.getRequestContext());
 
         const parsedData = await this.validate(data, models.requestSchema);
-        const user = await this.getRequestContext().getUser();
+        const user = await this.getRequestContext().getUserId();
         let invitation = models.Invitation.factory(parsedData);
         invitation.status = models.Status.pending;
 

@@ -205,7 +205,7 @@ export class UserController extends BaseController {
         this.service.setRequestContext(this.getRequestContext());
 
         try {
-            await this.service.deleteFull(this.getRequestContext().getUser().id);
+            await this.service.deleteFull(this.getRequestContext().getUserId());
         } catch (e) {
             throw new Errors.InternalServerError(e);
         }

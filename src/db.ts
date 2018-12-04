@@ -199,8 +199,12 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
         }
     }
 
-    async insert(entity: OModel, trx?: objection.Transaction): Promise<T> {
-        if (_.has(entity, 'tenantId')) {
+    async insert(entity: OModel, trx?: objection.Transaction, forceTenant?: boolean): Promise<T> {
+        if (forceTenant === undefined) {
+            forceTenant = true;
+        }
+
+        if (_.has(entity, 'tenantId') && forceTenant) {
             if (!entity['tenantId'] && this.getTenantId()) {
                 entity['tenantId'] = this.getTenantId();
             }
