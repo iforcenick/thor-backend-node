@@ -18,6 +18,7 @@ export const enum Relations {
 export class FundingSource extends db.Model {
     static tableName = db.Tables.fundingSources;
     type?: string = null;
+    name?: string = null;
     dwollaUri?: string = null;
     tenantId?: string = null;
     profileId?: string = null;
