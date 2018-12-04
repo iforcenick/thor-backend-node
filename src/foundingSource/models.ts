@@ -44,7 +44,7 @@ export class FundingSource extends db.Model {
 }
 
 
-export class FundingSourceResponse {
+export class FundingSourceResponse extends Mapper {
     id: string = mapper.FIELD_STR;
     type: string = mapper.FIELD_STR;
     externalUri: string = mapper.FIELD_STR;
