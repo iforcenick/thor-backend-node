@@ -72,7 +72,7 @@ describe('Mailer service', () => {
         });
 
         it('should send sendFundingSourceCreated', async () => {
-            expect(await service.sendFundingSourceCreated(user, {})).to.be.true;
+            expect(await service.sendFundingSourceCreated(user)).to.be.true;
             expect(sendSpy.calledOnce).to.be.true;
             expect(sendSpy.getCall(0).args[0]).to.equal(email);
             expect(sendSpy.getCall(0).args[3]).to.be.a('string');
@@ -80,7 +80,7 @@ describe('Mailer service', () => {
         });
 
         it('should send sendFundingSourceRemoved', async () => {
-            expect(await service.sendFundingSourceRemoved(user, {})).to.be.true;
+            expect(await service.sendFundingSourceRemoved(user)).to.be.true;
             expect(sendSpy.calledOnce).to.be.true;
             expect(sendSpy.getCall(0).args[0]).to.equal(email);
             expect(sendSpy.getCall(0).args[3]).to.be.a('string');

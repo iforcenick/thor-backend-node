@@ -26,20 +26,15 @@ class FundingSourceCreateAndNotifyLogic extends Logic {
 
     async execute(fundingSource: FundingSource, uri: string, user: User): Promise<any> {
         const profile = user.tenantProfile;
-        const sourceInfo = {
-            sourceUri: uri,
-            routing: fundingSource.routing,
-            account: fundingSource.account,
-        };
 
-        const logic = new UserFundingSourcesLogic(this.context);
-        const fundingSources = await logic.execute(user.id);
+        const logic = new GetUserFundingSourcesLogic(this.context);
+        const fundingSources = await logic.execute(user);
         if (!fundingSources || fundingSources.length == 0) {
             fundingSource.isDefault = true;
         }
 
         try {
-            await this.mailer.sendFundingSourceCreated(user, sourceInfo);
+            await this.mailer.sendFundingSourceCreated(user);
         } catch (e) {
             this.logger.error(e.message);
         }
@@ -56,16 +51,11 @@ class FundingSourceCreateAndNotifyLogic extends Logic {
 }
 
 @AutoWired
-export class UserFundingSourcesLogic extends Logic {
+export class GetUserFundingSourcesLogic extends Logic {
     @Inject protected userService: UserService;
     @Inject protected fundingService: FundingSourceService;
 
-    async execute(id: string): Promise<Array<FundingSource>> {
-        const user = await this.userService.get(id);
-        if (!user) {
-            throw new Errors.NotFoundError('User not found');
-        }
-
+    async execute(user: User): Promise<Array<FundingSource>> {
         const query = this.fundingService.query();
         query.where(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id);
         return await query;
@@ -113,41 +103,6 @@ export class SetDefaultFundingSourceLogic extends Logic {
 }
 
 @AutoWired
-export class CreateUserFundingSourceLogic extends Logic {
-    @Inject protected dwollaClient: dwolla.Client;
-    @Inject protected userService: UserService;
-    @Inject protected profileService: ProfileService;
-    @Inject protected fundingSourceService: FundingSourceService;
-    @Inject protected mailer: MailerService;
-    @Inject protected logger: Logger;
-
-    async execute(data: any, user: User): Promise<any> {
-        const profile = user.tenantProfile;
-        const sourceUri = await this.dwollaClient.createFundingSource(
-            profile.dwollaUri,
-            data.routing,
-            data.account,
-            'checking',
-            data.name,
-        );
-
-        const fundingSource: FundingSource = FundingSource.factory({
-            routing: data.routing,
-            account: data.account,
-            type: 'checking',
-            name: data.name,
-            profileId: profile.id,
-            tenantId: profile.tenantId,
-            isDefault: false,
-            dwollaUri: sourceUri
-        });
-
-        const logic = new FundingSourceCreateAndNotifyLogic(this.context);
-        return await logic.execute(fundingSource, sourceUri, user);
-    }
-}
-
-@AutoWired
 export class DeleteFundingSourceLogic extends Logic {
     @Inject protected dwollaClient: dwolla.Client;
     @Inject protected profileService: ProfileService;
@@ -159,8 +114,6 @@ export class DeleteFundingSourceLogic extends Logic {
         const profile: Profile = user.tenantProfile;
         const sourceInfo = {
             sourceUri: profile.dwollaUri,
-            routing: profile.dwollaRouting,
-            account: profile.dwollaAccount,
         };
 
         const fundingSource: FundingSource = await this.fundingSourceService.get(id);
@@ -175,7 +128,7 @@ export class DeleteFundingSourceLogic extends Logic {
         await this.dwollaClient.deleteFundingSource(fundingSource.dwollaUri);
 
         try {
-            await this.mailer.sendFundingSourceRemoved(user, sourceInfo);
+            await this.mailer.sendFundingSourceRemoved(user);
         } catch (e) {
             this.logger.error(e.message);
         }
@@ -255,12 +208,7 @@ export class GetIavTokenLogic extends Logic {
     @Inject protected userService: UserService;
     @Inject private client: dwolla.Client;
 
-    async execute(id: string) {
-        const user = await this.userService.get(id);
-        if (!user) {
-            throw new Errors.NotFoundError('User not found');
-        }
-
+    async execute(user: User) {
         try {
             return await this.client.getIavToken(user.tenantProfile.dwollaUri);
         } catch (e) {
@@ -279,14 +227,8 @@ export class AddIavFundingSourceLogic extends Logic {
     @Inject protected userService: UserService;
     @Inject private client: dwolla.Client;
 
-    async execute(id, uri, routing, account: string) {
-        const user = await this.userService.get(id);
-        if (!user) {
-            throw new Errors.NotFoundError('User not found');
-        }
-
+    async execute(user: User, uri: string) {
         let dwollaFunding;
-
         try {
             dwollaFunding = await this.client.getFundingSource(uri);
         } catch (e) {
@@ -294,8 +236,6 @@ export class AddIavFundingSourceLogic extends Logic {
         }
 
         const fundingSource: FundingSource = FundingSource.factory({
-            routing: routing,
-            account: account,
             type: dwollaFunding.type,
             name: dwollaFunding.name,
             profileId: user.tenantProfile.id,

@@ -17,9 +17,6 @@ export const enum Relations {
 
 export class FundingSource extends db.Model {
     static tableName = db.Tables.fundingSources;
-    routing?: string = null;
-    account?: string = null;
-    name?: string = null;
     type?: string = null;
     dwollaUri?: string = null;
     tenantId?: string = null;
@@ -46,16 +43,7 @@ export class FundingSource extends db.Model {
 }
 
 
-export class FundingSourceBaseInfo extends Mapper {
-    routing: string = mapper.FIELD_STR;
-    account: string = mapper.FIELD_STR;
-    name: string = mapper.FIELD_STR;
-}
-
-export class FundingSourceRequest extends FundingSourceBaseInfo {
-}
-
-export class FundingSourceResponse extends FundingSourceBaseInfo {
+export class FundingSourceResponse {
     id: string = mapper.FIELD_STR;
     type: string = mapper.FIELD_STR;
     externalUri: string = mapper.FIELD_STR;
@@ -76,20 +64,10 @@ export class FundingSourceIavToken extends Mapper {
 
 export class FundingSourceIavRequest extends Mapper {
     uri: string = mapper.FIELD_STR;
-    routing: string = mapper.FIELD_STR;
-    account: string = mapper.FIELD_STR;
 }
 
 export const fundingSourceIavRequestSchema = Joi.object().keys({
     uri: Joi.string().required(),
-    routing: Joi.string().required(),
-    account: Joi.string().required(),
-});
-
-export const fundingSourceRequestSchema = Joi.object().keys({
-    routing: Joi.string().required(),
-    account: Joi.string().required(),
-    name: Joi.string().allow(null, '').default('default'),
 });
 
 export const contractorFundingSourceVerificationRequestSchema = Joi.object().keys({

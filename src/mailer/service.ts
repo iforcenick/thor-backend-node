@@ -24,15 +24,11 @@ export class MailerService {
         return await this.send(user.tenantProfile.email, this.from, await template.getSubject(), await template.getHtml(), await template.getText());
     }
 
-    async sendFundingSourceCreated(user: users.User, sourceInfo: any) {
+    async sendFundingSourceCreated(user: users.User) {
         const params = {
             title: 'Bank Added',
             description1: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
             description2: `A bank account has been added to your profile.`,
-            field1: 'Account:',
-            field1Text: `${sourceInfo.account}`,
-            field2: 'Routing Number:',
-            field2Text: `${sourceInfo.routing}`,
             field3: 'Type:',
             field3Text: `Checking`,
         };
@@ -45,16 +41,12 @@ export class MailerService {
         return await this.sendTemplate(user, template);
     }
 
-    async sendFundingSourceRemoved(user: users.User, sourceInfo: any) {
+    async sendFundingSourceRemoved(user: users.User) {
         const template = new templates.Template();
         const params = {
             title: 'Bank Added',
             description1: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
             description2: `A bank account has been added to your profile.`,
-            field1: 'Account:',
-            field1Text: `${sourceInfo.account}`,
-            field2: 'Routing Number:',
-            field2Text: `${sourceInfo.routing}`,
             field3: 'Type:',
             field3Text: `Checking`,
         };

@@ -3,14 +3,7 @@ import {
     Context, DELETE, Errors, GET, PATCH, Path, PathParam, POST, Preprocessor, QueryParam,
     ServiceContext
 } from 'typescript-rest';
-import {
-    contractorFundingSourceVerificationRequestSchema,
-    FundingSource,
-    FundingSourceBaseInfo, FundingSourceIavRequest, fundingSourceIavRequestSchema, FundingSourceIavToken,
-    FundingSourceRequest,
-    fundingSourceRequestSchema,
-    FundingSourceResponse, UserFundingSourceVerificationRequest
-} from './models';
+import * as models from './models';
 import {MailerService} from '../mailer';
 import * as dwolla from '../dwolla';
 import {UserService} from '../user/service';
@@ -20,83 +13,8 @@ import {AutoWired, Inject} from 'typescript-ioc';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {User} from '../user/models';
 import {Pagination} from '../db';
-import {
-    AddIavFundingSourceLogic, ContractorDefaultFundingSourcesLogic,
-    CreateUserFundingSourceLogic, DeleteFundingSourceLogic, GetIavTokenLogic,
-    InitiateContractorFundingSourceVerificationLogic,
-    SetDefaultFundingSourceLogic, UserFundingSourcesLogic, VerifyContractorFundingSourceLogic
-} from './logic';
+import * as logicLayer from './logic';
 
-@AutoWired
-export abstract class FundingSourceBaseController extends BaseController {
-    @Inject protected dwollaClient: dwolla.Client;
-    @Inject protected userService: UserService;
-    @Inject protected profileService: ProfileService;
-    @Inject protected fundingSourceService: FundingSourceService;
-    @Inject protected mailer: MailerService;
-
-    protected async _setDefaultFundingSource(fundingId: string, userId: string) {
-        const logic = new SetDefaultFundingSourceLogic(this.getRequestContext());
-        const fundingSource = await logic.execute(fundingId, userId);
-
-        return this.map(FundingSourceResponse, fundingSource);
-    }
-
-    protected async _getDefaultFundingSource(user: User): Promise<FundingSource> {
-        const logic = new ContractorDefaultFundingSourcesLogic(this.getRequestContext());
-        const fundingSource = await logic.execute(user.id);
-        if (!fundingSource) {
-            throw new Errors.NotFoundError();
-        }
-        return fundingSource;
-    }
-
-    protected async _createUserFundingSource(user: User, data: FundingSourceRequest): Promise<FundingSourceResponse> {
-        const parsedData: FundingSourceBaseInfo = await this.validate(data, fundingSourceRequestSchema);
-        if (!user) {
-            throw new Errors.NotFoundError();
-        }
-
-        try {
-            const logic = new CreateUserFundingSourceLogic(this.getRequestContext());
-            const fundingSource = await logic.execute(parsedData, user);
-
-            return this.map(FundingSourceResponse, fundingSource);
-        } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
-                throw err.toValidationError(null, {
-                    accountNumber: 'account',
-                    routingNumber: 'routing',
-                });
-            }
-
-            throw new Errors.InternalServerError(err.message);
-        }
-    }
-
-    protected async _deleteUserFundingSource(user: User, id: string) {
-        if (!user) {
-            throw new Errors.NotFoundError();
-        }
-
-        try {
-            const logic = new DeleteFundingSourceLogic(this.getRequestContext());
-            await logic.execute(id, user);
-        } catch (err) {
-            this.logger.error(err.message);
-            throw new Errors.InternalServerError(err.message);
-        }
-    }
-
-    protected async _getFundingSources(user: User, page: number = 1, limit: number = this.config.get('pagination.limit')) {
-        const logic = new UserFundingSourcesLogic(this.getRequestContext());
-        const fundingSources = await logic.execute(user.id);
-
-        return this.paginate(new Pagination(page, limit, fundingSources.length), fundingSources.map(fundingSource => {
-            return this.map(FundingSourceResponse, fundingSource);
-        }));
-    }
-}
 
 @AutoWired
 @Security('api_key')
@@ -109,19 +27,78 @@ export class FundingSourceController extends BaseController {
     @POST
     @Path(':id/verify')
     async initiateFundingSourceVerification(@PathParam('id') id: string) {
-        const logic = new InitiateContractorFundingSourceVerificationLogic(this.getRequestContext());
+        const logic = new logicLayer.InitiateContractorFundingSourceVerificationLogic(this.getRequestContext());
         await logic.execute(id);
     }
 
     @PATCH
     @Path(':id/verify')
-    async verifyFundingSource(@PathParam('id') id: string, data: UserFundingSourceVerificationRequest) {
-        const parsedData: UserFundingSourceVerificationRequest = await this.validate(data, contractorFundingSourceVerificationRequestSchema);
-        const logic = new VerifyContractorFundingSourceLogic(this.getRequestContext());
+    async verifyFundingSource(@PathParam('id') id: string, data: models.UserFundingSourceVerificationRequest) {
+        const parsedData: models.UserFundingSourceVerificationRequest = await this.validate(data, models.contractorFundingSourceVerificationRequestSchema);
+        const logic = new logicLayer.VerifyContractorFundingSourceLogic(this.getRequestContext());
         await logic.execute(parsedData.amount1, parsedData.amount2, id);
     }
-
 }
+
+@AutoWired
+export abstract class FundingSourceBaseController extends BaseController {
+    @Inject protected dwollaClient: dwolla.Client;
+    @Inject protected userService: UserService;
+    @Inject protected profileService: ProfileService;
+    @Inject protected fundingSourceService: FundingSourceService;
+    @Inject protected mailer: MailerService;
+
+    protected async _setDefaultFundingSource(fundingId: string, userId: string) {
+        const logic = new logicLayer.SetDefaultFundingSourceLogic(this.getRequestContext());
+        const fundingSource = await logic.execute(fundingId, userId);
+
+        return this.map(models.FundingSourceResponse, fundingSource);
+    }
+
+    protected async _getDefaultFundingSource(user: User): Promise<models.FundingSource> {
+        const logic = new logicLayer.ContractorDefaultFundingSourcesLogic(this.getRequestContext());
+        const fundingSource = await logic.execute(user.id);
+        if (!fundingSource) {
+            throw new Errors.NotFoundError();
+        }
+        return fundingSource;
+    }
+
+    protected async _deleteUserFundingSource(user: User, id: string) {
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+
+        try {
+            const logic = new logicLayer.DeleteFundingSourceLogic(this.getRequestContext());
+            await logic.execute(id, user);
+        } catch (err) {
+            this.logger.error(err.message);
+            throw new Errors.InternalServerError(err.message);
+        }
+    }
+
+    protected async _getFundingSources(user: User, page: number = 1, limit: number = this.config.get('pagination.limit')) {
+        const logic = new logicLayer.GetUserFundingSourcesLogic(this.getRequestContext());
+        const fundingSources = await logic.execute(user);
+
+        return this.paginate(new Pagination(page, limit, fundingSources.length), fundingSources.map(fundingSource => {
+            return this.map(models.FundingSourceResponse, fundingSource);
+        }));
+    }
+
+    protected async _addIavFundingSource(user: User, data: models.FundingSourceIavRequest) {
+        const parsedData: models.FundingSourceIavRequest = await this.validate(data, models.fundingSourceIavRequestSchema);
+        const logic = new logicLayer.AddIavFundingSourceLogic(this.getRequestContext());
+        return await logic.execute(user, parsedData.uri);
+    }
+
+    protected async _getIavToken(user: User) {
+        const logic = new logicLayer.GetIavTokenLogic(this.getRequestContext());
+        return await logic.execute(user);
+    }
+}
+
 
 @AutoWired
 @Security('api_key')
@@ -136,6 +113,9 @@ export class UserFundingSourceController extends FundingSourceBaseController {
     async getDefaultFundingSource(@PathParam('userId') userId: string) {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
         return await super._getDefaultFundingSource(user);
     }
 
@@ -145,19 +125,14 @@ export class UserFundingSourceController extends FundingSourceBaseController {
         return await super._setDefaultFundingSource(fundingId, userId);
     }
 
-    @POST
-    @Path('')
-    async createUserFundingSource(@PathParam('userId') userId: string, data: FundingSourceRequest): Promise<FundingSourceResponse> {
-        this.userService.setRequestContext(this.getRequestContext());
-        const user = await this.userService.get(userId);
-        return await this._createUserFundingSource(user, data);
-    }
-
     @DELETE
     @Path(':fundingId')
     async deleteUserFundingSource(@PathParam('userId') userId: string, @PathParam('fundingId') fundingId: string) {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
         return await this._deleteUserFundingSource(user, fundingId);
     }
 
@@ -167,7 +142,34 @@ export class UserFundingSourceController extends FundingSourceBaseController {
                             @QueryParam('limit') limit?: number) {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
         return await super._getFundingSources(user, page, limit);
+    }
+
+    @POST
+    @Path('iav')
+    async addIavFundingSource(@PathParam('userId') userId: string, data: models.FundingSourceIavRequest): Promise<models.FundingSourceResponse> {
+        this.userService.setRequestContext(this.getRequestContext());
+        const user = await this.userService.get(userId);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+        const token = this._addIavFundingSource(user, data);
+        return this.map(models.FundingSourceResponse, {token});
+    }
+
+    @GET
+    @Path('iav')
+    async getIavToken(@PathParam('userId') userId: string): Promise<models.FundingSourceIavToken> {
+        this.userService.setRequestContext(this.getRequestContext());
+        const user = await this.userService.get(userId);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+        const token = this._getIavToken(user);
+        return this.map(models.FundingSourceIavToken, {token});
     }
 }
 
@@ -194,6 +196,9 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
     async getDefaultFundingSource() {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(this.getRequestContext().getUserId());
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
         return await super._getDefaultFundingSource(user);
     }
 
@@ -203,36 +208,38 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
         return await super._setDefaultFundingSource(id, this.getRequestContext().getUserId());
     }
 
-    @POST
-    @Path('')
-    async createUserFundingSource(data: FundingSourceRequest): Promise<FundingSourceResponse> {
-        this.userService.setRequestContext(this.getRequestContext());
-        const user = await this.userService.get(this.getRequestContext().getUserId());
-        return await this._createUserFundingSource(user, data);
-    }
-
     @DELETE
     @Path(':id')
     async deleteUserFundingSource(@PathParam('id') id: string) {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(this.getRequestContext().getUserId());
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
         return await this._deleteUserFundingSource(user, id);
     }
 
     @GET
     @Path('iav')
-    async getIavToken(): Promise<FundingSourceIavToken> {
-        const logic = new GetIavTokenLogic(this.getRequestContext());
-        const token = await logic.execute(this.getRequestContext().getUserId());
-        return this.map(FundingSourceIavToken, {token});
+    async getIavToken(): Promise<models.FundingSourceIavToken> {
+        this.userService.setRequestContext(this.getRequestContext());
+        const user = await this.userService.get(this.getRequestContext().getUserId());
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+        const token = this._getIavToken(user);
+        return this.map(models.FundingSourceIavToken, {token});
     }
 
     @POST
     @Path('iav')
-    async addIavFundingSource(data: FundingSourceIavRequest): Promise<FundingSourceResponse> {
-        const parsedData: FundingSourceIavRequest = await this.validate(data, fundingSourceIavRequestSchema);
-        const logic = new AddIavFundingSourceLogic(this.getRequestContext());
-        const token = await logic.execute(this.getRequestContext().getUserId(), parsedData.uri, parsedData.routing, parsedData.account);
-        return this.map(FundingSourceResponse, {token});
+    async addIavFundingSource(data: models.FundingSourceIavRequest): Promise<models.FundingSourceResponse> {
+        this.userService.setRequestContext(this.getRequestContext());
+        const user = await this.userService.get(this.getRequestContext().getUserId());
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+        const token = this._addIavFundingSource(user, data);
+        return this.map(models.FundingSourceResponse, {token});
     }
 }
