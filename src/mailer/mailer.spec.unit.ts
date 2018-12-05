@@ -74,6 +74,7 @@ describe('Mailer service', () => {
 
         it('should send sendFundingSourceAdded', async () => {
             const fundingSource = new FundingSource();
+            fundingSource.createdAt = new Date();
             expect(await service.sendFundingSourceAdded(user, fundingSource)).to.be.true;
             expect(sendSpy.calledOnce).to.be.true;
             expect(sendSpy.getCall(0).args[0]).to.equal(email);

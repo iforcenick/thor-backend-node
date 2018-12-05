@@ -8,13 +8,12 @@ import {RequestContext} from '../context';
 import {ServiceContext} from 'typescript-rest';
 import {InvitationService} from './service';
 import {Container} from 'typescript-ioc';
-import {Invitation} from './models';
-import * as models from './models';
 import {TenantService} from '../tenant/service';
 import {Tenant} from '../tenant/models';
 import {MailerService} from '../mailer';
-import {assert} from 'joi';
 import {ProfileService} from '../profile/service';
+
+const {mockRequest} = require('mock-req-res');
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -24,12 +23,14 @@ let sut: BatchInvitationsLogic = undefined;
 describe('InvitationLogic', () => {
     describe('Batch invitations stubs', () => {
         beforeEach(async () => {
-            const requestContext = new RequestContext(undefined);
+            const serviceContext = new ServiceContext();
+            serviceContext.request = mockRequest();
+            const requestContext = new RequestContext(serviceContext);
             sandbox.stub(requestContext, 'getTenantId').returns('7bc0447a-ea99-4ba2-93bb-c84f5b325c50');
             sut = new BatchInvitationsLogic(requestContext);
 
             const invitationServiceStub = Container.get(InvitationService);
-            const array = new Array<Invitation>();
+            const array = [];
             sandbox.stub(invitationServiceStub, 'getByEmails').returns(Promise.resolve(array));
             sandbox.stub(invitationServiceStub, 'getByExternalIds').returns(Promise.resolve(array));
             sandbox.stub(invitationServiceStub, 'insert').returns(Promise.resolve(array));
@@ -48,6 +49,7 @@ describe('InvitationLogic', () => {
             sandbox.stub(mailerServiceStub, 'sendInvitation').returns(Promise.resolve(true));
             sut.mailer = mailerServiceStub;
         });
+
         it('with external id should send emails for all email addresses in file', async () => {
             const csv = 'email;externalId\n' +
                 'test00@test.com;e2c84d30-0e13-483b-9b42-3b4d9a1dfa90\n' +
@@ -57,6 +59,7 @@ describe('InvitationLogic', () => {
             expect(invitations).not.empty;
             expect(invitations.length).equals(2);
         });
+
         it('with inconsistent columns should send emails for all email addresses in file', async () => {
             const csv = 'email;externalId\n' +
                 'test00@test.com;e2c84d30-0e13-483b-9b42-3b4d9a1dfa90\n' +
@@ -66,6 +69,7 @@ describe('InvitationLogic', () => {
             expect(invitations).not.empty;
             expect(invitations.length).equals(2);
         });
+
         it('without external id should send emails for all email addresses in file', async () => {
             const csv = 'email;externalId\n' +
                 'test00@test.com\n' +
@@ -75,6 +79,7 @@ describe('InvitationLogic', () => {
             expect(invitations).not.empty;
             expect(invitations.length).equals(2);
         });
+
         it('on incorrect email in file should import validate emails', async () => {
             const csv = 'email;externalId\n' +
                 'test00@test.com\n' +
