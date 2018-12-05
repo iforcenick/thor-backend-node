@@ -23,7 +23,7 @@ export class DwollaController extends BaseController {
             const _event = event.factory(data);
             this.logger.info('Dwolla event: ' + JSON.stringify(_event, null, 2));
 
-            this.getRequestContext().setForceTenantId(this.config.get('dwolla.tenantId'));
+            this.getRequestContext().setTenantIdOverride(this.config.get('dwolla.tenantId'));
 
             const eventLogic = EventFactory.get(_event, this.getRequestContext());
             if (eventLogic) {

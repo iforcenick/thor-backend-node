@@ -4,7 +4,8 @@ import {Auth, AuthType} from './auth/models';
 export class RequestContext {
     private context: ServiceContext;
     private auth: Auth;
-    private _tenantId: string;
+    private tenantIdOverride: string;
+    private tenantIdClaimOverride: string;
 
     constructor(context: ServiceContext) {
         this.context = context;
@@ -12,8 +13,8 @@ export class RequestContext {
     }
 
     getTenantId(): string {
-        if (this._tenantId) {
-            return this._tenantId;
+        if (this.tenantIdOverride) {
+            return this.tenantIdOverride;
         }
 
         if (this.auth.type == AuthType.ANONYMOUS) {
@@ -21,14 +22,25 @@ export class RequestContext {
         }
 
         if (this.auth.type == AuthType.SYSTEM) {
-            return null;
+            const claim = this.getTenantIdClaim();
+            if (claim) {
+                return claim;
+            }
         }
 
         return this.auth.tenantId;
     }
 
-    setForceTenantId(id: string) {
-        this._tenantId = id;
+    private getTenantIdClaim(): string {
+        return this.tenantIdClaimOverride ? this.tenantIdClaimOverride : this.getHeader('X-Tenant-Claim');
+    }
+
+    setTenantIdOverride(id: string) {
+        this.tenantIdOverride = id;
+    }
+
+    setTenantIdClaimOverride(id: string) {
+        this.tenantIdClaimOverride = id;
     }
 
     getUserId(): string {
