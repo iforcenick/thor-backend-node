@@ -90,6 +90,7 @@
     "cross-env": "^5.1.4",
     "express-reload": "^1.1.0",
     "mocha": "^5.2.0",
+    "mock-req-res": "^1.0.2",
     "nodemon": "^1.18.3",
     "nyc": "^13.0.1",
     "sinon": "^6.3.4",

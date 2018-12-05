@@ -3,14 +3,14 @@ import * as role from '../user/role';
 export enum AuthType {
     SYSTEM = 'SYSTEM',
     TENANT = 'TENANT',
-    NONE = 'NONE',
+    ANONYMOUS = 'ANONYMOUS',
 }
 
 export class Auth {
-    tenantId: string;
-    userId: string;
-    roles: Array<string>;
-    type: AuthType;
+    tenantId: string = null;
+    userId: string = null;
+    roles: Array<string> = [];
+    type: AuthType = AuthType.ANONYMOUS;
 
     hasRole(role: role.models.Types) {
         return this.roles.includes(role);

@@ -1,6 +1,5 @@
 import {ServiceContext} from 'typescript-rest';
-import {User} from './user/models';
-import {Auth} from './auth/models';
+import {Auth, AuthType} from './auth/models';
 
 export class RequestContext {
     private context: ServiceContext;
@@ -16,6 +15,15 @@ export class RequestContext {
         if (this._tenantId) {
             return this._tenantId;
         }
+
+        if (this.auth.type == AuthType.ANONYMOUS) {
+            return null;
+        }
+
+        if (this.auth.type == AuthType.SYSTEM) {
+            return null;
+        }
+
         return this.auth.tenantId;
     }
 
@@ -28,6 +36,10 @@ export class RequestContext {
             return this.auth.userId;
         }
         throw new RequestContextMissingUserError();
+    }
+
+    getAuth(): Auth {
+        return this.auth;
     }
 
     getHeader(header: string) {

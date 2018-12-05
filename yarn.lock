@@ -3214,6 +3214,11 @@ mock-knex@^0.4.2:
     lodash "^4.14.2"
     semver "^5.3.0"
 
+mock-req-res@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/mock-req-res/-/mock-req-res-1.0.2.tgz#7f212a100f559449dd330ff913c5fe1230459510"
+  integrity sha512-3b9LqDI55vIpaJUnyh5qU5AdkdXlvE4EPKBimw9bZu0BKfVkqygP0m4LlgC23Dj15erm+9alu9R60ZtEVGiH+w==
+
 moment@2.x.x, moment@^2.22.2:
   version "2.22.2"
   resolved "https://registry.yarnpkg.com/moment/-/moment-2.22.2.tgz#3c257f9839fc0e93ff53149632239eb90783ff66"

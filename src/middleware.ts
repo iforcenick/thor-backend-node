@@ -16,9 +16,7 @@ export const authExtractor = (req, res, next): void => {
     if (req.user) {
         req.auth = req.user;
     } else {
-        const auth = new Auth();
-        auth.type = AuthType.NONE;
-        req.auth = auth;
+        req.auth = new Auth();
     }
 
     next();
