@@ -20,13 +20,16 @@ export class DwollaNotifier {
     async sendNotificationForDwollaCustomer(user: User, status: string) {
         switch (status) {
             case dwolla.customer.CUSTOMER_STATUS.Retry:
-                await this.mailer.sendCustomerVerificationRetry(user, user);
+                await this.mailer.sendCustomerVerificationRetry(user);
                 break;
             case dwolla.customer.CUSTOMER_STATUS.Document:
-                await this.mailer.sendCustomerVerificationDocument(user, user);
+                await this.mailer.sendCustomerVerificationDocumentRequired(user);
                 break;
             case dwolla.customer.CUSTOMER_STATUS.Suspended:
-                await this.mailer.sendCustomerVerificationSuspended(user, user);
+                await this.mailer.sendCustomerSuspended(user);
+                break;
+            case dwolla.customer.CUSTOMER_STATUS.Verified:
+                await this.mailer.sendCustomerVerified(user);
                 break;
             // default:
             //     throw new RangeError('Invalid status, ' + status + ' is out of range');

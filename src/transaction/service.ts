@@ -43,7 +43,7 @@ export class TransactionService extends db.ModelService<models.Transaction> {
         return queryResult || {total: '0', users: '0'};
     }
 
-    async getDwollaByTransferExternalId(id: string) {
+    async getByTransferDwollaUri(id: string) {
         // no tenat context for Dwolla
         const query = this.modelType.query();
         this.setConditions(query);

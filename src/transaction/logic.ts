@@ -10,7 +10,7 @@ import {TransferService} from './transfer/service';
 import * as users from '../user/models';
 import {transaction} from 'objection';
 import * as dwolla from '../dwolla';
-import {DwollaRequestError, event} from '../dwolla';
+import {DwollaRequestError} from '../dwolla';
 import * as models from './models';
 import {Statuses, Transaction, TransactionExistingJobRequest, TransactionPatchRequest} from './models';
 import {MailerService} from '../mailer';
@@ -29,29 +29,17 @@ import {ContractorDefaultFundingSourcesLogic} from '../foundingSource/logic';
 @AutoWired
 export class UpdateTransactionStatusLogic extends Logic {
     @Inject private transactionService: TransactionService;
-    @Inject private userService: UserService;
     @Inject private transferService: TransferService;
+    @Inject private userService: UserService;
     @Inject protected mailer: MailerService;
     @Inject protected logger: Logger;
-
-    private mapDwollaStatus(status: string) {
-        switch (status) {
-            case event.TYPE.transfer.canceled:
-                return models.Statuses.cancelled;
-            case event.TYPE.transfer.failed:
-                return models.Statuses.failed;
-            case event.TYPE.transfer.reclaimed:
-                return models.Statuses.reclaimed;
-            case event.TYPE.transfer.completed:
-                return models.Statuses.processed;
-        }
-
-        return status;
-    }
+    @Inject private fundingSourceService: FundingSourceService;
+    @Inject private tenantService: TenantService;
 
     async execute(_transaction: Transaction, status: string): Promise<any> {
+        if (_transaction.status === status) return;
+
         await transaction(this.transactionService.transaction(), async trx => {
-            status = this.mapDwollaStatus(status);
             _transaction.status = status;
             _transaction.transfer.status = status;
 
@@ -63,32 +51,34 @@ export class UpdateTransactionStatusLogic extends Logic {
         try {
             const user = await this.userService.get(_transaction.userId);
             const admin = await this.userService.get(_transaction.adminId);
+            const destination = await this.fundingSourceService.getByDwollaUri(_transaction.transfer.destinationUri);
+            const tenant = await this.tenantService.get(_transaction.tenantId);
             switch (status) {
-                case Statuses.failed:
+                case Statuses.processing:
                     await Promise.all([
-                        this.mailer.sendCustomerTransferFailedSender(admin, {user, admin, transaction: _transaction}),
-                        this.mailer.sendCustomerTransferFailedReceiver(user, {admin, user, transaction: _transaction})
+                        this.mailer.sendCustomerTransferCreatedSender(user, admin, _transaction, destination),
+                        this.mailer.sendCustomerTransferCreatedReceiver(user, tenant, _transaction),
                     ]);
                     break;
                 case Statuses.processed:
                     await Promise.all([
-                        this.mailer.sendCustomerTransferCompletedSender(admin, {
-                            admin,
-                            user,
-                            transaction: _transaction
-                        }),
-                        this.mailer.sendCustomerTransferCompletedReceiver(user, {
-                            admin,
-                            user,
-                            transaction: _transaction
-                        })
+                        this.mailer.sendCustomerTransferCompletedSender(user, admin, _transaction, destination),
+                        this.mailer.sendCustomerTransferCompletedReceiver(user, tenant, _transaction),
                     ]);
                     break;
-                case Statuses.new:
+                case Statuses.failed:
                     await Promise.all([
-                        this.mailer.sendCustomerTransferCreatedSender(admin, {admin, user, transaction: _transaction}),
-                        this.mailer.sendCustomerTransferCreatedReceiver(user, {admin, user, transaction: _transaction})
+                        this.mailer.sendCustomerTransferFailedSender(user, admin, _transaction, destination),
+                        this.mailer.sendCustomerTransferFailedReceiver(user, tenant, _transaction),
                     ]);
+                    break;
+                case Statuses.cancelled:
+                    await Promise.all([
+                        this.mailer.sendCustomerTransferCancelledSender(user, admin, _transaction, destination),
+                        this.mailer.sendCustomerTransferCancelledReceiver(user, tenant, _transaction),
+                    ]);
+                    break;
+                default:
                     break;
             }
         } catch (e) {
@@ -179,7 +169,12 @@ export class PrepareTransferLogic extends Logic {
     @Inject private userService: UserService;
     @Inject private config: Config;
 
-    async execute(transactions: Array<models.Transaction>, user, admin: users.User, tenantCharge: Transfer): Promise<any> {
+    async execute(
+        transactions: Array<models.Transaction>,
+        user,
+        admin: users.User,
+        tenantCharge: Transfer,
+    ): Promise<any> {
         const logic = new ContractorDefaultFundingSourcesLogic(this.context);
         const defaultFunding: FundingSource = await logic.execute(user.id);
         if (!defaultFunding) {
@@ -245,7 +240,11 @@ export class CreateTransactionTransferLogic extends Logic {
 
             await this.createExternalTransfer(transaction);
         } catch (e) {
-            if (e instanceof models.InvalidTransferDataError || e instanceof Errors.NotAcceptableError || e instanceof ChargeTenantError) {
+            if (
+                e instanceof models.InvalidTransferDataError ||
+                e instanceof Errors.NotAcceptableError ||
+                e instanceof ChargeTenantError
+            ) {
                 throw new Errors.NotAcceptableError(e.message);
             }
 
@@ -269,7 +268,14 @@ export class CreateTransactionTransferLogic extends Logic {
             const _transfer = await this.dwollaClient.getTransfer(_transaction.transfer.externalId);
             await updateStatusLogic.execute(_transaction, _transfer.status);
         } catch (e) {
-            await updateStatusLogic.execute(_transaction, models.Statuses.failed);
+            // handled w/o logic so an email isn't sent
+            await transaction(this.transactionService.transaction(), async trx => {
+                _transaction.status = status;
+                _transaction.transfer.status = status;
+
+                await this.transactionService.update(_transaction, trx);
+                await this.transferService.update(_transaction.transfer, trx);
+            });
             throw e;
         }
     }
@@ -321,7 +327,11 @@ export class CreateTransactionsTransferLogic extends Logic {
             // TODO: send email
             return transfer;
         } catch (e) {
-            if (e instanceof models.InvalidTransferDataError || e instanceof Errors.NotAcceptableError || e instanceof ChargeTenantError) {
+            if (
+                e instanceof models.InvalidTransferDataError ||
+                e instanceof Errors.NotAcceptableError ||
+                e instanceof ChargeTenantError
+            ) {
                 throw new Errors.NotAcceptableError(e.message);
             }
 
@@ -510,5 +520,4 @@ export class DeleteTransactionLogic extends Logic {
     }
 }
 
-export class ChargeTenantError extends BaseError {
-}
+export class ChargeTenantError extends BaseError {}

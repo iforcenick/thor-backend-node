@@ -1,28 +1,41 @@
 export const TYPE = {
-    customerTransfer : {
-        completed : 'customer_transfer_completed',
+    customerTransfer: {
+        created: 'customer_transfer_created',
         cancelled: 'customer_transfer_cancelled',
-        failed: 'customer_transfer_failed'
-
+        failed: 'customer_transfer_failed',
+        completed: 'customer_transfer_completed',
     },
-    customerBankTransfer : {
-        created : 'customer_bank_transfer_created'
+    customerBankTransfer: {
+        created: 'customer_bank_transfer_created',
+        creationFailed: 'customer_bank_transfer_creation_failed',
+        cancelled: 'customer_bank_transfer_cancelled',
+        failed: 'customer_bank_transfer_failed',
+        completed: 'customer_bank_transfer_completed',
     },
-    transfer : {
+    transfer: {
         completed: 'transfer_completed',
-        canceled: 'transfer_cancelled',
+        cancelled: 'transfer_cancelled',
         failed: 'transfer_failed',
         reclaimed: 'transfer_reclaimed',
         created: 'transfer_created',
     },
-    customerFundingSource : {
+    customerFundingSource: {
         added: 'customer_funding_source_added',
+        removed: 'customer_funding_source_removed',
+        verified: 'customer_funding_source_verified',
     },
     customer: {
         created: 'customer_created',
-        verificationDocumentNeeded : 'customer_verification_document_needed',
-        reverificationNeeded: 'customer_reverification_needed'
-    }
+        verificationDocumentNeeded: 'customer_verification_document_needed',
+        verificationDocumentUploaded: 'customer_verification_document_uploaded',
+        verificationDocumentApproved: 'customer_verification_document_approved',
+        verificationDocumentFailed: 'customer_verification_document_failed',
+        reverificationNeeded: 'customer_reverification_needed',
+        verified: 'customer_verified',
+        suspended: 'customer_suspended',
+        activated: 'customer_activated',
+        deactivated: 'customer_deactivated',
+    },
 };
 
 export interface IEvent {

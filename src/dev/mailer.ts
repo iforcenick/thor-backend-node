@@ -18,9 +18,3 @@ service.sendTemplate(user, template).then(r => {
 }).catch(e => {
     console.log(e);
 });
-
-service.sendTransferFailed(user, {}).then(r => {
-    console.log('result', r);
-}).catch(e => {
-    console.log(e);
-});

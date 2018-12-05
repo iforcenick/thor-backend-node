@@ -33,18 +33,18 @@ class FundingSourceCreateAndNotifyLogic extends Logic {
             fundingSource.isDefault = true;
         }
 
-        try {
-            await this.mailer.sendFundingSourceCreated(user);
-        } catch (e) {
-            this.logger.error(e.message);
-        }
-
         let fundingSourceResult;
 
         await transaction(this.profileService.transaction(), async trx => {
             fundingSourceResult = await this.fundingSourceService.insert(fundingSource, trx);
             await this.profileService.addFundingSource(profile, fundingSource, trx);
         });
+
+        try {
+            await this.mailer.sendFundingSourceAdded(user, fundingSource);
+        } catch (e) {
+            this.logger.error(e.message);
+        }
 
         return fundingSourceResult;
     }
@@ -163,7 +163,7 @@ export class DeleteFundingSourceLogic extends Logic {
         await this.dwollaClient.deleteFundingSource(fundingSource.dwollaUri);
 
         try {
-            await this.mailer.sendFundingSourceRemoved(user);
+            await this.mailer.sendFundingSourceRemoved(user, fundingSource);
         } catch (e) {
             this.logger.error(e.message);
         }

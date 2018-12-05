@@ -7,6 +7,7 @@ import * as users from '../user/models';
 import * as profiles from '../profile/models';
 import 'mocha';
 import {sandbox} from '../test-setup.spec.unit';
+import { FundingSource } from '../foundingSource/models';
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -71,8 +72,9 @@ describe('Mailer service', () => {
             expect(sendSpy.getCall(0).args[4]).to.equal('test test');
         });
 
-        it('should send sendFundingSourceCreated', async () => {
-            expect(await service.sendFundingSourceCreated(user)).to.be.true;
+        it('should send sendFundingSourceAdded', async () => {
+            const fundingSource = new FundingSource();
+            expect(await service.sendFundingSourceAdded(user, fundingSource)).to.be.true;
             expect(sendSpy.calledOnce).to.be.true;
             expect(sendSpy.getCall(0).args[0]).to.equal(email);
             expect(sendSpy.getCall(0).args[3]).to.be.a('string');
@@ -80,7 +82,8 @@ describe('Mailer service', () => {
         });
 
         it('should send sendFundingSourceRemoved', async () => {
-            expect(await service.sendFundingSourceRemoved(user)).to.be.true;
+            const fundingSource = new FundingSource();
+            expect(await service.sendFundingSourceRemoved(user, fundingSource)).to.be.true;
             expect(sendSpy.calledOnce).to.be.true;
             expect(sendSpy.getCall(0).args[0]).to.equal(email);
             expect(sendSpy.getCall(0).args[3]).to.be.a('string');
@@ -95,16 +98,8 @@ describe('Mailer service', () => {
         //     expect(sendSpy.getCall(0).args[4]).to.be.a('string');
         // });
 
-        it('should send sendTransferFailed', async () => {
-            expect(await service.sendTransferFailed(user, {})).to.be.true;
-            expect(sendSpy.calledOnce).to.be.true;
-            expect(sendSpy.getCall(0).args[0]).to.equal(email);
-            expect(sendSpy.getCall(0).args[3]).to.be.a('string');
-            expect(sendSpy.getCall(0).args[4]).to.be.a('string');
-        });
-
         it('should send sendCustomerVerificationRetry', async () => {
-            expect(await service.sendCustomerVerificationRetry(user, {})).to.be.true;
+            expect(await service.sendCustomerVerificationRetry(user)).to.be.true;
             expect(sendSpy.calledOnce).to.be.true;
             expect(sendSpy.getCall(0).args[0]).to.equal(email);
             expect(sendSpy.getCall(0).args[3]).to.be.a('string');
@@ -112,15 +107,15 @@ describe('Mailer service', () => {
         });
 
         it('should send sendCustomerVerificationDocument', async () => {
-            expect(await service.sendCustomerVerificationDocument(user, {})).to.be.true;
+            expect(await service.sendCustomerVerificationDocumentRequired(user)).to.be.true;
             expect(sendSpy.calledOnce).to.be.true;
             expect(sendSpy.getCall(0).args[0]).to.equal(email);
             expect(sendSpy.getCall(0).args[3]).to.be.a('string');
             expect(sendSpy.getCall(0).args[4]).to.be.a('string');
         });
 
-        it('should send sendCustomerVerificationSuspended', async () => {
-            expect(await service.sendCustomerVerificationSuspended(user, {})).to.be.true;
+        it('should send sendCustomerSuspended', async () => {
+            expect(await service.sendCustomerSuspended(user)).to.be.true;
             expect(sendSpy.calledOnce).to.be.true;
             expect(sendSpy.getCall(0).args[0]).to.equal(email);
             expect(sendSpy.getCall(0).args[3]).to.be.a('string');

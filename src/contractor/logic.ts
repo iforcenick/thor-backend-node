@@ -6,7 +6,6 @@ import {User} from '../user/models';
 import * as models from '../profile/models';
 import {Profile} from '../profile/models';
 import {UserService} from '../user/service';
-import {DwollaNotifier} from '../dwolla/notifier';
 import {InvitationService} from '../invitation/service';
 import * as role from '../user/role';
 import {RoleService} from '../user/role/service';
@@ -23,12 +22,11 @@ import {GenerateJwtLogic} from '../auth/logic';
 @AutoWired
 export class AddContractorLogic extends Logic {
     @Inject private dwollaClient: dwolla.Client;
-    @Inject private dwollaNotifier: DwollaNotifier;
     @Inject private userService: UserService;
-    @Inject private invitationService: InvitationService;
     @Inject private roleService: RoleService;
     @Inject private profileService: ProfileService;
-    @Inject private logger: Logger;
+    @Inject protected mailerService: MailerService;
+    @Inject protected logger: Logger;
 
     async execute(profileData: any, tenantId, password: string, externalId?: string, trx?: any) {
         this.userService.setTenantId(tenantId);
@@ -54,6 +52,7 @@ export class AddContractorLogic extends Logic {
         await objection.transaction(trx, async _trx => {
             user = await this.userService.insert(user, _trx);
             profile.userId = user.id;
+            // TODO: should the external id and roles only be stored in the tenant profile?
             profile.externalId = externalId;
             const contractorRole = await this.getRole(role.models.Types.contractor);
             const roles = [contractorRole];
@@ -62,8 +61,21 @@ export class AddContractorLogic extends Logic {
             user.tenantProfile = await this.createTenantProfile(profile, roles, tenantId, _trx);
         });
 
+        // TODO: move to background task
         try {
-            await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
+            switch (profile.dwollaStatus) {
+                // TODO: test if dwolla immediately verifies customers... that may be only a sandbox thing
+                case dwolla.customer.CUSTOMER_STATUS.Verified:
+                    await this.mailerService.sendCustomerCreatedAndVerified(user);
+                    break;
+                // TODO: I think this is the only case needed during prod
+                case dwolla.customer.CUSTOMER_STATUS.Unverified:
+                    await this.mailerService.sendCustomerCreated(user);
+                    break;
+                default:
+                    await sendCustomerStatusEmail(user, profile.dwollaStatus);
+                    break;
+            }
         } catch (e) {
             this.logger.error(e.message);
         }
@@ -71,7 +83,12 @@ export class AddContractorLogic extends Logic {
         return user;
     }
 
-    private async createTenantProfile(profile: Profile, roles: Array<role.models.Role>, tenantId: string, trx: objection.Transaction) {
+    private async createTenantProfile(
+        profile: Profile,
+        roles: Array<role.models.Role>,
+        tenantId: string,
+        trx: objection.Transaction,
+    ) {
         profile.tenantId = tenantId;
         profile = await this.profileService.insert(profile, trx);
         await this.addRoles(profile, roles, trx);
@@ -104,10 +121,9 @@ export class AddContractorLogic extends Logic {
 @AutoWired
 export class AddContractorOnRetryStatusLogic extends Logic {
     @Inject private dwollaClient: dwolla.Client;
-    @Inject private dwollaNotifier: DwollaNotifier;
     @Inject private userService: UserService;
-    @Inject private logger: Logger;
     @Inject private profileService: ProfileService;
+    @Inject protected logger: Logger;
 
     async execute(profileData: any, tenantId, userId: string) {
         this.userService.setTenantId(tenantId);
@@ -125,8 +141,9 @@ export class AddContractorOnRetryStatusLogic extends Logic {
 
         await this.profileService.update(user.tenantProfile);
 
+        // TODO: move to background task
         try {
-            await this.dwollaNotifier.sendNotificationForDwollaCustomer(user, dwollaCustomer.status);
+            await sendCustomerStatusEmail(user, user.tenantProfile.dwollaStatus);
         } catch (e) {
             this.logger.error(e.message);
         }
@@ -135,11 +152,9 @@ export class AddContractorOnRetryStatusLogic extends Logic {
     }
 }
 
-
 @AutoWired
 export class AddInvitedContractorLogic extends Logic {
     @Inject private invitationService: InvitationService;
-    @Inject private userService: UserService;
 
     async execute(profileData: any, invitationToken, password: string) {
         const invitation = await this.invitationService.getForAllTenants(invitationToken);
@@ -173,29 +188,41 @@ export class AddInvitedContractorLogic extends Logic {
 }
 
 @AutoWired
-export class ContractorDocumentEventLogic extends Logic {
-    @Inject private mailer: MailerService;
-    @Inject userService: UserService;
-    @Inject profileService: ProfileService;
-    @Inject logger: Logger;
+export class UpdateContractorStatusLogic extends Logic {
+    @Inject private profileService: ProfileService;
+    @Inject protected mailerService: MailerService;
+    @Inject protected logger: Logger;
 
-    async execute(event: IEvent): Promise<any> {
-        const profile = await this.profileService.getByResourceLink(event['_links']['resource']['href']);
-        if (!profile) {
-            throw new Error(`Could not find profile by dwollaUri ${event['_links']['resource']['href']}`);
-        }
-        const user = await this.userService.get(profile.userId);
+    async execute(user: User, status: string): Promise<any> {
+        // only send an email for a changed status
+        if (user.tenantProfile.dwollaStatus === status) return;
 
-        if (!user) {
-            throw new Error(`Could not find user by profile ${profile.id}`);
-        }
-
-        user.tenantProfile.dwollaStatus = dwolla.customer.CUSTOMER_STATUS.Document;
-        try {
-            await this.mailer.sendCustomerDocumentRequired(user, user);
-        } catch (error) {
-            this.logger.error(error);
-        }
+        user.tenantProfile.dwollaStatus = status;
         await this.profileService.update(user.tenantProfile);
+
+        try {
+            sendCustomerStatusEmail(user, status);
+        } catch (e) {
+            this.logger.error(e);
+        }
+    }
+}
+
+async function sendCustomerStatusEmail(user: User, status: string): Promise<any> {
+    switch (status) {
+        case dwolla.customer.CUSTOMER_STATUS.Retry:
+            await this.mailerService.sendCustomerVerificationRetry(user);
+            break;
+        case dwolla.customer.CUSTOMER_STATUS.Document:
+            await this.mailerService.sendCustomerVerificationDocumentRequired(user);
+            break;
+        case dwolla.customer.CUSTOMER_STATUS.Suspended:
+            await this.mailerService.sendCustomerSuspended(user);
+            break;
+        case dwolla.customer.CUSTOMER_STATUS.Verified:
+            await this.mailerService.sendCustomerVerified(user);
+            break;
+        default:
+            break;
     }
 }

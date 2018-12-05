@@ -20,6 +20,7 @@ export const enum Relations {
 
 export const enum Statuses {
     new = 'new',
+    pending = 'pending',
     processing = 'processing',
     failed = 'failed',
     reclaimed = 'reclaimed',
