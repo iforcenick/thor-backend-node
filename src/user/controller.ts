@@ -116,8 +116,8 @@ export class UserController extends BaseController {
                        @QueryParam('orderBy') orderBy?: string,
                        @QueryParam('order') order?: string,
                        @QueryParam('contractor') contractor?: string,
-                       @QueryParam('filterColumnName') filterColumnName?: string,
-                       @QueryParam('filterValue') filterValue?: string,
+                       @QueryParam('city') city?: string,
+                       @QueryParam('state') state?: string
         ): Promise<PaginatedUserResponse> {
         const logic = new UsersListLogic(this.getRequestContext());
         const searchCriteria = new SearchCriteria();
@@ -126,8 +126,8 @@ export class UserController extends BaseController {
         searchCriteria.orderBy = orderBy;
         searchCriteria.order = order;
         searchCriteria.contractor = contractor;
-        searchCriteria.filterColumnName = filterColumnName;
-        searchCriteria.filterValue = filterValue;
+        searchCriteria.city = city;
+        searchCriteria.state = state;
 
         const users = await logic.execute(searchCriteria);
 

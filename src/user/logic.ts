@@ -168,17 +168,14 @@ export class SearchCriteria {
     public orderBy?: string;
     public order?: string;
     public contractor?: string;
-    public filterColumnName?: string;
-    public filterValue?: any;
+    public city?: string;
+    public state?: string;
 }
 
 @AutoWired
 export class UsersListLogic extends Logic {
     @Inject private userService: UserService;
-    private static stateFilterName: string = 'state';
-    private static cityFilterName: string = 'city';
     static sortableFields = ['firstName', 'lastName', 'createdAt', 'lastActivity'];
-    static availableFilters = [UsersListLogic.stateFilterName, UsersListLogic.cityFilterName];
 
     async execute(searchCriteria: SearchCriteria): Promise<db.Paginated<User>> {
         if (!searchCriteria.orderBy) {
@@ -187,12 +184,6 @@ export class UsersListLogic extends Logic {
 
         if (!searchCriteria.order) {
             searchCriteria.order = db.Ordering.asc;
-        }
-
-        if (searchCriteria.filterColumnName) {
-            if (!UsersListLogic.availableFilters.includes(searchCriteria.filterColumnName)) {
-                throw new Errors.ConflictError('Invalid filter by field, allowed: ' + UsersListLogic.availableFilters.join(', '));
-            }
         }
 
         if (!UsersListLogic.sortableFields.includes(searchCriteria.orderBy)) {
@@ -213,9 +204,13 @@ export class UsersListLogic extends Logic {
         if (searchCriteria.contractor) {
             filterByContractor(query, searchCriteria.contractor);
         }
-        if (searchCriteria.filterColumnName) {
-            query.where(`${models.Relations.tenantProfile}.${searchCriteria.filterColumnName}`,
-                'ilike', `%${searchCriteria.filterValue}%`);
+        if (searchCriteria.state) {
+            query.where(`${models.Relations.tenantProfile}.state`,
+                'ilike', `%${searchCriteria.state}%`);
+        }
+        if (searchCriteria.city) {
+            query.where(`${models.Relations.tenantProfile}.city`,
+                'ilike', `%${searchCriteria.city}%`);
         }
 
         const pag = this.userService.addPagination(query, searchCriteria.page, searchCriteria.limit);
