@@ -36,3 +36,6 @@ export const tenantFundingSourceVerificationRequestSchema = Joi.object().keys({
 export class FundingSourceIavRequest extends Mapper {
     uri: string = mapper.FIELD_STR;
 }
+export class FundingSourceIavToken extends Mapper {
+    token: string = mapper.FIELD_STR;
+}

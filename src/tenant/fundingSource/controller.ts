@@ -87,6 +87,9 @@ export class TenantFundingSourcesController extends BaseController {
      async getIavToken() {
         const tenant = await this.tenantService.get(this.getRequestContext().getTenantId());
         const logic = new GetIavTokenForTenantLogic(this.getRequestContext());
-        return await logic.execute(tenant);
+
+        const token =  await logic.execute(tenant);
+        return this.map(models.FundingSourceIavToken, {token});
+
     }
 }
