@@ -201,3 +201,21 @@ export class AddVerifyingFundingSourceForTenantLogic extends Logic {
         return tenant;
     }
 }
+
+@AutoWired
+export class GetIavTokenForTenantLogic extends Logic {
+    @Inject protected userService: UserService;
+    @Inject private client: dwolla.Client;
+
+    async execute(user: User) {
+        try {
+            return await this.client.getIavToken(user.tenantProfile.dwollaUri);
+        } catch (e) {
+            if (e instanceof dwolla.DwollaRequestError) {
+                throw e.toValidationError();
+            }
+
+            throw e;
+        }
+    }
+}

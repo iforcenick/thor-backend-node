@@ -7,6 +7,8 @@ import {Security, Tags} from 'typescript-rest-swagger';
 import * as logicLayer from './logic';
 import {UserService} from '../../user/service';
 import {NotFoundError} from 'typescript-rest/dist/server-errors';
+import {User} from '../../user/models';
+import {GetIavTokenForTenantLogic} from './logic';
 
 @AutoWired
 @Path('/tenants/company/fundingSources')
@@ -77,5 +79,17 @@ export class TenantFundingSourcesController extends BaseController {
         }
         const result = await logic.execute(user, data.uri);
         return this.map(models.TenantFundingSourceResponse, result);
+    }
+
+    @GET
+    @Path('iav')
+     async getIavToken() {
+        this.userService.setRequestContext(this.getRequestContext());
+        const user = await this.userService.get(this.getRequestContext().getUserId());
+        if (!user) {
+            throw new NotFoundError();
+        }
+        const logic = new GetIavTokenForTenantLogic(this.getRequestContext());
+        return await logic.execute(user);
     }
 }
