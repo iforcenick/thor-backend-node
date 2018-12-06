@@ -14,7 +14,7 @@ import {Security, Tags} from 'typescript-rest-swagger';
 import {User} from '../user/models';
 import {Pagination} from '../db';
 import * as logicLayer from './logic';
-import {FundingSourceRequest, fundingSourceRequestSchema, FundingSourceResponse} from './models';
+import {FundingSource, FundingSourceRequest, fundingSourceRequestSchema, FundingSourceResponse} from './models';
 import {CreateUserFundingSourceLogic} from './logic';
 
 
@@ -89,7 +89,7 @@ export abstract class FundingSourceBaseController extends BaseController {
         }));
     }
 
-    protected async _addVerifyingFundingSource(user: User, data: models.FundingSourceIavRequest) {
+    protected async _addVerifyingFundingSource(user: User, data: models.FundingSourceIavRequest): Promise<FundingSource> {
         const parsedData: models.FundingSourceIavRequest = await this.validate(data, models.fundingSourceIavRequestSchema);
         const logic = new logicLayer.AddVerifyingFundingSourceLogic(this.getRequestContext());
         return await logic.execute(user, parsedData.uri);
@@ -185,8 +185,8 @@ export class UserFundingSourceController extends FundingSourceBaseController {
         if (!user) {
             throw new Errors.NotFoundError();
         }
-        const token =  await this._addVerifyingFundingSource(user, data);
-        return this.map(models.FundingSourceResponse, token);
+        const source: FundingSource = await this._addVerifyingFundingSource(user, data);
+        return this.map(models.FundingSourceResponse, source);
     }
 
     @GET
@@ -197,7 +197,7 @@ export class UserFundingSourceController extends FundingSourceBaseController {
         if (!user) {
             throw new Errors.NotFoundError();
         }
-        const token =  await  this._getIavToken(user);
+        const token = await this._getIavToken(user);
         return this.map(models.FundingSourceIavToken, {token});
     }
 }
@@ -268,7 +268,7 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
         if (!user) {
             throw new Errors.NotFoundError();
         }
-        const source = await this._addVerifyingFundingSource(user, data);
+        const source: FundingSource = await this._addVerifyingFundingSource(user, data);
         return this.map(models.FundingSourceResponse, source);
     }
 }

@@ -5,7 +5,16 @@ import {TenantService} from '../service';
 import {Tenant} from '../models';
 import {Logic} from '../../logic';
 import {Errors} from 'typescript-rest';
-import {VerificationStatuses} from '../../foundingSource/models';
+import {FundingSource, VerificationStatuses} from '../../foundingSource/models';
+import {FundingSourceService} from '../../foundingSource/services';
+import {UserService} from '../../user/service';
+import {User} from '../../user/models';
+import {ISource} from '../../dwolla/funding';
+import {ProfileService} from '../../profile/service';
+import {MailerService} from '../../mailer';
+import {Logger} from '../../logger';
+import {transaction} from 'objection';
+import {GetUserFundingSourcesLogic} from '../../foundingSource/logic';
 
 
 @AutoWired
@@ -21,6 +30,11 @@ export class CreateTenantFundingSourceLogic extends Logic {
 
         if (tenant.fundingSourceUri) {
             throw new Errors.NotAcceptableError('Could not add more funding sources');
+        }
+
+        if (!tenant.dwollaUri) {
+            throw new Errors.NotAcceptableError('Tenant has to have company details');
+
         }
 
         tenant.fundingSourceUri = await this.dwollaClient.createFundingSource(
@@ -135,5 +149,55 @@ export class VerifyTenantFundingSourceLogic extends Logic {
 
         tenant.fundingSourceVerificationStatus = VerificationStatuses.completed;
         await this.tenantService.update(tenant);
+    }
+}
+
+@AutoWired
+export class AddVerifyingFundingSourceForTenantLogic extends Logic {
+    @Inject fundingService: FundingSourceService;
+    @Inject tenantService: TenantService;
+    @Inject client: dwolla.Client;
+    @Inject mailer: MailerService;
+    @Inject logger: Logger;
+
+    async execute(user: User, uri: string): Promise<Tenant> {
+        if (!uri) {
+            throw new Errors.NotAcceptableError('Uri is empty');
+        }
+        if (await this.fundingService.getByDwollaUri(uri)) {
+            throw new Errors.NotAcceptableError('Funding source with provided uri is already registered');
+        }
+        let tenant = await this.tenantService.get(user.tenantProfile.tenantId);
+        if (tenant.fundingSourceUri) {
+            throw new Errors.NotAcceptableError('Could not add more funding sources');
+        }
+
+        let dwollaFunding: ISource;
+        try {
+            dwollaFunding = await this.client.getFundingSource(uri);
+        } catch (e) {
+            throw new Errors.NotFoundError(e.toValidationError().message);
+        }
+
+        tenant.fundingSourceName = dwollaFunding.name;
+        tenant.fundingSourceUri = uri;
+        tenant.fundingSourceVerificationStatus = dwollaFunding.verificationStatus();
+
+        tenant = await this.tenantService.update(tenant);
+
+        const fundingSource: FundingSource = FundingSource.factory({
+            type: dwollaFunding.type,
+            name: dwollaFunding.name,
+            createdAt: new Date(),
+            verificationStatus: dwollaFunding.verificationStatus(),
+        });
+
+        try {
+            await this.mailer.sendFundingSourceAdded(user, fundingSource);
+        } catch (e) {
+            this.logger.error(e.message);
+        }
+
+        return tenant;
     }
 }

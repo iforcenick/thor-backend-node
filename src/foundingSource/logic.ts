@@ -24,7 +24,7 @@ class FundingSourceCreateAndNotifyLogic extends Logic {
     @Inject protected mailer: MailerService;
     @Inject protected logger: Logger;
 
-    async execute(fundingSource: FundingSource, uri: string, user: User): Promise<any> {
+    async execute(fundingSource: FundingSource, uri: string, user: User): Promise<FundingSource> {
         const profile = user.tenantProfile;
 
         const logic = new GetUserFundingSourcesLogic(this.context);
@@ -262,7 +262,7 @@ export class AddVerifyingFundingSourceLogic extends Logic {
     @Inject protected userService: UserService;
     @Inject private client: dwolla.Client;
 
-    async execute(user: User, uri: string) {
+    async execute(user: User, uri: string): Promise<FundingSource> {
         if (await this.fundingService.getByDwollaUri(uri)) {
             throw new Errors.NotAcceptableError('Funding source with provided uri is already registered');
         }
