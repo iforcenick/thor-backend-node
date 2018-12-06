@@ -9,6 +9,7 @@ import {UserService} from '../../user/service';
 import {NotFoundError} from 'typescript-rest/dist/server-errors';
 import {User} from '../../user/models';
 import {GetIavTokenForTenantLogic} from './logic';
+import {TenantService} from '../service';
 
 @AutoWired
 @Path('/tenants/company/fundingSources')
@@ -17,7 +18,7 @@ import {GetIavTokenForTenantLogic} from './logic';
 @Tags('tenantCompany', 'fundingSources')
 export class TenantFundingSourcesController extends BaseController {
     @Inject protected userService: UserService;
-
+    @Inject protected tenantService: TenantService;
     @POST
     @Path('')
     async createFundingSource(request: models.CreateTenantFundingSourceRequest): Promise<models.TenantFundingSourceResponse> {
@@ -84,12 +85,8 @@ export class TenantFundingSourcesController extends BaseController {
     @GET
     @Path('iav')
      async getIavToken() {
-        this.userService.setRequestContext(this.getRequestContext());
-        const user = await this.userService.get(this.getRequestContext().getUserId());
-        if (!user) {
-            throw new NotFoundError();
-        }
+        const tenant = await this.tenantService.get(this.getRequestContext().getTenantId());
         const logic = new GetIavTokenForTenantLogic(this.getRequestContext());
-        return await logic.execute(user);
+        return await logic.execute(tenant);
     }
 }
