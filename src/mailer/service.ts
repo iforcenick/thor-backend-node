@@ -35,6 +35,35 @@ export class MailerService {
     }
 
     /**
+     * System sending complete registration link to admin user
+     *
+     * @param {string} email
+     * @param {string} companyName
+     * @param {string} link
+     * @returns
+     * @memberof MailerService
+     */
+    async sendCompleteRegistration(email: string, companyName: string, link: string) {
+        const params = {
+            companyName,
+            link,
+        };
+        const template = new templates.Template();
+        template
+            .setSubject(`You have been invited to GoThor!`)
+            .setHtml(templates.TemplatesFiles.INVITATION_HTML)
+            .setText(templates.TemplatesFiles.INVITATION_TEXT)
+            .setParams(params);
+        return await this.send(
+                email,
+                this.from,
+                await template.getSubject(),
+                await template.getHtml(),
+                await template.getText(),
+            );
+    }
+
+    /**
      * Company sending invite to new contractor
      * @param companyName name of company sending transaction
      * @param link link to the invitation
@@ -57,6 +86,32 @@ export class MailerService {
             await template.getHtml(),
             await template.getText(),
         );
+    }
+
+    /**
+     * System sending password reset link to user
+     *
+     * @param {users.User} user
+     * @param {string} link
+     * @returns
+     * @memberof MailerService
+     */
+    async sendPasswordReset(user: users.User, link: string) {
+        const params = {
+            title: 'Account Notice',
+            descriptions: [
+                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Follow this link to reset your password for your ${user.tenantProfile.email} account.`,
+                `${link}`
+            ],
+        };
+        const template = new templates.Template();
+        template
+            .setSubject(`Here's your password reset link`)
+            .setHtml(templates.TemplatesFiles.PASSWORD_RESET_HTML)
+            .setText(templates.TemplatesFiles.PASSWORD_RESET_TEXT)
+            .setParams(params);
+        return await this.sendTemplate(user, template);
     }
 
     /************************************************************************/

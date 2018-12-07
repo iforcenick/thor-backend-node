@@ -46,6 +46,8 @@ export class User extends db.Model {
     transactions?: Array<Transaction>;
     lastActivity?: Date;
     tenantProfile?: profile.Profile;
+    passwordResetToken?: string = null;
+    passwordResetExpiry?: number = null;
 
     hasRole(role: role.models.Types) {
         return this.tenantProfile.hasRole(role);

@@ -46,7 +46,8 @@ export class UserAuthorization extends Logic {
 
     private async findTenant(login: string): Promise<string> {
         const query = Profile.query();
-        query.where('email', login).first();
+        query.where('email', login);
+        query.whereNotNull('tenantId').first();
         const profile: any = await query;
 
         return profile ? profile.tenantId : null;

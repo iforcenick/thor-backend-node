@@ -79,6 +79,8 @@ export enum TemplatesFiles {
     TRANSFER_PROCESSED_HTML = 'transfer_processed_html.twig',
     INVITATION_TEXT = 'text/invitation.twig',
     INVITATION_HTML = 'html/invitation.twig',
+    PASSWORD_RESET_TEXT = 'text/dwolla_event.twig',
+    PASSWORD_RESET_HTML = 'html/dwolla_event.twig',
 
     CUSTOMER_TRANSFER_CREATED_SENDER_TEXT = 'text/dwolla_event.twig',
     CUSTOMER_TRANSFER_CREATED_SENDER_HTML = 'html/dwolla_event.twig',

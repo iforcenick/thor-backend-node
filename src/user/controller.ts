@@ -27,7 +27,7 @@ import {MailerService} from '../mailer';
 import * as _ from 'lodash';
 import {DwollaNotifier} from '../dwolla/notifier';
 import {AddContractorLogic, AddContractorOnRetryStatusLogic} from '../contractor/logic';
-import {RatingJobsListLogic, SearchCriteria, UsersListLogic, UserStatisticsLogic} from './logic';
+import {RatingJobsListLogic, SearchCriteria, UsersListLogic, UserStatisticsLogic, CreatePasswordResetLogic} from './logic';
 import {
     ContractorOnRetryRequest, contractorOnRetryRequestSchema, ContractorOnRetryResponse,
     PaginatedRankingJobs, PaginatedUserResponse,
@@ -360,5 +360,13 @@ export class UserController extends BaseController {
             }
             throw err;
         }
+    }
+
+    @POST
+    @Path('/:userId/passwordReset')
+    @Preprocessor(BaseController.requireAdmin)
+    async createUserPasswordReset(@PathParam('userId') userId: string): Promise<any> {
+        const logic = new CreatePasswordResetLogic(this.getRequestContext());
+        await logic.execute(userId);
     }
 }

@@ -1,3 +1,4 @@
+import crypto = require('crypto');
 import {Logic} from '../logic';
 import {UserService} from './service';
 import {AutoWired, Inject} from 'typescript-ioc';
@@ -8,6 +9,9 @@ import {raw} from 'objection';
 import * as db from '../db';
 import {Errors} from 'typescript-rest';
 import {ApiServer} from '../server';
+import { MailerService } from '../mailer';
+import { Logger } from '../logger';
+import { Config } from '../config';
 
 const filterByContractor = (query, contractor) => {
     const likeContractor = `%${contractor}%`;
@@ -290,5 +294,81 @@ where ranking.userId = ?
         const current = queryResult ? queryResult.current : 0;
         const rank = rankResult.rows[0] ? rankResult.rows[0].rank : null;
         return {rank, nJobs, prev, current, ytd};
+    }
+}
+
+@AutoWired
+export class CreatePasswordResetLogic extends Logic {
+    @Inject private userService: UserService;
+    @Inject private mailerService: MailerService;
+    @Inject private config: Config;
+    @Inject private logger: Logger;
+
+    async execute(userId: string): Promise<any> {
+        const user = await this.userService.get(userId);
+        if (!user) {
+            throw new Errors.NotFoundError('User not found');
+        }
+
+        const buffer = await crypto.randomBytes(20);
+        user.passwordResetToken = buffer.toString('hex');
+        user.passwordResetExpiry = Date.now() + 3600000;    // 1 hr
+
+        // TODO:
+        delete user['lastActivity'];
+        await this.userService.update(user);
+
+        try {
+            const link = `${this.config.get('application.frontUri')}/reset-password/${user.passwordResetToken}`;
+            await this.mailerService.sendPasswordReset(user, link);
+        } catch (error) {
+            this.logger.error(error.message);
+        }
+    }
+}
+
+@AutoWired
+export class ResetPasswordLogic extends Logic {
+    @Inject private userService: UserService;
+
+    async execute(resetToken: string, newPassword: string): Promise<any> {
+        const user = await this.userService.findByPasswordResetToken(resetToken);
+        if (!user) {
+            throw new Errors.NotFoundError('Password reset token not found');
+        }
+
+        if (user.passwordResetExpiry < Date.now()) {
+            throw new Errors.NotAcceptableError('Password reset token has expired');
+        }
+
+        const isNewOldPasswordSame = await this.userService.checkPassword(newPassword, user.password);
+        if (isNewOldPasswordSame) {
+            throw new Errors.ConflictError('New password is the same as the old one');
+        }
+
+        // TODO:
+        delete user['lastActivity'];
+        user.password = await this.userService.hashPassword(newPassword);
+        user.passwordResetExpiry = null;
+        user.passwordResetToken = null;
+        await this.userService.update(user);
+
+        // TODO: send a password has been reset email?
+    }
+}
+
+@AutoWired
+export class GetPasswordResetLogic extends Logic {
+    @Inject private userService: UserService;
+
+    async execute(resetToken: string): Promise<any> {
+        const user = await this.userService.findByPasswordResetToken(resetToken);
+        if (!user) {
+            throw new Errors.NotFoundError('Password reset token not found');
+        }
+
+        if (user.passwordResetExpiry < Date.now()) {
+            throw new Errors.NotAcceptableError('Password reset token has expired');
+        }
     }
 }

@@ -17,11 +17,22 @@ export class PasswordRequest extends Mapper {
     newPassword: string = mapper.FIELD_STR;
 }
 
+export class ResetPasswordRequest extends Mapper {
+    resetToken: string = mapper.FIELD_STR;
+    newPassword: string = mapper.FIELD_STR;
+}
+
 export const loginRequestSchema = Joi.object().keys({
     login: Joi.string().required(),
     password: Joi.string().required(),
 });
+
 export const passwordRequestSchema = Joi.object().keys({
     oldPassword: Joi.string().required(),
+    newPassword: Joi.string().required(),
+});
+
+export const resetPasswordRequestSchema = Joi.object().keys({
+    resetToken: Joi.string().required(),
     newPassword: Joi.string().required(),
 });

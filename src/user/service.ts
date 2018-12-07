@@ -117,6 +117,13 @@ export class UserService extends db.ModelService<models.User> {
         return await query;
     }
 
+    async findByPasswordResetToken(resetToken: string) {
+        const query = this.modelType.query();
+        query.where('passwordResetToken', resetToken);
+        query.first();
+        return await query;
+    }
+
     async findByExternalIdAndTenant(externalId: string, tenantId: string): Promise<models.User> {
         this.setTenantId(tenantId);
         const query = super.query();

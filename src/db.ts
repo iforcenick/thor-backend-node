@@ -66,7 +66,8 @@ export const enum Tables {
     transfers = 'transfers',
     contractorInvitations = 'contractorInvitations',
     fundingSources = 'fundingSources',
-    profilesFundingSources = 'profilesFundingSources'
+    profilesFundingSources = 'profilesFundingSources',
+    passwordReset = 'passwordReset',
 }
 
 export class Pagination {
