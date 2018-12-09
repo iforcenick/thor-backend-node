@@ -16,8 +16,9 @@ import {Errors} from 'typescript-rest';
 import {Logger} from '../logger';
 import * as generator from 'generate-password';
 import {MailerService} from '../mailer';
-import {IEvent} from '../dwolla/event';
 import {GenerateJwtLogic} from '../auth/logic';
+import {TransactionService} from '../transaction/service';
+import {Transaction} from "../transaction/models";
 
 @AutoWired
 export class AddContractorLogic extends Logic {
@@ -83,12 +84,10 @@ export class AddContractorLogic extends Logic {
         return user;
     }
 
-    private async createTenantProfile(
-        profile: Profile,
-        roles: Array<role.models.Role>,
-        tenantId: string,
-        trx: objection.Transaction,
-    ) {
+    private async createTenantProfile(profile: Profile,
+                                      roles: Array<role.models.Role>,
+                                      tenantId: string,
+                                      trx: objection.Transaction,) {
         profile.tenantId = tenantId;
         profile = await this.profileService.insert(profile, trx);
         await this.addRoles(profile, roles, trx);
@@ -205,6 +204,19 @@ export class UpdateContractorStatusLogic extends Logic {
         } catch (e) {
             this.logger.error(e);
         }
+    }
+}
+
+@AutoWired
+export class GetContractorTransactionsLogic extends Logic {
+    @Inject private transactionService: TransactionService;
+
+    async execute(contractorId: string, startDate, endDate: Date, status: string, page, limit: number): Promise<any> {
+        const filter = builder => {
+            Transaction.filter(builder, startDate, endDate, status, contractorId);
+        };
+
+        return await this.transactionService.listPaginated(page, limit, filter);
     }
 }
 

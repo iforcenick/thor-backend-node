@@ -1,16 +1,15 @@
 import {Context, Errors, ServiceContext} from 'typescript-rest';
-import Joi = require('joi');
 import {ValidationError} from './errors';
 import * as mapper from './mapper';
-import * as user from './user/models';
 import * as role from './user/role';
 import * as db from './db';
 import * as context from './context';
+import {RequestContext} from './context';
 import {Inject} from 'typescript-ioc';
 import {Logger} from './logger';
 import {Config} from './config';
-import {RequestContext} from './context';
-import {Auth} from "./auth/models";
+import {Auth} from './auth/models';
+import Joi = require('joi');
 
 export {mapper};
 
@@ -94,6 +93,11 @@ export class BaseController {
         };
     }
 }
+
+export const dateRangeSchema = Joi.object().keys({
+    startDate: Joi.date().required(),
+    endDate: Joi.date().required(),
+});
 
 export class BaseError extends Error {
     message: string;
