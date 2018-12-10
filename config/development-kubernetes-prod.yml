@@ -1,19 +1,20 @@
 ---
 application:
-  frontUri: https://odin-prod.firebaseapp.com
+    frontUri: https://odin.gothor.com
 db:
-  autoMigrate: true
-  connection:
-    host: 35.233.154.25
-    password: bzm1tdHrM7C9hNdj
-    database: development
+    autoMigrate: true
+    connection:
+        host: 35.233.154.25
+        password: bzm1tdHrM7C9hNdj
+        database: production
 dwolla:
-  webhookUri: https://odin-api.prod.gothor.com/dwolla/events
-  environment: production
+    webhookUri: https://odin-api.prod.gothor.com/dwolla/events
+    environment: production
+    masterFunding: https://api.dwolla.com/funding-sources/5f8bb320-4beb-40e9-ba6c-db977fc8f476
 swagger:
-  host: odin-api.prod.gothor.com
-  schema: https
+    host: odin-api.prod.gothor.com
+    schema: https
 mailer:
-  mailgun:
-    url: https://api.mailgun.net/v3
-    user: api
+    mailgun:
+        url: https://api.mailgun.net/v3
+user: api

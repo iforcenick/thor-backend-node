@@ -49,8 +49,11 @@ Migrations are run based on config files from config directory. In order to use 
     mailer_mailgun_key: XXXXXXXXXXX
   ```
   Where the data field is a map. Its keys must consist of alphanumeric characters, ‘-’, ‘_’ or ‘.’. The values are arbitrary data, encoded using base64.
+  
 * Updating a secret ```kubectl apply -f [FILE_NAME].yaml```
 * Retrieving a secret ```kubectl get secret [SECRET_NAME] -o yaml --namespace=[NAMESPACE]```
+* Encoding a secret to base 64 ```echo -n '[STRING_TO_ENCODE]' | base64```
+* Decoding a secret from base 64 ```echo -n '[STRING_TO_DECODE]' | base64 --decode```
 
  ### DevScripts
  Dev scripts are run from console. The required program for executing scripts is NodeJS.
