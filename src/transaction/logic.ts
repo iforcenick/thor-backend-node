@@ -405,9 +405,9 @@ export class CreateTransactionWithCustomJobLogic extends Logic {
     @Inject private transactionService: TransactionService;
 
     async execute(userId: string, jobData: JobRequest, value: number, externalId?: string): Promise<any> {
-        const job = Job.factory(jobData);
+        const job: Job = Job.factory(jobData);
         job.isActive = true;
-
+        job.isCustom = true;
         const logic = new CreateTransactionLogic(this.context);
         return await logic.execute(userId, value, job, externalId);
     }
