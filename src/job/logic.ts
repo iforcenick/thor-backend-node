@@ -75,7 +75,7 @@ export class ChargeTenantError extends BaseError {
 
 @AutoWired
 export class JobListLogic extends Logic {
-    public static sortableFields: string[] = ['value'];
+    public static sortableFields: string[] = ['value', 'createdAt'];
 
     @Inject private service: JobService;
 
@@ -85,12 +85,13 @@ export class JobListLogic extends Logic {
         };
 
         let options;
-        if (searchCriteria.orderBy) {
-            options = builder => {
-                models.Job.orderBy(builder, searchCriteria.orderBy, searchCriteria.order);
-            };
+        if (!searchCriteria.orderBy) {
+            searchCriteria.orderBy = 'createdAt';
+            searchCriteria.order = db.Ordering.desc;
         }
-
+        options = builder => {
+            models.Job.orderBy(builder, searchCriteria.orderBy, searchCriteria.order);
+        };
         const jobs = await this.service.listPaginated(searchCriteria.page, searchCriteria.limit, filter, options);
 
         return jobs;
