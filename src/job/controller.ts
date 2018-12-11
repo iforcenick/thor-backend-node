@@ -4,8 +4,10 @@ import {Inject} from 'typescript-ioc';
 import * as models from './models';
 import {JobService} from './service';
 import {Security, Tags} from 'typescript-rest-swagger';
-import {TransactionResponse} from '../transaction/models';
-import {CreateJobLogic, UpdateJobLogic, DeleteJobLogic} from './logic';
+import * as logicLayer from './logic';
+import * as db from '../db';
+import {NotAcceptableError} from 'typescript-rest/dist/server-errors';
+import {JobListLogic} from './logic';
 
 @Security('api_key')
 @Path('/jobs')
@@ -18,10 +20,10 @@ export class JobController extends BaseController {
     @Tags('jobs')
     async create(data: models.JobRequest): Promise<models.JobResponse> {
         const parsedData: models.JobRequest = await this.validate(data, models.jobRequestSchema);
-        const logic = new CreateJobLogic(this.getRequestContext());
+        const logic = new logicLayer.CreateJobLogic(this.getRequestContext());
         const job = await logic.execute(parsedData);
 
-        return this.map(TransactionResponse, job);
+        return this.map(models.JobResponse, job);
     }
 
     /**
@@ -36,13 +38,29 @@ export class JobController extends BaseController {
         @QueryParam('page') page?: number,
         @QueryParam('limit') limit?: number,
         @QueryParam('isActive') isActive?: boolean,
+        @QueryParam('isCustom') isCustom?: boolean,
+        @QueryParam('name') name?: string,
+        @QueryParam('orderBy') orderBy?: string,
+        @QueryParam('order') order?: string,
     ): Promise<models.PaginatedJobResponse> {
-        this.service.setRequestContext(this.getRequestContext());
 
-        const filter = builder => {
-            models.Job.filter(builder, isActive);
-        };
-        const jobs = await this.service.listPaginated(page, limit, filter);
+        if (orderBy && !JobListLogic.sortableFields.includes(orderBy)) {
+            throw new NotAcceptableError(`Invalid orderBy, allowed order by ${JobListLogic.sortableFields.join(', ')}`);
+        }
+
+        const searchCriteria = new logicLayer.SearchCriteria();
+        searchCriteria.name = name;
+        searchCriteria.orderBy = orderBy;
+        if (order) {
+            searchCriteria.order = db.parseOrdering(order);
+        }
+        searchCriteria.page = page;
+        searchCriteria.limit = limit;
+        searchCriteria.isActive = isActive;
+        searchCriteria.isCustom = isCustom;
+
+        const jobListLogic = new logicLayer.JobListLogic(this.getRequestContext());
+        const jobs = await jobListLogic.execute(searchCriteria);
 
         return this.paginate(
             jobs.pagination,
@@ -73,7 +91,7 @@ export class JobController extends BaseController {
     @Tags('jobs')
     async update(@PathParam('id') id: string, data: models.JobPatchRequest): Promise<models.JobResponse> {
         const parsedData: models.JobPatchRequest = await this.validate(data, models.jobPatchRequestSchema);
-        const logic = new UpdateJobLogic(this.getRequestContext());
+        const logic = new logicLayer.UpdateJobLogic(this.getRequestContext());
         const job = await logic.execute(id, parsedData);
 
         return this.map(models.JobResponse, job);
@@ -84,7 +102,7 @@ export class JobController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     @Tags('jobs')
     async delete(@PathParam('id') id: string) {
-        const logic = new DeleteJobLogic(this.getRequestContext());
+        const logic = new logicLayer.DeleteJobLogic(this.getRequestContext());
         await logic.execute(id);
     }
 }

@@ -13,6 +13,9 @@ import {FundingSourceService} from '../foundingSource/services';
 import {UserService} from '../user/service';
 import {TransactionService} from '../transaction/service';
 import {Tenant} from '../tenant/models';
+import {Paginated} from '../db';
+import {options} from 'joi';
+import * as db from '../db';
 
 @AutoWired
 export class CreateJobLogic extends Logic {
@@ -67,4 +70,39 @@ export class DeleteJobLogic extends Logic {
     }
 }
 
-export class ChargeTenantError extends BaseError {}
+export class ChargeTenantError extends BaseError {
+}
+
+@AutoWired
+export class JobListLogic extends Logic {
+    public static sortableFields: string[] = ['value'];
+
+    @Inject private service: JobService;
+
+    async execute(searchCriteria: SearchCriteria): Promise<Paginated<Job>> {
+        const filter = builder => {
+            models.Job.filter(builder, searchCriteria.name, searchCriteria.isActive, searchCriteria.isCustom);
+        };
+
+        let options;
+        if (searchCriteria.orderBy) {
+            options = builder => {
+                models.Job.orderBy(builder, searchCriteria.orderBy, searchCriteria.order);
+            };
+        }
+
+        const jobs = await this.service.listPaginated(searchCriteria.page, searchCriteria.limit, filter, options);
+
+        return jobs;
+    }
+}
+
+export class SearchCriteria {
+    public page: number;
+    public limit: number;
+    public isActive?: boolean;
+    public isCustom?: boolean;
+    public name?: string;
+    public orderBy?: string;
+    public order: string = db.Ordering.desc;
+}
