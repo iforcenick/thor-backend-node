@@ -8,14 +8,6 @@ export enum Types {
     contractor = 'contractor',
 }
 
-export const roleExists = (role) => {
-    return Object.values(Types).includes(role);
-};
-
-export const isAdminRole = (role) => {
-    return [Types.admin, Types.adminReader].includes(role);
-};
-
 export class Role extends db.Model {
     static tableName = db.Tables.roles;
     name?: string = null;

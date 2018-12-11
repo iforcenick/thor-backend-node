@@ -11,13 +11,13 @@ import {JobListLogic} from './logic';
 
 @Security('api_key')
 @Path('/jobs')
+@Tags('jobs')
 export class JobController extends BaseController {
     @Inject private service: JobService;
 
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('jobs')
     async create(data: models.JobRequest): Promise<models.JobResponse> {
         const parsedData: models.JobRequest = await this.validate(data, models.jobRequestSchema);
         const logic = new logicLayer.CreateJobLogic(this.getRequestContext());
@@ -29,11 +29,15 @@ export class JobController extends BaseController {
     /**
      * @param page page to be queried, starting from 0
      * @param limit transactions per page
+     * @param isActive
+     * @param isCustom
+     * @param name
+     * @param orderBy
+     * @param order
      */
     @GET
     @Path('')
-    @Preprocessor(BaseController.requireAdmin)
-    @Tags('jobs')
+    @Preprocessor(BaseController.requireAdminReader)
     async getJobs(
         @QueryParam('page') page?: number,
         @QueryParam('limit') limit?: number,
@@ -72,8 +76,7 @@ export class JobController extends BaseController {
 
     @GET
     @Path(':id')
-    @Preprocessor(BaseController.requireAdmin)
-    @Tags('jobs')
+    @Preprocessor(BaseController.requireAdminReader)
     async getJob(@PathParam('id') id: string): Promise<models.PaginatedJobResponse> {
         this.service.setRequestContext(this.getRequestContext());
 
@@ -88,7 +91,6 @@ export class JobController extends BaseController {
     @PATCH
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('jobs')
     async update(@PathParam('id') id: string, data: models.JobPatchRequest): Promise<models.JobResponse> {
         const parsedData: models.JobPatchRequest = await this.validate(data, models.jobPatchRequestSchema);
         const logic = new logicLayer.UpdateJobLogic(this.getRequestContext());
@@ -100,7 +102,6 @@ export class JobController extends BaseController {
     @DELETE
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
-    @Tags('jobs')
     async delete(@PathParam('id') id: string) {
         const logic = new logicLayer.DeleteJobLogic(this.getRequestContext());
         await logic.execute(id);

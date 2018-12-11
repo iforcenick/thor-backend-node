@@ -34,7 +34,7 @@ export class InvitationController extends BaseController {
 
     @GET
     @Path('')
-    @Preprocessor(BaseController.requireAdmin)
+    @Preprocessor(BaseController.requireAdminReader)
     async getInvitations(@QueryParam('page') page?: number,
                          @QueryParam('limit') limit?: number,
                          @QueryParam('status') status?: string): Promise<models.InvitationPaginatedResponse> {

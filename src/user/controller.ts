@@ -59,7 +59,7 @@ export class UserController extends BaseController {
 
     @GET
     @Path(':id')
-    @Preprocessor(BaseController.requireAdmin)
+    @Preprocessor(BaseController.requireAdminReader)
     async getUser(@PathParam('id') id: string): Promise<UserResponse> {
         this.service.setRequestContext(this.getRequestContext());
 
@@ -84,7 +84,7 @@ export class UserController extends BaseController {
      */
     @GET
     @Path('/rating/jobs')
-    @Preprocessor(BaseController.requireAdmin)
+    @Preprocessor(BaseController.requireAdminReader)
     async getRatingJobsList(@QueryParam('startDate') startDate: Date,
                             @QueryParam('endDate') endDate: Date,
                             @QueryParam('limit') limit?: number,
@@ -112,12 +112,12 @@ export class UserController extends BaseController {
      * @param orderBy - field name
      * @param order - asc|desc
      * @param contractor - contractor firstName, lastName or "firstName lastName"
-     * @param filterColumnName - profile state or city
-     * @param filterValue - profile state value or city value
+     * @param city
+     * @param state
      */
     @GET
     @Path('')
-    @Preprocessor(BaseController.requireAdmin)
+    @Preprocessor(BaseController.requireAdminReader)
     async getUsersList(@QueryParam('page') page?: number,
                        @QueryParam('limit') limit?: number,
                        @QueryParam('orderBy') orderBy?: string,
@@ -240,7 +240,7 @@ export class UserController extends BaseController {
 
     @GET
     @Path(':id/transactions')
-    @Preprocessor(BaseController.requireAdmin)
+    @Preprocessor(BaseController.requireAdminReader)
     @Tags('transactions')
     async getUserTransactions(@PathParam('id') userId: string,
                               @QueryParam('page') page?: number,
@@ -266,7 +266,7 @@ export class UserController extends BaseController {
 
     @GET
     @Path(':id/statistics')
-    @Preprocessor(BaseController.requireAdmin)
+    @Preprocessor(BaseController.requireAdminReader)
     @Tags('statistics')
     async getJobs(@PathParam('id') userId: string,
                   @QueryParam('currentStartDate') currentStartDate: string,
@@ -293,6 +293,7 @@ export class UserController extends BaseController {
 
     @POST
     @Path(':id/documents')
+    @Preprocessor(BaseController.requireAdmin)
     async createUserDocument(@PathParam('id') userId: string,
                              @QueryParam('type') type: string,
                              @FileParam('filepond') file, @ContextRequest context: ServiceContext): Promise<UserDocument> {
@@ -326,6 +327,7 @@ export class UserController extends BaseController {
 
     @GET
     @Path(':id/documents')
+    @Preprocessor(BaseController.requireAdminReader)
     async getUserDocuments(@PathParam('id') userId: string): Promise<Array<UserDocument>> {
         this.service.setRequestContext(this.getRequestContext());
 
@@ -347,6 +349,7 @@ export class UserController extends BaseController {
 
     @PUT
     @Path('/:userId')
+    @Preprocessor(BaseController.requireAdmin)
     async addContractorOnRetry(@PathParam('userId') userId: string, data: ContractorOnRetryRequest): Promise<ContractorOnRetryResponse> {
         this.service.setRequestContext(this.getRequestContext());
         const parsedData = await this.validate(data, contractorOnRetryRequestSchema);

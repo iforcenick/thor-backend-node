@@ -27,10 +27,10 @@ import * as Errors from 'typescript-rest/dist/server-errors';
 @Security('api_key')
 @Path('/tenants/company')
 @Tags('tenantCompany')
-@Preprocessor(BaseController.requireAdmin)
 export abstract class BeneficialOwnerController extends BaseController {
     @POST
     @Path('beneficialOwners')
+    @Preprocessor(BaseController.requireAdmin)
     async addBeneficialOwner(request: AddBeneficialOwnerRequest): Promise<BeneficialOwnerResponse> {
         const validateResult: AddBeneficialOwnerRequest = await this.validate(request, addBeneficialOwnerRequestSchema);
         try {
@@ -52,6 +52,7 @@ export abstract class BeneficialOwnerController extends BaseController {
 
     @PUT
     @Path('beneficialOwners')
+    @Preprocessor(BaseController.requireAdmin)
     async retryBeneficialOwner(request: RetryBeneficialOwnerRequest): Promise<any> {
         const validateResult: RetryBeneficialOwnerRequest = await this.validate(request, retryBeneficialOwnerRequestSchema);
         try {
@@ -72,6 +73,7 @@ export abstract class BeneficialOwnerController extends BaseController {
 
     @PATCH
     @Path('beneficialOwners')
+    @Preprocessor(BaseController.requireAdmin)
     async editBeneficialOwner(request: EditBeneficialOwnerRequest): Promise<EditBeneficialOwnerResponse> {
         const validateResult: EditBeneficialOwnerRequest = await this.validate(request, editBeneficialOwnerRequestSchema);
         try {
@@ -88,6 +90,7 @@ export abstract class BeneficialOwnerController extends BaseController {
 
     @GET
     @Path('beneficialOwners')
+    @Preprocessor(BaseController.requireAdminReader)
     async getBeneficialOwners(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<PaginatedBeneficialOwnerResponse> {
         try {
             if (!page) {
@@ -115,6 +118,7 @@ export abstract class BeneficialOwnerController extends BaseController {
 
     @GET
     @Path('beneficialOwners/:id')
+    @Preprocessor(BaseController.requireAdminReader)
     async getBeneficialOwner(@PathParam('id') id: string): Promise<BeneficialOwnerResponse> {
         try {
             const logic = new GetBeneficialOwnerLogic(this.getRequestContext());
@@ -127,6 +131,7 @@ export abstract class BeneficialOwnerController extends BaseController {
 
     @DELETE
     @Path('beneficialOwners/:id')
+    @Preprocessor(BaseController.requireAdmin)
     async deleteBeneficialOwner(@PathParam('id') id: string) {
         try {
             const logic = new DeleteBeneficialOwnerLogic(this.getRequestContext());

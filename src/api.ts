@@ -9,6 +9,7 @@ import {Inject} from 'typescript-ioc';
 import {Logger} from './logger';
 import {Config} from './config';
 import {Auth} from './auth/models';
+import * as roleChecks from './user/role/checks';
 import Joi = require('joi');
 
 export {mapper};
@@ -45,8 +46,23 @@ export class BaseController {
         return req;
     }
 
+    static _checkRoles(req: any, checkCallback: any) {
+        const auth: Auth = req.auth;
+        for (const role of auth.roles) {
+            if (checkCallback(role)) {
+                return req;
+            }
+        }
+
+        throw new Errors.ForbiddenError();
+    }
+
     static requireAdmin(req: any) {
         return BaseController._requireRole(req, role.models.Types.admin);
+    }
+
+    static requireAdminReader(req: any) {
+        return BaseController._checkRoles(req, roleChecks.isAdminReader);
     }
 
     static requireContractor(req: any) {

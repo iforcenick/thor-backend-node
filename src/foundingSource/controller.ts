@@ -106,12 +106,12 @@ export abstract class FundingSourceBaseController extends BaseController {
 @Security('api_key')
 @Path('/users/:userId/fundingSources')
 @Tags('users', 'fundingSources')
-@Preprocessor(BaseController.requireAdmin)
 export class UserFundingSourceController extends FundingSourceBaseController {
     @Context protected context: ServiceContext;
 
     @GET
     @Path('default')
+    @Preprocessor(BaseController.requireAdminReader)
     async getDefaultFundingSource(@PathParam('userId') userId: string) {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
@@ -123,12 +123,14 @@ export class UserFundingSourceController extends FundingSourceBaseController {
 
     @POST
     @Path(':fundingId/default')
+    @Preprocessor(BaseController.requireAdmin)
     async setDefaultFundingSource(@PathParam('userId') userId: string, @PathParam('fundingId') fundingId: string) {
         return await super._setDefaultFundingSource(fundingId, userId);
     }
 
     @POST
     @Path('')
+    @Preprocessor(BaseController.requireAdmin)
     async createUserFundingSource(@PathParam('userId') userId: string, data: FundingSourceRequest): Promise<FundingSourceResponse> {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
@@ -156,6 +158,7 @@ export class UserFundingSourceController extends FundingSourceBaseController {
 
     @DELETE
     @Path(':fundingId')
+    @Preprocessor(BaseController.requireAdmin)
     async deleteUserFundingSource(@PathParam('userId') userId: string, @PathParam('fundingId') fundingId: string) {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
@@ -167,6 +170,7 @@ export class UserFundingSourceController extends FundingSourceBaseController {
 
     @GET
     @Path('')
+    @Preprocessor(BaseController.requireAdminReader)
     async getFundingSources(@PathParam('userId') userId: string, @QueryParam('page') page?: number,
                             @QueryParam('limit') limit?: number) {
         this.userService.setRequestContext(this.getRequestContext());
@@ -179,6 +183,7 @@ export class UserFundingSourceController extends FundingSourceBaseController {
 
     @POST
     @Path('iav')
+    @Preprocessor(BaseController.requireAdmin)
     async addVerifyingFundingSource(@PathParam('userId') userId: string, data: models.FundingSourceIavRequest): Promise<models.FundingSourceResponse> {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
@@ -191,6 +196,7 @@ export class UserFundingSourceController extends FundingSourceBaseController {
 
     @GET
     @Path('iav')
+    @Preprocessor(BaseController.requireAdminReader)
     async getIavToken(@PathParam('userId') userId: string): Promise<models.FundingSourceIavToken> {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);

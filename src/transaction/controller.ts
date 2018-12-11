@@ -24,7 +24,7 @@ export class TransactionController extends BaseController {
 
     @GET
     @Path(':id')
-    @Preprocessor(BaseController.requireAdmin)
+    @Preprocessor(BaseController.requireAdminReader)
     async getTransaction(@PathParam('id') id: string): Promise<models.TransactionResponse> {
         this.service.setRequestContext(this.getRequestContext());
 
@@ -47,7 +47,7 @@ export class TransactionController extends BaseController {
      */
     @GET
     @Path('')
-    @Preprocessor(BaseController.requireAdmin)
+    @Preprocessor(BaseController.requireAdminReader)
     async getTransactions(@QueryParam('page') page?: number,
                           @QueryParam('limit') limit?: number,
                           @QueryParam('dateFrom') dateFrom?: Date,
@@ -168,7 +168,7 @@ export class TransactionController extends BaseController {
      */
     @GET
     @Path('/rating/period')
-    @Preprocessor(BaseController.requireAdmin)
+    @Preprocessor(BaseController.requireAdminReader)
     async getPeriodStats(@QueryParam('startDate') startDate?: string,
                          @QueryParam('endDate') endDate?: string,
                          @QueryParam('limit') limit?: number,

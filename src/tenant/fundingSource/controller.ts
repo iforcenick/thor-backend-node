@@ -13,14 +13,15 @@ import {TenantService} from '../service';
 
 @AutoWired
 @Path('/tenants/company/fundingSources')
-@Preprocessor(BaseController.requireAdmin)
 @Security('api_key')
 @Tags('tenantCompany', 'fundingSources')
 export class TenantFundingSourcesController extends BaseController {
     @Inject protected userService: UserService;
     @Inject protected tenantService: TenantService;
+
     @POST
     @Path('')
+    @Preprocessor(BaseController.requireAdmin)
     async createFundingSource(request: models.CreateTenantFundingSourceRequest): Promise<models.TenantFundingSourceResponse> {
         const parsedData = await this.validate(request, models.createTenantFundingSourceRequestSchema);
         try {
@@ -41,6 +42,7 @@ export class TenantFundingSourcesController extends BaseController {
 
     @GET
     @Path('')
+    @Preprocessor(BaseController.requireAdminReader)
     async getFundingSource(): Promise<models.TenantFundingSourceResponse> {
         const logic = new logicLayer.GetTenantFundingSourceLogic(this.getRequestContext());
         const result = await logic.execute(this.getRequestContext().getTenantId());
@@ -49,6 +51,7 @@ export class TenantFundingSourcesController extends BaseController {
 
     @DELETE
     @Path('')
+    @Preprocessor(BaseController.requireAdmin)
     async deleteFundingSource() {
         const logic = new logicLayer.DeleteTenantFundingSourcesLogic(this.getRequestContext());
         await logic.execute(this.getRequestContext().getTenantId());
@@ -56,6 +59,7 @@ export class TenantFundingSourcesController extends BaseController {
 
     @POST
     @Path('/verify')
+    @Preprocessor(BaseController.requireAdmin)
     async initiateFundingSourceVerification() {
         const logic = new logicLayer.InitiateTenantFundingSourceVerificationLogic(this.getRequestContext());
         await logic.execute(this.getRequestContext().getTenantId());
@@ -63,6 +67,7 @@ export class TenantFundingSourcesController extends BaseController {
 
     @PATCH
     @Path('/verify')
+    @Preprocessor(BaseController.requireAdmin)
     async verifyFundingSource(data: models.TenantFundingSourceVerificationRequest) {
         const parsedData: models.TenantFundingSourceVerificationRequest = await this.validate(data, models.tenantFundingSourceVerificationRequestSchema);
         const logic = new logicLayer.VerifyTenantFundingSourceLogic(this.getRequestContext());
@@ -71,6 +76,7 @@ export class TenantFundingSourcesController extends BaseController {
 
     @POST
     @Path('iav')
+    @Preprocessor(BaseController.requireAdmin)
     async addVeryfingFundingSource(data: models.FundingSourceIavRequest): Promise<models.TenantFundingSourceResponse> {
         this.userService.setRequestContext(this.getRequestContext());
         const logic = new logicLayer.AddVerifyingFundingSourceForTenantLogic(this.getRequestContext());
@@ -84,11 +90,12 @@ export class TenantFundingSourcesController extends BaseController {
 
     @GET
     @Path('iav')
-     async getIavToken() {
+    @Preprocessor(BaseController.requireAdminReader)
+    async getIavToken() {
         const tenant = await this.tenantService.get(this.getRequestContext().getTenantId());
         const logic = new GetIavTokenForTenantLogic(this.getRequestContext());
 
-        const token =  await logic.execute(tenant);
+        const token = await logic.execute(tenant);
         return this.map(models.FundingSourceIavToken, {token});
 
     }

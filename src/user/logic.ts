@@ -18,8 +18,9 @@ import * as role from './role';
 import {Profile} from '../profile/models';
 import {RoleService} from './role/service';
 import * as _ from 'lodash';
-import {isAdminRole, roleExists, Types} from "./role/models";
-import {SYSTEM_TENANT_SKIP} from "../db";
+import {Types} from './role/models';
+import {SYSTEM_TENANT_SKIP} from '../db';
+import {isAdminRole, roleExists} from './role/checks';
 
 const filterByContractor = (query, contractor) => {
     const likeContractor = `%${contractor}%`;

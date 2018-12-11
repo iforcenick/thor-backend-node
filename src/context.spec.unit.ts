@@ -1,70 +1,22 @@
-import chaiAsPromised from 'chai-as-promised';
-import chai from 'chai';
-import 'mocha';
-
-const {mockRequest} = require('mock-req-res');
 import {RequestContext, RequestContextMissingUserError} from './context';
 import {ServiceContext} from 'typescript-rest';
-import {Auth, AuthType} from './auth/models';
+import {AuthType} from './auth/models';
 import {Types} from './user/role/models';
-import {sinon} from './test-setup.spec.unit';
+import * as b from './test-setup.spec.unit';
 
-chai.use(chaiAsPromised);
-const expect = chai.expect;
-const contractorTenantId = '7bc0447a-ea99-4ba2-93bb-c84f5b325c50';
-const contractorId = '8251efb9-18b5-476e-a2a0-27e38a4da750';
-const adminTenantId = '7bc0447a-ea99-4ba2-93bb-c84f5b325c50';
-const adminId = '7f11b5b2-c9f8-4e3f-920d-0248daaa216e';
-const systemId = '1d86de60-3d88-4207-9531-4a630c1998e9';
-const systemTenantId = 'SYSTEM_TENANT';
+const expect = b.chai.expect;
 
-const setAnonymousAuth = (serviceContext) => {
-    const auth = new Auth();
-    serviceContext.request.auth = auth;
-    return auth;
-};
-
-const setContractorAuth = (serviceContext) => {
-    const auth = new Auth();
-    auth.type = AuthType.TENANT;
-    auth.userId = contractorId;
-    auth.tenantId = contractorTenantId;
-    auth.roles = [Types.contractor];
-    serviceContext.request.auth = auth;
-    return auth;
-};
-
-const setAdminAuth = (serviceContext) => {
-    const auth = new Auth();
-    auth.type = AuthType.TENANT;
-    auth.userId = adminId;
-    auth.tenantId = adminTenantId;
-    auth.roles = [Types.admin];
-    serviceContext.request.auth = auth;
-    return auth;
-};
-
-const setSystemAuth = (serviceContext) => {
-    const auth = new Auth();
-    auth.type = AuthType.SYSTEM;
-    auth.userId = systemId;
-    auth.tenantId = systemTenantId;
-    auth.roles = [Types.admin];
-    serviceContext.request.auth = auth;
-    return auth;
-};
 
 describe('Context', async () => {
     describe('RequestContext', async () => {
         let serviceContext: ServiceContext;
 
         beforeEach(async () => {
-            serviceContext = new ServiceContext();
-            serviceContext.request = mockRequest();
+            serviceContext = b.getMockedServiceContext();
         });
 
         it('should override tenant id', async () => {
-            setAnonymousAuth(serviceContext);
+            b.setAnonymousAuth(serviceContext);
             const context = new RequestContext(serviceContext);
             expect(context.getTenantId()).to.equal(null);
             const tenantId = 'testTenantId';
@@ -74,7 +26,7 @@ describe('Context', async () => {
 
         describe('Anonymous auth', async () => {
             beforeEach(async () => {
-                setAnonymousAuth(serviceContext);
+                b.setAnonymousAuth(serviceContext);
             });
 
             it('should create', async () => {
@@ -92,14 +44,14 @@ describe('Context', async () => {
             it('should not return tenant id from X-Tenant-Claim header', async () => {
                 const tenantIdClaim = 'test';
                 const context = new RequestContext(serviceContext);
-                sinon.stub(context, 'getHeader').returns(tenantIdClaim);
+                b.sinon.stub(context, 'getHeader').returns(tenantIdClaim);
                 expect(context.getTenantId()).to.equal(null);
             });
 
             it('should not override X-Tenant-Claim header', async () => {
                 const tenantIdClaim = 'test2';
                 const context = new RequestContext(serviceContext);
-                sinon.stub(context, 'getHeader').returns('test');
+                b.sinon.stub(context, 'getHeader').returns('test');
                 context.setTenantIdClaimOverride(tenantIdClaim);
                 expect(context.getTenantId()).to.equal(null);
             });
@@ -107,7 +59,7 @@ describe('Context', async () => {
 
         describe('Contractor auth', async () => {
             beforeEach(async () => {
-                setContractorAuth(serviceContext);
+                b.setContractorAuth(serviceContext);
             });
 
             it('should create', async () => {
@@ -117,12 +69,12 @@ describe('Context', async () => {
 
             it('should return user id', async () => {
                 const context = new RequestContext(serviceContext);
-                expect(context.getUserId()).to.equal(contractorId);
+                expect(context.getUserId()).to.equal(b.contractorId);
             });
 
             it('should return tenant id', async () => {
                 const context = new RequestContext(serviceContext);
-                expect(context.getTenantId()).to.equal(contractorTenantId);
+                expect(context.getTenantId()).to.equal(b.contractorTenantId);
             });
 
             it('should have contractor role', async () => {
@@ -133,22 +85,22 @@ describe('Context', async () => {
             it('should not return tenant id from X-Tenant-Claim header', async () => {
                 const tenantIdClaim = 'test';
                 const context = new RequestContext(serviceContext);
-                sinon.stub(context, 'getHeader').returns(tenantIdClaim);
-                expect(context.getTenantId()).to.equal(contractorTenantId);
+                b.sinon.stub(context, 'getHeader').returns(tenantIdClaim);
+                expect(context.getTenantId()).to.equal(b.contractorTenantId);
             });
 
             it('should not override X-Tenant-Claim header', async () => {
                 const tenantIdClaim = 'test2';
                 const context = new RequestContext(serviceContext);
-                sinon.stub(context, 'getHeader').returns('test');
+                b.sinon.stub(context, 'getHeader').returns('test');
                 context.setTenantIdClaimOverride(tenantIdClaim);
-                expect(context.getTenantId()).to.equal(contractorTenantId);
+                expect(context.getTenantId()).to.equal(b.contractorTenantId);
             });
         });
 
         describe('Admin auth', async () => {
             beforeEach(async () => {
-                setAdminAuth(serviceContext);
+                b.setAdminAuth(serviceContext);
             });
 
             it('should create', async () => {
@@ -158,12 +110,12 @@ describe('Context', async () => {
 
             it('should return user id', async () => {
                 const context = new RequestContext(serviceContext);
-                expect(context.getUserId()).to.equal(adminId);
+                expect(context.getUserId()).to.equal(b.adminId);
             });
 
             it('should return tenant id', async () => {
                 const context = new RequestContext(serviceContext);
-                expect(context.getTenantId()).to.equal(adminTenantId);
+                expect(context.getTenantId()).to.equal(b.adminTenantId);
             });
 
             it('should have admin role', async () => {
@@ -174,22 +126,22 @@ describe('Context', async () => {
             it('should not return tenant id from X-Tenant-Claim header', async () => {
                 const tenantIdClaim = 'test';
                 const context = new RequestContext(serviceContext);
-                sinon.stub(context, 'getHeader').returns(tenantIdClaim);
-                expect(context.getTenantId()).to.equal(adminTenantId);
+                b.sinon.stub(context, 'getHeader').returns(tenantIdClaim);
+                expect(context.getTenantId()).to.equal(b.adminTenantId);
             });
 
             it('should not override X-Tenant-Claim header', async () => {
                 const tenantIdClaim = 'test2';
                 const context = new RequestContext(serviceContext);
-                sinon.stub(context, 'getHeader').returns('test');
+                b.sinon.stub(context, 'getHeader').returns('test');
                 context.setTenantIdClaimOverride(tenantIdClaim);
-                expect(context.getTenantId()).to.equal(adminTenantId);
+                expect(context.getTenantId()).to.equal(b.adminTenantId);
             });
         });
 
         describe('System auth', async () => {
             beforeEach(async () => {
-                setSystemAuth(serviceContext);
+                b.setSystemAuth(serviceContext);
             });
 
             it('should create', async () => {
@@ -199,13 +151,13 @@ describe('Context', async () => {
 
             it('should return user id', async () => {
                 const context = new RequestContext(serviceContext);
-                expect(context.getUserId()).to.equal(systemId);
+                expect(context.getUserId()).to.equal(b.systemId);
             });
 
             it('should return tenant id', async () => {
                 const context = new RequestContext(serviceContext);
-                sinon.stub(context, 'getHeader').returns(undefined);
-                expect(context.getTenantId()).to.equal(systemTenantId);
+                b.sinon.stub(context, 'getHeader').returns(undefined);
+                expect(context.getTenantId()).to.equal(b.systemTenantId);
             });
 
             it('should have admin role', async () => {
@@ -216,14 +168,14 @@ describe('Context', async () => {
             it('should return tenant id from X-Tenant-Claim header', async () => {
                 const tenantIdClaim = '7bc0447a-ea99-4ba2-93bb-c84f5b325c50';
                 const context = new RequestContext(serviceContext);
-                sinon.stub(context, 'getHeader').returns(tenantIdClaim);
+                b.sinon.stub(context, 'getHeader').returns(tenantIdClaim);
                 expect(context.getTenantId()).to.equal(tenantIdClaim);
             });
 
             it('should override X-Tenant-Claim header', async () => {
                 const tenantIdClaim = '7bc0447a-ea99-4ba2-93bb-c84f5b325c50';
                 const context = new RequestContext(serviceContext);
-                sinon.stub(context, 'getHeader').returns('test');
+                b.sinon.stub(context, 'getHeader').returns('test');
                 context.setTenantIdClaimOverride(tenantIdClaim);
                 expect(context.getTenantId()).to.equal(tenantIdClaim);
             });

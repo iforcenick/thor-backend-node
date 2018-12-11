@@ -22,7 +22,6 @@ import * as _ from "lodash";
 
 @Security('api_key')
 @Path('/tenants')
-@Preprocessor(BaseController.requireAdmin)
 export class TenantController extends BaseController {
     @Inject private service: TenantService;
     @Inject private dwollaClient: dwolla.Client;
@@ -32,6 +31,7 @@ export class TenantController extends BaseController {
     @GET
     @Path('')
     @Tags('tenants')
+    @Preprocessor(BaseController.requireAdminReader)
     async getTenant(): Promise<models.TenantResponse> {
         const logic = new GetTenantLogic(this.getRequestContext());
         const tenant = await logic.execute(this.getRequestContext().getTenantId());
@@ -42,6 +42,7 @@ export class TenantController extends BaseController {
     @POST
     @Path('')
     @Tags('tenants')
+    @Preprocessor(BaseController.requireAdmin)
     async createTenant(data: models.TenantRequest): Promise<models.TenantResponse> {
         throw new Errors.NotImplementedError();
         // const parsedData = await this.validate(data, models.tenantRequestSchema);
@@ -62,6 +63,7 @@ export class TenantController extends BaseController {
     @GET
     @Path('/company')
     @Tags('tenantCompany')
+    @Preprocessor(BaseController.requireAdminReader)
     async getTenantCompany(): Promise<models.TenantCompanyResponse> {
         const logic = new GetTenantCompanyLogic(this.getRequestContext());
         const company = await logic.execute(this.getRequestContext().getTenantId());
@@ -72,6 +74,7 @@ export class TenantController extends BaseController {
     @GET
     @Path('/company/owner')
     @Tags('tenantCompany')
+    @Preprocessor(BaseController.requireAdminReader)
     async getTenantCompanyOwner(): Promise<models.TenantOwnerResponse> {
         const logic = new GetTenantCompanyOwnerLogic(this.getRequestContext());
         const owner = await logic.execute(this.getRequestContext().getTenantId());
@@ -82,6 +85,7 @@ export class TenantController extends BaseController {
     @POST
     @Path('/company')
     @Tags('tenantCompany')
+    @Preprocessor(BaseController.requireAdmin)
     async createTenantCompany(data: models.TenantCompanyPostRequest): Promise<models.TenantCompanyResponse> {
         const parsedData: models.TenantCompanyPostRequest = await this.validate(data, models.tenantCompanyPostRequestSchema);
         const logic = new AddTenantCompanyLogic(this.getRequestContext());
@@ -93,6 +97,7 @@ export class TenantController extends BaseController {
     @PATCH
     @Path('/company')
     @Tags('tenantCompany')
+    @Preprocessor(BaseController.requireAdmin)
     async updateTenantCompany(data: models.TenantCompanyPatchRequest): Promise<models.TenantCompanyResponse> {
         const parsedData: models.TenantCompanyPatchRequest = await this.validate(data, models.tenantCompanyPatchRequestSchema);
         const logic = new UpdateTenantCompanyLogic(this.getRequestContext());
@@ -104,6 +109,7 @@ export class TenantController extends BaseController {
     @PUT
     @Path('/company')
     @Tags('tenantCompany')
+    @Preprocessor(BaseController.requireAdmin)
     async retryTenantCompany(data: models.TenantCompanyRetryRequest): Promise<models.TenantCompanyResponse> {
         const parsedData: models.TenantCompanyRetryRequest = await this.validate(data, models.tenantCompanyRetryRequestSchema);
         const logic = new RetryTenantCompanyLogic(this.getRequestContext());
@@ -115,6 +121,7 @@ export class TenantController extends BaseController {
     @GET
     @Path('/company/businessCategories')
     @Tags('tenantCompany')
+    @Preprocessor(BaseController.requireAdminReader)
     async getBusinessCategories() {
         let businessCategories;
 
@@ -124,6 +131,7 @@ export class TenantController extends BaseController {
 
     @GET
     @Path('/company/documents')
+    @Preprocessor(BaseController.requireAdminReader)
     async getTenantCompanyDocuments(): Promise<Array<TenantCompanyDocument>> {
         const logic = new ListTenantCompanyDocumentsLogic(this.getRequestContext());
         const docs = await logic.execute(this.getRequestContext().getTenantId());
@@ -135,6 +143,7 @@ export class TenantController extends BaseController {
 
     @POST
     @Path('/company/documents')
+    @Preprocessor(BaseController.requireAdmin)
     async createTenantCompanyDocuments(@QueryParam('type') type: string, @FileParam('filepond') file): Promise<TenantCompanyDocument> {
         if (!file) {
             throw new Errors.NotAcceptableError('File missing');

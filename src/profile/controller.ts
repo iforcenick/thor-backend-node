@@ -14,7 +14,7 @@ export class ProfileController extends BaseController {
 
     @GET
     @Path(':id')
-    @Preprocessor(BaseController.requireAdmin)
+    @Preprocessor(BaseController.requireAdminReader)
     async getProfile(@PathParam('id') id: string): Promise<models.ProfileResponse> {
         this.service.setRequestContext(this.getRequestContext());
         const profile = await this.service.get(id);
