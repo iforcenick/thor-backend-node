@@ -7,6 +7,7 @@ import * as transactions from '../transaction/models';
 import {ProfileService} from '../profile/service';
 import {transaction} from 'objection';
 import {RequestContext} from '../context';
+import {SYSTEM_TENANT_SKIP} from '../db';
 
 const bcrypt = require('bcrypt');
 
@@ -51,7 +52,11 @@ export class UserService extends db.ModelService<models.User> {
     setConditions(query) {
         const tenantId = this.getTenantId();
         this.setBasicConditions(query);
-        this.selectProfileForTenant(query, tenantId);
+
+        if (tenantId && tenantId !== SYSTEM_TENANT_SKIP) {
+            this.selectProfileForTenant(query, tenantId);
+        }
+
         this.selectLastActivity(query);
     }
 
@@ -65,9 +70,10 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     useTenantContext(query) {
-        if (this.getTenantId()) {
+        const tenantId = this.getTenantId();
+        if (tenantId && tenantId !== SYSTEM_TENANT_SKIP) {
             query.where({
-                [`${models.Relations.tenantProfile}.tenantId`]: this.getTenantId()
+                [`${models.Relations.tenantProfile}.tenantId`]: tenantId
             });
         }
     }

@@ -18,7 +18,7 @@ import * as generator from 'generate-password';
 import {MailerService} from '../mailer';
 import {GenerateJwtLogic} from '../auth/logic';
 import {TransactionService} from '../transaction/service';
-import {Transaction} from "../transaction/models";
+import {Transaction} from '../transaction/models';
 
 @AutoWired
 export class AddContractorLogic extends Logic {

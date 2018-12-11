@@ -1,4 +1,4 @@
-import {DELETE, Errors, GET, HttpError, Path, PathParam, POST, PATCH, Preprocessor, QueryParam} from 'typescript-rest';
+import {DELETE, Errors, GET, HttpError, PATCH, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
 import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
 import * as models from './models';
@@ -8,14 +8,7 @@ import {JobService} from '../job/service';
 import {Security, Tags} from 'typescript-rest-swagger';
 import moment from 'moment';
 import {FundingSourceService} from '../foundingSource/services';
-import {
-    CancelTransactionLogic,
-    CreateTransactionLogic,
-    UpdateTransactionLogic,
-    DeleteTransactionLogic,
-    CreateTransactionsTransferLogic,
-    CreateTransactionTransferLogic, CreateTransactionWithExistingJobLogic, CreateTransactionWithCustomJobLogic
-} from './logic';
+import * as logicLayer from './logic';
 import * as dwolla from '../dwolla';
 
 const validate = require('uuid-validate');
@@ -88,7 +81,7 @@ export class TransactionController extends BaseController {
         const parsedData: models.TransactionExistingJobRequest = await this.validate(data, models.transactionExistingJobRequestSchema);
 
         try {
-            const logic = new CreateTransactionWithExistingJobLogic(this.getRequestContext());
+            const logic = new logicLayer.CreateTransactionWithExistingJobLogic(this.getRequestContext());
             const transaction = await logic.execute(parsedData.userId, parsedData.jobId, parsedData.value, parsedData.externalId);
             return this.map(models.TransactionResponse, transaction);
         } catch (err) {
@@ -111,7 +104,7 @@ export class TransactionController extends BaseController {
         const parsedData: models.TransactionCustomJobRequest = await this.validate(data, models.transactionCustomJobRequestSchema);
 
         try {
-            const logic = new CreateTransactionWithCustomJobLogic(this.getRequestContext());
+            const logic = new logicLayer.CreateTransactionWithCustomJobLogic(this.getRequestContext());
             const transaction = await logic.execute(parsedData.userId, parsedData.job, parsedData.value, parsedData.externalId);
             return this.map(models.TransactionResponse, transaction);
         } catch (err) {
@@ -133,7 +126,7 @@ export class TransactionController extends BaseController {
     async updateTransaction(@PathParam('id') id: string, data: models.TransactionPatchRequest): Promise<models.TransactionResponse> {
         const parsedData: models.TransactionPatchRequest = await this.validate(data, models.transactionPatchRequestSchema);
 
-        const logic = new UpdateTransactionLogic(this.getRequestContext());
+        const logic = new logicLayer.UpdateTransactionLogic(this.getRequestContext());
         const transaction = await logic.execute(id, parsedData);
         return this.map(models.TransactionResponse, transaction);
     }
@@ -142,7 +135,7 @@ export class TransactionController extends BaseController {
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
     async deleteTransaction(@PathParam('id') id: string) {
-        const logic = new DeleteTransactionLogic(this.getRequestContext());
+        const logic = new logicLayer.DeleteTransactionLogic(this.getRequestContext());
         await logic.execute(id);
     }
 
@@ -150,7 +143,7 @@ export class TransactionController extends BaseController {
     @Path(':id/transfers')
     @Preprocessor(BaseController.requireAdmin)
     async createTransactionTransfer(@PathParam('id') id: string): Promise<models.TransactionResponse> {
-        const logic = new CreateTransactionTransferLogic(this.getRequestContext());
+        const logic = new logicLayer.CreateTransactionTransferLogic(this.getRequestContext());
         const transaction = await logic.execute(id);
 
         return this.map(models.TransactionResponse, transaction);
@@ -160,7 +153,7 @@ export class TransactionController extends BaseController {
     @Path('transfers/user/:id')
     @Preprocessor(BaseController.requireAdmin)
     async createTransactionsTransfer(@PathParam('id') id: string, data: models.TransactionsTransferRequest): Promise<models.TransferResponse> {
-        const logic = new CreateTransactionsTransferLogic(this.getRequestContext());
+        const logic = new logicLayer.CreateTransactionsTransferLogic(this.getRequestContext());
         const transfer = await logic.execute(id, data['transactionsIds']);
 
         return this.map(models.TransferResponse, transfer);
@@ -211,13 +204,11 @@ export class TransactionController extends BaseController {
         }
 
         try {
-            const user = await this.userService.get(this.getRequestContext().getUserId());
-
             if (!_transaction.transferId || _transaction.canBeCancelled()) {
                 throw new Errors.NotAcceptableError('Transfer cannot be cancelled');
             }
 
-            const cancelLogic = new CancelTransactionLogic(this.getRequestContext());
+            const cancelLogic = new logicLayer.CancelTransactionLogic(this.getRequestContext());
             await cancelLogic.execute(_transaction);
         } catch (e) {
             if (e instanceof Errors.NotAcceptableError) {

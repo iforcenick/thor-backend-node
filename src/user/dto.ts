@@ -49,6 +49,19 @@ export class UserPatchRequest extends UserBaseInfo {
     profile: profile.ProfilePatchRequest = new profile.ProfilePatchRequest();
 }
 
+export class AdminUserProfileRequest extends Mapper {
+    firstName: string = mapper.FIELD_STR;
+    lastName: string = mapper.FIELD_STR;
+    email: string = mapper.FIELD_STR;
+    role: string = mapper.FIELD_STR;
+}
+
+export class AdminUserRequest extends UserBaseInfo {
+    password: string = mapper.FIELD_STR;
+    @mapper.object(AdminUserProfileRequest)
+    profile: AdminUserProfileRequest = new AdminUserProfileRequest();
+}
+
 export interface PaginatedUserResponse extends PaginatedResponse {
     items: Array<UserResponse>;
 }
@@ -69,6 +82,18 @@ export const userPatchSchema = Joi.object().keys({
 export const rankingRequestSchema = Joi.object().keys({
     startDate: Joi.date().required(),
     endDate: Joi.date().required(),
+});
+
+export const adminUserProfileRequestSchema = Joi.object().keys({
+    firstName: Joi.string().allow('', null),
+    lastName: Joi.string().allow('', null),
+    email: Joi.string().required().email(),
+    role: Joi.string().required(),
+});
+
+export const adminUserRequestSchema = Joi.object().keys({
+    password: Joi.string().required(),
+    profile: adminUserProfileRequestSchema.required(),
 });
 
 export class UserStatisticsResponse extends Mapper {

@@ -27,8 +27,15 @@ import {MailerService} from '../mailer';
 import * as _ from 'lodash';
 import {DwollaNotifier} from '../dwolla/notifier';
 import {AddContractorLogic, AddContractorOnRetryStatusLogic} from '../contractor/logic';
-import {RatingJobsListLogic, SearchCriteria, UsersListLogic, UserStatisticsLogic, CreatePasswordResetLogic} from './logic';
 import {
+    RatingJobsListLogic,
+    SearchCriteria,
+    UsersListLogic,
+    UserStatisticsLogic,
+    CreatePasswordResetLogic, AddAdminUserLogic
+} from './logic';
+import {
+    AdminUserRequest, adminUserRequestSchema,
     ContractorOnRetryRequest, contractorOnRetryRequestSchema, ContractorOnRetryResponse,
     PaginatedRankingJobs, PaginatedUserResponse,
     RankingJobs,
@@ -117,8 +124,7 @@ export class UserController extends BaseController {
                        @QueryParam('order') order?: string,
                        @QueryParam('contractor') contractor?: string,
                        @QueryParam('city') city?: string,
-                       @QueryParam('state') state?: string
-        ): Promise<PaginatedUserResponse> {
+                       @QueryParam('state') state?: string): Promise<PaginatedUserResponse> {
         const logic = new UsersListLogic(this.getRequestContext());
         const searchCriteria = new SearchCriteria();
         searchCriteria.page = page;
@@ -143,8 +149,6 @@ export class UserController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async createUser(data: UserRequest): Promise<UserResponse> {
-        this.service.setRequestContext(this.getRequestContext());
-
         const parsedData: UserRequest = await this.validate(data, userRequestSchema);
         ProfileService.validateAge(parsedData.profile);
 
@@ -368,5 +372,22 @@ export class UserController extends BaseController {
     async createUserPasswordReset(@PathParam('userId') userId: string): Promise<any> {
         const logic = new CreatePasswordResetLogic(this.getRequestContext());
         await logic.execute(userId);
+    }
+
+    @POST
+    @Path('/admin')
+    @Preprocessor(BaseController.requireAdmin)
+    /**
+     * Allowed roles: admin, adminReader
+     */
+    async createAdminUser(data: AdminUserRequest): Promise<UserResponse> {
+        const parsedData: AdminUserRequest = await this.validate(data, adminUserRequestSchema);
+        const logic = new AddAdminUserLogic(this.getRequestContext());
+        const user = await logic.execute(
+            parsedData.profile.email, parsedData.profile.firstName, parsedData.profile.lastName,
+            parsedData.password, parsedData.profile.role
+        );
+
+        return this.map(UserResponse, user);
     }
 }

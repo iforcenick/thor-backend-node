@@ -10,6 +10,8 @@ import * as objection from 'objection';
 const validate = require('uuid-validate');
 const uuid = require('uuid');
 
+export const SYSTEM_TENANT_SKIP = 'SYSTEM_TENANT_SKIP';
+
 export {OModel};
 
 export class Model extends OModel {
@@ -196,8 +198,9 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
     }
 
     useTenantContext(query) {
-        if (this.getTenantId()) {
-            query.where(`${this.modelType.tableName}.tenantId`, this.getTenantId());
+        const tenantId = this.getTenantId();
+        if (tenantId && tenantId !== SYSTEM_TENANT_SKIP) {
+            query.where(`${this.modelType.tableName}.tenantId`, tenantId);
         }
     }
 

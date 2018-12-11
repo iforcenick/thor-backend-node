@@ -9,9 +9,17 @@ import {raw} from 'objection';
 import * as db from '../db';
 import {Errors} from 'typescript-rest';
 import {ApiServer} from '../server';
-import { MailerService } from '../mailer';
-import { Logger } from '../logger';
-import { Config } from '../config';
+import {MailerService} from '../mailer';
+import {Logger} from '../logger';
+import {Config} from '../config';
+import {ProfileService} from '../profile/service';
+import * as objection from 'objection';
+import * as role from './role';
+import {Profile} from '../profile/models';
+import {RoleService} from './role/service';
+import * as _ from 'lodash';
+import {isAdminRole, roleExists, Types} from "./role/models";
+import {SYSTEM_TENANT_SKIP} from "../db";
 
 const filterByContractor = (query, contractor) => {
     const likeContractor = `%${contractor}%`;
@@ -370,5 +378,69 @@ export class GetPasswordResetLogic extends Logic {
         if (user.passwordResetExpiry < Date.now()) {
             throw new Errors.NotAcceptableError('Password reset token has expired');
         }
+    }
+}
+
+@AutoWired
+export class AddAdminUserLogic extends Logic {
+    @Inject private userService: UserService;
+    @Inject private roleService: RoleService;
+    @Inject private profileService: ProfileService;
+    @Inject protected logger: Logger;
+
+    async execute(login, firstName, lastName, password, role: string) {
+        if (!roleExists(role) || !isAdminRole(role)) {
+            throw new Errors.ConflictError('Invalid role');
+        }
+
+        if (await this.userService.findByEmailAndTenant(login, SYSTEM_TENANT_SKIP)) {
+            throw new Errors.NotAcceptableError('User with selected login already exists');
+        }
+
+        let user: User = new User();
+        const profile = new Profile();
+        profile.email = login;
+        profile.firstName = firstName;
+        profile.lastName = lastName;
+        user.password = await this.userService.hashPassword(password);
+
+        await objection.transaction(this.userService.transaction(), async _trx => {
+            user = await this.userService.insert(user, _trx);
+            profile.userId = user.id;
+            const adminRole = await this.getRole(Types[role]);
+            const roles = [adminRole];
+
+            await this.createBaseProfile(profile, roles, _trx);
+            user.tenantProfile = await this.createTenantProfile(profile, roles, _trx);
+        });
+
+        return user;
+    }
+
+    private async createTenantProfile(profile: Profile,
+                                      roles: Array<role.models.Role>,
+                                      trx: objection.Transaction) {
+        profile = await this.profileService.insert(profile, trx);
+        await this.addRoles(profile, roles, trx);
+        return profile;
+    }
+
+    private async createBaseProfile(profile: Profile, roles: Array<role.models.Role>, trx: objection.Transaction) {
+        let baseProfile = _.clone(profile);
+        baseProfile = await this.profileService.insert(baseProfile, trx, false);
+        await this.addRoles(baseProfile, roles, trx);
+        return baseProfile;
+    }
+
+    private async addRoles(profile: Profile, roles: Array<role.models.Role>, trx: objection.Transaction) {
+        profile.roles = [];
+        for (const role of roles) {
+            await profile.$relatedQuery(models.Relations.roles, trx).relate(role.id);
+            profile.roles.push(role);
+        }
+    }
+
+    async getRole(role: role.models.Types): Promise<role.models.Role> {
+        return await this.roleService.find(role);
     }
 }
