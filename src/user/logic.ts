@@ -4,22 +4,22 @@ import {UserService} from './service';
 import {AutoWired, Inject} from 'typescript-ioc';
 import * as transactions from '../transaction/models';
 import * as models from './models';
-import {User} from './models';
+import {SearchCriteria, User} from './models';
+import * as objection from 'objection';
 import {raw} from 'objection';
 import * as db from '../db';
+import {SYSTEM_TENANT_SKIP} from '../db';
 import {Errors} from 'typescript-rest';
 import {ApiServer} from '../server';
 import {MailerService} from '../mailer';
 import {Logger} from '../logger';
 import {Config} from '../config';
 import {ProfileService} from '../profile/service';
-import * as objection from 'objection';
 import * as role from './role';
 import {Profile} from '../profile/models';
 import {RoleService} from './role/service';
 import * as _ from 'lodash';
 import {Types} from './role/models';
-import {SYSTEM_TENANT_SKIP} from '../db';
 import {isAdminRole, roleExists} from './role/checks';
 
 const filterByContractor = (query, contractor) => {
@@ -173,16 +173,6 @@ export class RatingJobsListLogic extends Logic {
             query.orderBy(orderBy, order);
         }
     }
-}
-
-export class SearchCriteria {
-    public page: number;
-    public limit: number;
-    public orderBy?: string;
-    public order?: string;
-    public contractor?: string;
-    public city?: string;
-    public state?: string;
 }
 
 @AutoWired
@@ -443,5 +433,22 @@ export class AddAdminUserLogic extends Logic {
 
     async getRole(role: role.models.Types): Promise<role.models.Role> {
         return await this.roleService.find(role);
+    }
+}
+
+export class DeleteUserLogic extends Logic {
+    @Inject service: UserService;
+
+    async execute(user: User): Promise<any> {
+        const hasUnpaidTransactions = await this.service.hasUnpaidTransactions(user.id);
+        if (hasUnpaidTransactions) {
+            throw new Errors.ConflictError('User have unprocessed transactions');
+        }
+
+        try {
+            await this.service.delete(user);
+        } catch (e) {
+            throw new Errors.InternalServerError(e);
+        }
     }
 }

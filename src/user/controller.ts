@@ -27,23 +27,9 @@ import {MailerService} from '../mailer';
 import * as _ from 'lodash';
 import {DwollaNotifier} from '../dwolla/notifier';
 import {AddContractorLogic, AddContractorOnRetryStatusLogic} from '../contractor/logic';
-import {
-    RatingJobsListLogic,
-    SearchCriteria,
-    UsersListLogic,
-    UserStatisticsLogic,
-    CreatePasswordResetLogic, AddAdminUserLogic
-} from './logic';
-import {
-    AdminUserRequest, adminUserRequestSchema,
-    ContractorOnRetryRequest, contractorOnRetryRequestSchema, ContractorOnRetryResponse,
-    PaginatedRankingJobs, PaginatedUserResponse,
-    RankingJobs,
-    rankingRequestSchema, statisticsRequestSchema, UserDocument, UserPatchRequest, userPatchSchema,
-    UserRequest,
-    userRequestSchema,
-    UserResponse, UserStatisticsResponse
-} from './dto';
+import * as logicLayer from './logic';
+import * as dto from './dto';
+import {SearchCriteria} from './models';
 
 
 @Security('api_key')
@@ -60,7 +46,7 @@ export class UserController extends BaseController {
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdminReader)
-    async getUser(@PathParam('id') id: string): Promise<UserResponse> {
+    async getUser(@PathParam('id') id: string): Promise<dto.UserResponse> {
         this.service.setRequestContext(this.getRequestContext());
 
         const user = await this.service.get(id);
@@ -69,7 +55,7 @@ export class UserController extends BaseController {
             throw new Errors.NotFoundError();
         }
 
-        return this.map(UserResponse, user);
+        return this.map(dto.UserResponse, user);
     }
 
     /**
@@ -92,16 +78,16 @@ export class UserController extends BaseController {
                             @QueryParam('status') status?: string,
                             @QueryParam('orderBy') orderBy?: string,
                             @QueryParam('order') order?: string,
-                            @QueryParam('contractor') contractor?: string): Promise<PaginatedRankingJobs> {
-        const dates: any = await this.validate({startDate, endDate}, rankingRequestSchema);
-        const logic = new RatingJobsListLogic(this.getRequestContext());
+                            @QueryParam('contractor') contractor?: string): Promise<dto.PaginatedRankingJobs> {
+        const dates: any = await this.validate({startDate, endDate}, dto.rankingRequestSchema);
+        const logic = new logicLayer.RatingJobsListLogic(this.getRequestContext());
 
         const rankings = await logic.execute(dates.startDate, dates.endDate, page, limit, status, orderBy, order, contractor);
 
         return this.paginate(
             rankings.pagination,
             rankings.rows.map(ranking => {
-                return this.map(RankingJobs, ranking);
+                return this.map(dto.RankingJobs, ranking);
             }),
         );
     }
@@ -124,8 +110,8 @@ export class UserController extends BaseController {
                        @QueryParam('order') order?: string,
                        @QueryParam('contractor') contractor?: string,
                        @QueryParam('city') city?: string,
-                       @QueryParam('state') state?: string): Promise<PaginatedUserResponse> {
-        const logic = new UsersListLogic(this.getRequestContext());
+                       @QueryParam('state') state?: string): Promise<dto.PaginatedUserResponse> {
+        const logic = new logicLayer.UsersListLogic(this.getRequestContext());
         const searchCriteria = new SearchCriteria();
         searchCriteria.page = page;
         searchCriteria.limit = limit;
@@ -140,7 +126,7 @@ export class UserController extends BaseController {
         return this.paginate(
             users.pagination,
             users.rows.map(user => {
-                return this.map(UserResponse, user);
+                return this.map(dto.UserResponse, user);
             }),
         );
     }
@@ -148,14 +134,14 @@ export class UserController extends BaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async createUser(data: UserRequest): Promise<UserResponse> {
-        const parsedData: UserRequest = await this.validate(data, userRequestSchema);
+    async createUser(data: dto.UserRequest): Promise<dto.UserResponse> {
+        const parsedData: dto.UserRequest = await this.validate(data, dto.userRequestSchema);
         ProfileService.validateAge(parsedData.profile);
 
         try {
             const logic = new AddContractorLogic(this.getRequestContext());
             const user = await logic.execute(parsedData.profile, this.getRequestContext().getTenantId(), parsedData.password);
-            return this.map(UserResponse, user);
+            return this.map(dto.UserResponse, user);
         } catch (err) {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError('profile');
@@ -168,11 +154,11 @@ export class UserController extends BaseController {
     @PATCH
     @Path(':id/profile')
     @Preprocessor(BaseController.requireAdmin)
-    async patchAnyUser(@PathParam('id') id: string, data: UserPatchRequest): Promise<ProfileResponse> {
+    async patchAnyUser(@PathParam('id') id: string, data: dto.UserPatchRequest): Promise<ProfileResponse> {
         this.service.setRequestContext(this.getRequestContext());
         this.profileService.setRequestContext(this.getRequestContext());
 
-        const parsedData = await this.validate(data, userPatchSchema);
+        const parsedData = await this.validate(data, dto.userPatchSchema);
         ProfileService.validateAge(parsedData['profile']);
 
         try {
@@ -220,22 +206,13 @@ export class UserController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async delete(@PathParam('id') id: string) {
         this.service.setRequestContext(this.getRequestContext());
-
         const user = await this.service.get(id);
         if (!user) {
             throw new Errors.NotFoundError('User not found');
         }
 
-        const hasUnpaidTransactions = await this.service.hasUnpaidTransactions(id);
-        if (hasUnpaidTransactions) {
-            throw new Errors.ConflictError('User have unprocessed transactions');
-        }
-
-        try {
-            await this.service.delete(user);
-        } catch (e) {
-            throw new Errors.InternalServerError(e);
-        }
+        const logic = new logicLayer.DeleteUserLogic(this.getRequestContext());
+        await logic.execute(user);
     }
 
     @GET
@@ -272,14 +249,14 @@ export class UserController extends BaseController {
                   @QueryParam('currentStartDate') currentStartDate: string,
                   @QueryParam('currentEndDate') currentEndDate: string,
                   @QueryParam('previousStartDate') previousStartDate: string,
-                  @QueryParam('previousEndDate') previousEndDate: string): Promise<UserStatisticsResponse> {
-        const logic = new UserStatisticsLogic(this.getRequestContext());
+                  @QueryParam('previousEndDate') previousEndDate: string): Promise<dto.UserStatisticsResponse> {
+        const logic = new logicLayer.UserStatisticsLogic(this.getRequestContext());
         const parsed = await this.validate({
             currentStartDate,
             currentEndDate,
             previousStartDate,
             previousEndDate
-        }, statisticsRequestSchema);
+        }, dto.statisticsRequestSchema);
 
         const statistics = await logic.execute(
             userId,
@@ -288,7 +265,7 @@ export class UserController extends BaseController {
             parsed.previousStartDate,
             parsed.previousEndDate,
         );
-        return this.map(UserStatisticsResponse, statistics);
+        return this.map(dto.UserStatisticsResponse, statistics);
     }
 
     @POST
@@ -296,7 +273,7 @@ export class UserController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async createUserDocument(@PathParam('id') userId: string,
                              @QueryParam('type') type: string,
-                             @FileParam('filepond') file, @ContextRequest context: ServiceContext): Promise<UserDocument> {
+                             @FileParam('filepond') file, @ContextRequest context: ServiceContext): Promise<dto.UserDocument> {
         this.service.setRequestContext(this.getRequestContext());
 
         if (!file) {
@@ -319,7 +296,7 @@ export class UserController extends BaseController {
 
             const location = await this.dwollaClient.createDocument(user.tenantProfile.dwollaUri, file.buffer, file.originalname, type);
             const doc = await this.dwollaClient.getDocument(location);
-            return this.map(UserDocument, doc);
+            return this.map(dto.UserDocument, doc);
         } catch (e) {
             throw new Errors.InternalServerError(e);
         }
@@ -328,7 +305,7 @@ export class UserController extends BaseController {
     @GET
     @Path(':id/documents')
     @Preprocessor(BaseController.requireAdminReader)
-    async getUserDocuments(@PathParam('id') userId: string): Promise<Array<UserDocument>> {
+    async getUserDocuments(@PathParam('id') userId: string): Promise<Array<dto.UserDocument>> {
         this.service.setRequestContext(this.getRequestContext());
 
         try {
@@ -340,7 +317,7 @@ export class UserController extends BaseController {
             const docs = await this.dwollaClient.listDocuments(user.tenantProfile.dwollaUri);
 
             return docs.map((doc) => {
-                return this.map(UserDocument, doc);
+                return this.map(dto.UserDocument, doc);
             });
         } catch (e) {
             throw new Errors.InternalServerError(e);
@@ -350,9 +327,9 @@ export class UserController extends BaseController {
     @PUT
     @Path('/:userId')
     @Preprocessor(BaseController.requireAdmin)
-    async addContractorOnRetry(@PathParam('userId') userId: string, data: ContractorOnRetryRequest): Promise<ContractorOnRetryResponse> {
+    async addContractorOnRetry(@PathParam('userId') userId: string, data: dto.ContractorOnRetryRequest): Promise<dto.ContractorOnRetryResponse> {
         this.service.setRequestContext(this.getRequestContext());
-        const parsedData = await this.validate(data, contractorOnRetryRequestSchema);
+        const parsedData = await this.validate(data, dto.contractorOnRetryRequestSchema);
         const profile = parsedData['profile'];
         ProfileService.validateAge(profile);
         try {
@@ -360,7 +337,7 @@ export class UserController extends BaseController {
             const tenantId = this.getRequestContext().getTenantId();
             const user = await logic.execute(profile, tenantId, userId);
 
-            return this.map(ContractorOnRetryResponse, user);
+            return this.map(dto.ContractorOnRetryResponse, user);
         } catch (err) {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError('profile');
@@ -373,7 +350,7 @@ export class UserController extends BaseController {
     @Path('/:userId/passwordReset')
     @Preprocessor(BaseController.requireAdmin)
     async createUserPasswordReset(@PathParam('userId') userId: string): Promise<any> {
-        const logic = new CreatePasswordResetLogic(this.getRequestContext());
+        const logic = new logicLayer.CreatePasswordResetLogic(this.getRequestContext());
         await logic.execute(userId);
     }
 
@@ -383,14 +360,14 @@ export class UserController extends BaseController {
     /**
      * Allowed roles: admin, adminReader
      */
-    async createAdminUser(data: AdminUserRequest): Promise<UserResponse> {
-        const parsedData: AdminUserRequest = await this.validate(data, adminUserRequestSchema);
-        const logic = new AddAdminUserLogic(this.getRequestContext());
+    async createAdminUser(data: dto.AdminUserRequest): Promise<dto.UserResponse> {
+        const parsedData: dto.AdminUserRequest = await this.validate(data, dto.adminUserRequestSchema);
+        const logic = new logicLayer.AddAdminUserLogic(this.getRequestContext());
         const user = await logic.execute(
             parsedData.profile.email, parsedData.profile.firstName, parsedData.profile.lastName,
             parsedData.password, parsedData.profile.role
         );
 
-        return this.map(UserResponse, user);
+        return this.map(dto.UserResponse, user);
     }
 }

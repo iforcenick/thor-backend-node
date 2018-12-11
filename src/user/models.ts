@@ -59,10 +59,12 @@ export class User extends db.Model {
 }
 
 
-
-
-
-
-
-
-
+export class SearchCriteria {
+    public page: number;
+    public limit: number;
+    public orderBy?: string;
+    public order?: string;
+    public contractor?: string;
+    public city?: string;
+    public state?: string;
+}
