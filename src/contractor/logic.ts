@@ -78,7 +78,7 @@ export class AddContractorLogic extends Logic {
                     break;
             }
         } catch (e) {
-            this.logger.error(e.message);
+            this.logger.error(e);
         }
 
         return user;
@@ -144,7 +144,7 @@ export class AddContractorOnRetryStatusLogic extends Logic {
         try {
             await sendCustomerStatusEmail(user, user.tenantProfile.dwollaStatus);
         } catch (e) {
-            this.logger.error(e.message);
+            this.logger.error(e);
         }
 
         return user;

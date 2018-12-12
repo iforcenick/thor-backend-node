@@ -75,7 +75,7 @@ export abstract class FundingSourceBaseController extends BaseController {
             const logic = new logicLayer.DeleteFundingSourceLogic(this.getRequestContext());
             await logic.execute(id, user);
         } catch (err) {
-            this.logger.error(err.message);
+            this.logger.error(err);
             throw new Errors.InternalServerError(err.message);
         }
     }

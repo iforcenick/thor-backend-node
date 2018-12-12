@@ -99,7 +99,7 @@ export class BatchInvitationsLogic extends Logic {
                     companyName: tenant.businessName
                 });
             } catch (error) {
-                this.logger.error(error.message);
+                this.logger.error(error);
             }
         }
 

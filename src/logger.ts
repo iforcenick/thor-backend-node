@@ -3,6 +3,7 @@ import * as expressWinston from 'express-winston';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {inspect} from 'util';
 import {Config} from './config';
+import * as _ from 'lodash';
 
 const MESSAGE = Symbol.for('message');
 
@@ -99,6 +100,18 @@ export class Logger {
         return Winston.createLogger(options);
     }
 
+    private parseParams(args) {
+        if (args.length) {
+            const first = args[0];
+            if (_.isObject(first)) {
+                args[0] = JSON.stringify(first);
+                args.push({__loggedObject: first});
+            }
+        }
+
+        return args;
+    }
+
     isDebugEnabled(): boolean {
         return this.level === LogLevel.debug;
     }
@@ -116,19 +129,19 @@ export class Logger {
     }
 
     debug(...args: any[]) {
-        this.winston.debug.apply(this, arguments);
+        this.winston.debug.apply(this, this.parseParams(args));
     }
 
     info(...args: any[]) {
-        this.winston.info.apply(this, arguments);
+        this.winston.info.apply(this, this.parseParams(args));
     }
 
     warn(...args: any[]) {
-        this.winston.warn.apply(this, arguments);
+        this.winston.warn.apply(this, this.parseParams(args));
     }
 
     error(...args: any[]) {
-        this.winston.error.apply(this, arguments);
+        this.winston.error.apply(this, this.parseParams(args));
     }
 
     inspectObject(object: any) {

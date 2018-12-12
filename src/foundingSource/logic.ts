@@ -43,7 +43,7 @@ class FundingSourceCreateAndNotifyLogic extends Logic {
         try {
             await this.mailer.sendFundingSourceAdded(user, fundingSource);
         } catch (e) {
-            this.logger.error(e.message);
+            this.logger.error(e);
         }
 
         return fundingSourceResult;
@@ -165,7 +165,7 @@ export class DeleteFundingSourceLogic extends Logic {
         try {
             await this.mailer.sendFundingSourceRemoved(user, fundingSource);
         } catch (e) {
-            this.logger.error(e.message);
+            this.logger.error(e);
         }
 
         await transaction(this.profileService.transaction(), async trx => {

@@ -321,7 +321,7 @@ export class CreatePasswordResetLogic extends Logic {
             const link = `${this.config.get('application.frontUri')}/reset-password/${user.passwordResetToken}`;
             await this.mailerService.sendPasswordReset(user, link);
         } catch (error) {
-            this.logger.error(error.message);
+            this.logger.error(error);
         }
     }
 }

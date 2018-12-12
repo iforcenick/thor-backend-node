@@ -102,7 +102,7 @@ export class InvitationController extends BaseController {
                 companyName: tenant.businessName
             });
         } catch (e) {
-            this.logger.error(e.message);
+            this.logger.error(e);
         }
 
         return this.map(models.InvitationResponse, invitation);
@@ -130,7 +130,7 @@ export class InvitationController extends BaseController {
                 companyName: tenant.businessName
             });
         } catch (e) {
-            this.logger.error(e.message);
+            this.logger.error(e);
         }
     }
 

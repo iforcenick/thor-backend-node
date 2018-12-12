@@ -62,7 +62,7 @@ export class GetTenantCompanyOwnerLogic extends Logic {
             const customer = await this.dwollaClient.getCustomer(tenant.dwollaUri);
             return customer.controller;
         } catch (e) {
-            this.logger.error(e.message);
+            this.logger.error(e);
             throw new Errors.NotFoundError('Owner data not found');
         }
     }

@@ -30,7 +30,7 @@ export class UserAuthorization extends Logic {
         try {
             user = await this.authenticate(login, password, tenant);
         } catch (err) {
-            this.logger.error(err.message);
+            this.logger.error(err);
             throw new Errors.UnauthorizedError();
         }
 
@@ -93,7 +93,7 @@ export class UserChangePassword extends Logic {
             const newPasswordHash = await this.userService.hashPassword(newPassword);
             await user.$query().patch({password: newPasswordHash});
         } catch (e) {
-            this.logger.debug(e.message);
+            this.logger.debug(e);
             throw new Errors.ConflictError(e.message);
         }
 
@@ -130,7 +130,7 @@ export class DecodeJwtLogic {
             try {
                 return cb(null, Auth.fromJwt(payload));
             } catch (e) {
-                this.logger.error(e.message);
+                this.logger.error(e);
                 throw new Errors.UnauthorizedError();
             }
         };

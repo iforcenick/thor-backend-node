@@ -30,7 +30,7 @@ export class DwollaController extends BaseController {
                 await eventLogic.execute(_event);
             }
         } catch (e) {
-            this.logger.error(e.message);
+            this.logger.error(e);
             throw e;
         }
     }

@@ -195,7 +195,7 @@ export class AddVerifyingFundingSourceForTenantLogic extends Logic {
         try {
             await this.mailer.sendFundingSourceAdded(user, fundingSource);
         } catch (e) {
-            this.logger.error(e.message);
+            this.logger.error(e);
         }
 
         return tenant;

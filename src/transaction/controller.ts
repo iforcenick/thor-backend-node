@@ -215,7 +215,7 @@ export class TransactionController extends BaseController {
                 throw new Errors.NotAcceptableError(e.message);
             }
 
-            this.logger.error(e.message);
+            this.logger.error(e);
             throw new Errors.InternalServerError(e.message);
         }
 
