@@ -22,6 +22,12 @@ def DEV_SERVICE_ACCOUNT_KEY = "thor-dev-service-account-key"
 def DEV_GCP_PROJECT = "odin-214321"
 def DEV_CLUSTER_NAME = "thor-dev"
 def DEV_ZONE = "us-west1-a"
+def STG_BRANCH = "stage"
+def STG_SERVICE_ACCOUNT = "jenkins-thor-deployer@odin-214321.iam.gserviceaccount.com"
+def STG_SERVICE_ACCOUNT_KEY = "thor-dev-service-account-key"
+def STG_GCP_PROJECT = "odin-214321"
+def STG_CLUSTER_NAME = "thor-stg"
+def STG_ZONE = "us-west1-a"
 
 
 node('docker') {
@@ -68,7 +74,7 @@ node('docker') {
         }
 
         stage('Build image') {
-            if (env.BRANCH_NAME != DEV_BRANCH && env.BRANCH_NAME != PROD_BRANCH) {
+            if (env.BRANCH_NAME != DEV_BRANCH && env.BRANCH_NAME != STG_BRANCH && env.BRANCH_NAME != PROD_BRANCH) {
                 echo "Skipping. Runs only for ${DEV_BRANCH} and ${PROD_BRANCH} branches"
                 return;
             }
@@ -76,7 +82,7 @@ node('docker') {
         }
 
         stage('Push image') {
-            if (env.BRANCH_NAME != DEV_BRANCH && env.BRANCH_NAME != PROD_BRANCH) {
+            if (env.BRANCH_NAME != DEV_BRANCH && env.BRANCH_NAME != STG_BRANCH && env.BRANCH_NAME != PROD_BRANCH) {
                 echo "Skipping. Runs only for ${DEV_BRANCH} and ${PROD_BRANCH} branches"
                 return;
             }
@@ -102,6 +108,22 @@ node('docker') {
 				return;
 			}
 
+            if (env.BRANCH_NAME == STG_BRANCH) {
+				echo "Deploy to stage"
+                withCredentials([file(credentialsId: STG_SERVICE_ACCOUNT_KEY, variable: 'KEY_FILE')]) {
+                    docker.withRegistry("${GCR_URL}", "gcr:${GCR_CREDENTIALS}") {
+                        docker.image('us.gcr.io/odin-214321/jenkins-deployer:0.1.0').inside("-u root") {
+                            sh "/root/google-cloud-sdk/bin/gcloud auth activate-service-account ${STG_SERVICE_ACCOUNT} --key-file=${KEY_FILE}"
+                            sh "/root/google-cloud-sdk/bin/gcloud container clusters get-credentials ${STG_CLUSTER_NAME} --zone ${STG_ZONE} --project ${STG_GCP_PROJECT}"
+                            retry(3) {
+                                sh "helm upgrade --values kubernetes/thor-api/values/values-prod.yaml thor-api kubernetes/thor-api --set env.DOCKER_REPOSITORY=${DOCKER_REPOSITORY} --set env.TAG=${version} --wait --timeout 600"
+                            }
+                        }
+                    }
+                }
+				return;
+			}
+
             if (env.BRANCH_NAME == PROD_BRANCH) {
 				echo "Deploy to prod"
                 withCredentials([file(credentialsId: PROD_SERVICE_ACCOUNT_KEY, variable: 'KEY_FILE')]) {
@@ -117,7 +139,7 @@ node('docker') {
                 }
 				return;
 			}
-            echo "Skipping. Runs only for ${DEV_BRANCH} and ${PROD_BRANCH} branches"
+            echo "Skipping. Runs only for ${DEV_BRANCH}, ${STG_BRANCH} and ${PROD_BRANCH} branches"
 		}
     }
     catch (ex) {
