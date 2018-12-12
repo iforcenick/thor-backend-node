@@ -10,6 +10,7 @@ import * as _ from 'lodash';
 import {FundingSource} from '../foundingSource/models';
 import * as regex from '../validation/regex';
 import * as dwolla from '../dwolla';
+import moment = require('moment');
 
 export const enum Relations {
     user = 'user',
@@ -149,7 +150,7 @@ export class ProfileBaseInfo extends Mapper {
     postalCode: string = mapper.FIELD_STR;
     address1: string = mapper.FIELD_STR;
     address2: string = mapper.FIELD_STR;
-    dateOfBirth: string = mapper.FIELD_STR;
+    dateOfBirth: Date = mapper.FIELD_DATE;
     externalId: string = mapper.FIELD_STR;
 }
 
@@ -187,7 +188,10 @@ export const profileRequestSchema = Joi.object().keys({
     lastName: Joi.string().required(),
     phone: Joi.string().allow('', null).regex(regex.phoneRegex),
     email: Joi.string().required().email(),
-    dateOfBirth: Joi.string().required(),
+    dateOfBirth:  Joi.date().max(moment(Date.now()).subtract(18, 'years')
+        .calendar()).error(message => {
+            return 'You must be at least 18 years old';
+    }).required(),
     ssn: Joi.string().required(),
     country: Joi.string().required(),
     state: Joi.string().required().uppercase().length(2),
@@ -208,4 +212,8 @@ export const profilePatchSchema = Joi.object().keys({
     postalCode: Joi.string(),
     address1: Joi.string().max(50),
     address2: Joi.string().allow('', null).max(50),
+    dateOfBirth:  Joi.date().max(moment(Date.now()).subtract(18, 'years')
+        .calendar()).error(message => {
+        return 'You must be at least 18 years old';
+    }).allow(null),
 });

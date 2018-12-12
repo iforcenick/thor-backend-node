@@ -22,7 +22,6 @@ export class ContractorController extends BaseController {
 
         const parsedData = await this.validate(data, contractorRequestSchema);
         const profile = parsedData['profile'];
-        ProfileService.validateAge(profile);
         try {
             const logic = new AddInvitedContractorLogic(this.getRequestContext());
             const user = await logic.execute(profile, parsedData.invitationToken, parsedData.password);

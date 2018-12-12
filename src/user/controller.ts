@@ -136,7 +136,6 @@ export class UserController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async createUser(data: dto.UserRequest): Promise<dto.UserResponse> {
         const parsedData: dto.UserRequest = await this.validate(data, dto.userRequestSchema);
-        ProfileService.validateAge(parsedData.profile);
 
         try {
             const logic = new AddContractorLogic(this.getRequestContext());
@@ -159,7 +158,6 @@ export class UserController extends BaseController {
         this.profileService.setRequestContext(this.getRequestContext());
 
         const parsedData = await this.validate(data, dto.userPatchSchema);
-        ProfileService.validateAge(parsedData['profile']);
 
         try {
             const user = await this.service.get(id);
@@ -331,7 +329,7 @@ export class UserController extends BaseController {
         this.service.setRequestContext(this.getRequestContext());
         const parsedData = await this.validate(data, dto.contractorOnRetryRequestSchema);
         const profile = parsedData['profile'];
-        ProfileService.validateAge(profile);
+
         try {
             const logic = new AddContractorOnRetryStatusLogic(this.getRequestContext());
             const tenantId = this.getRequestContext().getTenantId();

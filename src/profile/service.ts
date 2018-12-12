@@ -20,13 +20,6 @@ export class ProfileService extends db.ModelService<models.Profile> {
         this.modelType = models.Profile;
     }
 
-    static validateAge(profile) {
-        const dateOfBirth = profile['dateOfBirth'];
-        if (!dateOfBirth) return;
-        const age = moment().diff(dateOfBirth, 'years');
-        if (age >= 18) return;
-        throw new ValidationError('users is too young');
-    }
 
     async updateWithDwolla(profile: models.Profile, trx?: objection.Transaction): Promise<any> {
         try {
