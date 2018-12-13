@@ -19,13 +19,13 @@ service:
 ingress:
   enabled: true
   annotations:
-    kubernetes.io/ingress.global-static-ip-name: odin-api-prod-static-ip
+    kubernetes.io/ingress.global-static-ip-name: odin-api-stg-static-ip
   hosts:
-  - odin-api.prod.gothor.com 
+  - odin-api.stg.gothor.com 
   tls:
   - secretName: odin-api-tls
     hosts:
-    - odin-api.prod.gothor.com
+    - odin-api.stg.gothor.com
   path: /
 
 resources: {}

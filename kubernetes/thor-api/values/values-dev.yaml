@@ -35,7 +35,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-postgresql:
-  postgresPassword: qwe123
-  postgresDatabase: development
