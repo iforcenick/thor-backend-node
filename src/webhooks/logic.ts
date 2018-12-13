@@ -164,10 +164,11 @@ export class CustomerTransferEventLogic extends Logic {
                 // case dwolla.event.TYPE.customerTransfer.created:
                 // case dwolla.event.TYPE.transfer.created:
                 // case dwolla.event.TYPE.customerBankTransfer.creationFailed:
-                // case dwolla.event.TYPE.customerBankTransfer.cancelled:
-                // case dwolla.event.TYPE.customerTransfer.cancelled:
-                // case dwolla.event.TYPE.transfer.cancelled:
-                //     break;
+                case dwolla.event.TYPE.customerBankTransfer.cancelled:
+                case dwolla.event.TYPE.customerTransfer.cancelled:
+                case dwolla.event.TYPE.transfer.cancelled:
+                    await logic.execute(transaction, Statuses.cancelled);
+                    break;
 
                 default:
                     break;
