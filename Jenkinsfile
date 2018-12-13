@@ -132,7 +132,7 @@ node('docker') {
                             sh "/root/google-cloud-sdk/bin/gcloud auth activate-service-account ${PROD_SERVICE_ACCOUNT} --key-file=${KEY_FILE}"
                             sh "/root/google-cloud-sdk/bin/gcloud container clusters get-credentials ${PROD_CLUSTER_NAME} --zone ${PROD_ZONE} --project ${PROD_GCP_PROJECT}"
                             retry(3) {
-                                sh "helm upgrade --values kubernetes/thor-api/values/values-prod.yaml thor-api kubernetes/thor-api --set env.DOCKER_REPOSITORY=${DOCKER_REPOSITORY} --set env.TAG=${version} --wait --timeout 600"
+                                sh "helm upgrade --values kubernetes/thor-api/values/values-stg.yaml thor-api kubernetes/thor-api --set env.DOCKER_REPOSITORY=${DOCKER_REPOSITORY} --set env.TAG=${version} --wait --timeout 600"
                             }
                         }
                     }
