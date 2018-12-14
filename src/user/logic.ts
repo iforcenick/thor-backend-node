@@ -1,4 +1,3 @@
-import crypto = require('crypto');
 import {Logic} from '../logic';
 import {UserService} from './service';
 import {AutoWired, Inject} from 'typescript-ioc';
@@ -309,9 +308,8 @@ export class CreatePasswordResetLogic extends Logic {
             throw new Errors.NotFoundError('User not found');
         }
 
-        const buffer = await crypto.randomBytes(20);
-        user.passwordResetToken = buffer.toString('hex');
-        user.passwordResetExpiry = Date.now() + 3600000;    // 1 hr
+        user.passwordResetToken = await this.userService.getPasswordResetToken();
+        user.passwordResetExpiry = Date.now() + 86400000;    // 24 hr
 
         // TODO:
         delete user['lastActivity'];

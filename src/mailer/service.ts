@@ -35,7 +35,7 @@ export class MailerService {
     }
 
     /**
-     * System sending complete registration link to admin user
+     * System sending confirm account link to tenant admin
      *
      * @param {string} email
      * @param {string} companyName
@@ -43,16 +43,45 @@ export class MailerService {
      * @returns
      * @memberof MailerService
      */
-    async sendCompleteRegistration(email: string, companyName: string, link: string) {
+    async sendAdminConfirmAccount(email: string, companyName: string, link: string) {
         const params = {
             companyName,
             link,
         };
         const template = new templates.Template();
         template
-            .setSubject(`You have been invited to GoThor!`)
-            .setHtml(templates.TemplatesFiles.INVITATION_HTML)
-            .setText(templates.TemplatesFiles.INVITATION_TEXT)
+            .setSubject(`You have been invited to Thor!`)
+            .setHtml(templates.TemplatesFiles.ADMIN_INVITATION_HTML)
+            .setText(templates.TemplatesFiles.ADMIN_INVITATION_TEXT)
+            .setParams(params);
+        return await this.send(
+                email,
+                this.from,
+                await template.getSubject(),
+                await template.getHtml(),
+                await template.getText(),
+            );
+    }
+
+    /**
+     * System sending confirm account link to tenant
+     *
+     * @param {string} email
+     * @param {string} companyName
+     * @param {string} link
+     * @returns
+     * @memberof MailerService
+     */
+    async sendTenantConfirmAccount(email: string, companyName: string, link: string) {
+        const params = {
+            companyName,
+            link,
+        };
+        const template = new templates.Template();
+        template
+            .setSubject(`Your Thor account has been created!`)
+            .setHtml(templates.TemplatesFiles.TENANT_WELCOME_HTML)
+            .setText(templates.TemplatesFiles.TENANT_WELCOME_TEXT)
             .setParams(params);
         return await this.send(
                 email,
@@ -76,8 +105,8 @@ export class MailerService {
         const template = new templates.Template();
         template
             .setSubject('You have been invited to GoThor!')
-            .setHtml(templates.TemplatesFiles.INVITATION_HTML)
-            .setText(templates.TemplatesFiles.INVITATION_TEXT)
+            .setHtml(templates.TemplatesFiles.CONTRACTOR_INVITATION_HTML)
+            .setText(templates.TemplatesFiles.CONTRACTOR_INVITATION_TEXT)
             .setParams(params);
         return await this.send(
             email,

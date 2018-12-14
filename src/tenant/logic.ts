@@ -1,4 +1,5 @@
 import {Logic} from '../logic';
+import * as generator from 'generate-password';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {TenantService} from './service';
 import {Errors} from 'typescript-rest';
@@ -13,6 +14,8 @@ import {Profile} from '../profile/models';
 import {RoleService} from '../user/role/service';
 import {Role, Types} from '../user/role/models';
 import * as objection from 'objection';
+import {MailerService} from '../mailer';
+import {Config} from '../config';
 
 @AutoWired
 export class GetTenantLogic extends Logic {
@@ -227,23 +230,34 @@ export class AddTenantLogic extends Logic {
     @Inject userService: UserService;
     @Inject profileService: ProfileService;
     @Inject roleService: RoleService;
+    @Inject mailerService: MailerService;
+    @Inject logger: Logger;
+    @Inject config: Config;
 
     async execute(name: string, email: string): Promise<Tenant> {
-
         const tenantEntity: Tenant = await this.tenantService.getOneBy('name', name);
         if (tenantEntity) {
             throw new Error(`Name ${name} for tenant already used`);
         }
 
+        let user: User;
         const adminRole: Role = await this.roleService.find(Types.admin);
-        const tenant = await transaction(this.tenantService.transaction(), async (trx) => {
+        const tenant = await transaction(this.tenantService.transaction(), async trx => {
             const tenant = await this.addTenantEntity(name, trx);
-            const user = await this.addAdminUser(trx);
+            user = await this.addAdminUser(trx);
             const profile = await this.addAdminUserProfile(user.id, tenant.id, name, email, trx);
             await this.addRoleForAdminProfile(profile, adminRole, trx);
 
             return tenant;
         });
+
+        try {
+            const link = `${this.config.get('application.frontUri')}/reset-password/${user.passwordResetToken}`;
+            await this.mailerService.sendTenantConfirmAccount(email, name, link);
+        } catch (error) {
+            console.log(error);
+            this.logger.error(error.message);
+        }
 
         return await this.tenantService.get(tenant.id);
     }
@@ -255,11 +269,19 @@ export class AddTenantLogic extends Logic {
 
     private async addAdminUser(trx: objection.Transaction): Promise<User> {
         const user: User = User.factory({});
-        user.password = '$2b$10$TscOBpPG51MVLUtsmTkMnuOsdxMKGOHVUnj4kwmyI2ldF5uerGxx2'; // 123
+        user.password = generator.generate({length: 20, numbers: true, uppercase: true});
+        user.passwordResetToken = await this.userService.getPasswordResetToken();
+        user.passwordResetExpiry = Date.now() + 604800000; // 7 days
         return await this.userService.insert(user, trx);
     }
 
-    private async addAdminUserProfile(adminUserId: string, tenantId: string, tenantName: string, email: string, trx: objection.Transaction) {
+    private async addAdminUserProfile(
+        adminUserId: string,
+        tenantId: string,
+        tenantName: string,
+        email: string,
+        trx: objection.Transaction,
+    ) {
         const profile: Profile = Profile.factory({});
         profile.tenantId = tenantId;
         profile.userId = adminUserId;

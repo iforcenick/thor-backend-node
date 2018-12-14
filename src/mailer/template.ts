@@ -77,8 +77,12 @@ export class MissingTemplateFileException extends Error {
 export enum TemplatesFiles {
     TRANSFER_PROCESSED_TEXT = 'transfer_processed_text.twig',
     TRANSFER_PROCESSED_HTML = 'transfer_processed_html.twig',
-    INVITATION_TEXT = 'text/invitation.twig',
-    INVITATION_HTML = 'html/invitation.twig',
+    CONTRACTOR_INVITATION_TEXT = 'text/contractor_invitation.twig',
+    CONTRACTOR_INVITATION_HTML = 'html/contractor_invitation.twig',
+    TENANT_WELCOME_TEXT = 'text/tenant_welcome.twig',
+    TENANT_WELCOME_HTML = 'html/tenant_welcome.twig',
+    ADMIN_INVITATION_TEXT = 'text/admin_invitation.twig',
+    ADMIN_INVITATION_HTML = 'html/admin_invitation.twig',
     PASSWORD_RESET_TEXT = 'text/dwolla_event.twig',
     PASSWORD_RESET_HTML = 'html/dwolla_event.twig',
 

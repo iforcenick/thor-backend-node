@@ -1,3 +1,4 @@
+import crypto = require('crypto');
 import {AutoWired, Inject} from 'typescript-ioc';
 import * as models from './models';
 import * as db from '../db';
@@ -34,7 +35,7 @@ export class UserService extends db.ModelService<models.User> {
     selectProfileForTenant(query, tenantId) {
         query.mergeEager(`${models.Relations.tenantProfile}(tenantProfile).[${profile.Relations.roles}]`, {
             tenantProfile: builder => {
-                builder.where(function () {
+                builder.where(function() {
                     this.where('tenantId', tenantId).limit(1);
                 });
             },
@@ -44,8 +45,12 @@ export class UserService extends db.ModelService<models.User> {
     selectLastActivity(query) {
         query.select([
             `${db.Tables.users}.*`,
-            this.modelType.relatedQuery(models.Relations.transactions)
-                .select('createdAt').orderBy('createdAt', 'desc').limit(1).as('lastActivity')
+            this.modelType
+                .relatedQuery(models.Relations.transactions)
+                .select('createdAt')
+                .orderBy('createdAt', 'desc')
+                .limit(1)
+                .as('lastActivity'),
         ]);
     }
 
@@ -92,11 +97,13 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     async hasUnpaidTransactions(userId: string) {
-        const query = this.modelType.query()
+        const query = this.modelType
+            .query()
             .where({[`${db.Tables.users}.id`]: userId})
             .whereNot({[`${db.Tables.transactions}.status`]: transactions.Statuses.processed})
             .joinRelation(`${models.Relations.transactions}`)
-            .count().first();
+            .count()
+            .first();
         this.filterCustomerRole(query);
         this.useTenantContext(query);
         this.setBasicConditions(query);
@@ -145,6 +152,11 @@ export class UserService extends db.ModelService<models.User> {
 
     async hashPassword(password) {
         return await bcrypt.hash(password, 10);
+    }
+
+    async getPasswordResetToken() {
+        const buffer = await crypto.randomBytes(20);
+        return buffer.toString('hex');
     }
 
     query(trx?: transaction<any>) {
