@@ -4,8 +4,6 @@ application:
 db:
   autoMigrate: true
   connection:
-    host: 35.233.154.25
-    password: bzm1tdHrM7C9hNdj
     database: development
 dwolla:
   webhookUri: https://odin-api.dev.gothor.com/dwolla/events

@@ -115,7 +115,12 @@ export class ApiServer {
     }
 
     private setupDB() {
-        this.knex = knex(this.config.get('db'));
+        const connection = {
+            host: this.config.get('db.connection.host'),
+            password: this.config.get('db.connection.password'),
+            database: this.config.get('db.connection.database')
+        };
+        this.knex = knex({ connection });
         if (this.config.get('db.autoMigrate')) {
             this.knex.migrate.latest();
         }
