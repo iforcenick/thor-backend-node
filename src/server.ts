@@ -118,7 +118,9 @@ export class ApiServer {
         const connection = {
             host: this.config.get('db.connection.host'),
             password: this.config.get('db.connection.password'),
-            database: this.config.get('db.connection.database')
+            database: this.config.get('db.connection.database'),
+            user: this.config.get('db.connection.user'),
+            port: this.config.get('db.connection.port')
         };
         this.knex = knex({ connection });
         if (this.config.get('db.autoMigrate')) {
