@@ -9,6 +9,16 @@ import {FundingSource} from '../foundingSource/models';
 import {Tenant} from '../tenant/models';
 import {Transaction} from '../transaction/models';
 
+const getDateString = (date: Date = new Date()): string => {
+    const options = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    };
+    return date.toLocaleString('en-us', options);
+};
+
 @AutoWired
 export class MailerService {
     @Inject protected config: Config;
@@ -84,12 +94,12 @@ export class MailerService {
             .setText(templates.TemplatesFiles.TENANT_WELCOME_TEXT)
             .setParams(params);
         return await this.send(
-                email,
-                this.from,
-                await template.getSubject(),
-                await template.getHtml(),
-                await template.getText(),
-            );
+            email,
+            this.from,
+            await template.getSubject(),
+            await template.getHtml(),
+            await template.getText(),
+        );
     }
 
     /**
@@ -131,7 +141,7 @@ export class MailerService {
             descriptions: [
                 `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
                 `Follow this link to reset your password for your ${user.tenantProfile.email} account.`,
-                `${link}`
+                `${link}`,
             ],
         };
         const template = new templates.Template();
@@ -152,13 +162,13 @@ export class MailerService {
             title: 'Account Notice',
             descriptions: [
                 `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
-                `A ${fundingSource.type} account named ${
-                    fundingSource.name
-                } was added to your account on ${fundingSource.createdAt.toDateString()}`,
+                `Your ${fundingSource.name} ${fundingSource.type} account was added on ${getDateString(
+                    fundingSource.createdAt,
+                )}`,
             ],
-            footer: `You’ve agreed that future payments to Thor Technologies, Inc., will be processed by the Dwolla payment system using your ${
+            footer: `You’ve agreed that future payments will be processed by Thor Technologies, Inc. via the Dwolla payment system using your ${
                 fundingSource.name
-            } ${fundingSource.type} account.  To cancel, please contact support@gothor.com`,
+            } ${fundingSource.type} account.`,
         };
         const template = new templates.Template();
         template
@@ -170,14 +180,11 @@ export class MailerService {
     }
 
     async sendFundingSourceRemoved(user: users.User, fundingSource: FundingSource) {
-        const date = new Date().toDateString();
         const params = {
             title: 'Account Notice',
             descriptions: [
                 `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
-                `The ${fundingSource.type} account named ${
-                    fundingSource.name
-                } was removed from your account on ${date}`,
+                `Your ${fundingSource.name} ${fundingSource.type} account was removed on ${getDateString()}`,
             ],
         };
         const template = new templates.Template();
@@ -190,12 +197,11 @@ export class MailerService {
     }
 
     async sendFundingSourceVerified(user: users.User, fundingSource: FundingSource) {
-        const date = new Date().toDateString();
         const params = {
             title: 'Account Notice',
             descriptions: [
                 `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
-                `The ${fundingSource.type} account named ${fundingSource.name} was verified on ${date}`,
+                `Your ${fundingSource.name} ${fundingSource.type} account was verified on ${getDateString()}`,
             ],
         };
         const template = new templates.Template();
@@ -208,14 +214,13 @@ export class MailerService {
     }
 
     async sendCustomerMicrodepositsInitiated(user: users.User, fundingSource: FundingSource) {
-        const date = new Date().toDateString();
         const params = {
             title: 'Account Notice',
             descriptions: [
                 `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
-                `Micro-deposits were initiated to your ${fundingSource.type} account named ${
-                    fundingSource.name
-                } on ${date}`,
+                `Micro-deposits were initiated to your ${fundingSource.name} ${
+                    fundingSource.type
+                } account on ${getDateString()}`,
             ],
         };
         const template = new templates.Template();
@@ -228,14 +233,13 @@ export class MailerService {
     }
 
     async sendCustomerMicrodepositsCompleted(user: users.User, fundingSource: FundingSource) {
-        const date = new Date().toDateString();
         const params = {
             title: 'Account Notice',
             descriptions: [
                 `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
-                `Micro-deposits were successfully deposited into your ${fundingSource.type} account named ${
-                    fundingSource.name
-                } on ${date}`,
+                `Micro-deposits were successfully deposited into your ${fundingSource.name} ${
+                    fundingSource.type
+                } account on ${getDateString()}`,
             ],
         };
         const template = new templates.Template();
@@ -248,14 +252,13 @@ export class MailerService {
     }
 
     async sendCustomerMicrodepositsFailed(user: users.User, fundingSource: FundingSource) {
-        const date = new Date().toDateString();
         const params = {
             title: 'Account Notice',
             descriptions: [
                 `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
-                `Micro-deposits failed to be deposited into your ${fundingSource.type} account named ${
-                    fundingSource.name
-                } on ${date}`,
+                `Micro-deposits failed to be deposited into your ${fundingSource.name} ${
+                    fundingSource.type
+                } account on ${getDateString()}`,
             ],
         };
         const template = new templates.Template();
@@ -280,17 +283,17 @@ export class MailerService {
         const params = {
             title: 'Payment Notice',
             descriptions: [
-                `${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName},`,
+                `Hi ${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName},`,
                 `A payment initiated to ${user.tenantProfile.firstName} ${
                     user.tenantProfile.lastName
                 } has been created. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
-                {name: 'Source', description: `${fundingSource.name}`},
+                {name: 'Source:', description: `${fundingSource.name}`},
                 {name: 'Recipient:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
-                {name: 'Date Initiated:', description: transaction.transfer.createdAt.toDateString()},
+                {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
         };
         const template = new templates.Template();
@@ -307,14 +310,14 @@ export class MailerService {
             title: 'Payment Notice',
             descriptions: [
                 `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
-                `A payment from ${tenant.name} has been created. Here are the details of this payment:`,
+                `A payment from ${tenant.businessName} has been created. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
-                {name: 'Source', description: `${tenant.name}`},
+                {name: 'Source:', description: `${tenant.businessName}`},
                 {name: 'Destination:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
-                {name: 'Date Initiated:', description: transaction.transfer.createdAt.toDateString()},
+                {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
         };
         const template = new templates.Template();
@@ -362,10 +365,10 @@ export class MailerService {
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
-                {name: 'Source', description: `${fundingSource.name}`},
+                {name: 'Source:', description: `${fundingSource.name}`},
                 {name: 'Recipient:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
-                {name: 'Date Initiated:', description: transaction.transfer.createdAt.toDateString()},
+                {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
         };
         const template = new templates.Template();
@@ -382,14 +385,14 @@ export class MailerService {
             title: 'Payment Notice',
             descriptions: [
                 `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
-                `A payment from ${tenant.name} has been cancelled. Here are the details of this payment:`,
+                `A payment from ${tenant.businessName} has been cancelled. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
-                {name: 'Source', description: `${tenant.name}`},
+                {name: 'Source:', description: `${tenant.businessName}`},
                 {name: 'Destination:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
-                {name: 'Date Initiated:', description: transaction.transfer.createdAt.toDateString()},
+                {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
         };
         const template = new templates.Template();
@@ -417,10 +420,10 @@ export class MailerService {
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
-                {name: 'Source', description: `${fundingSource.name}`},
+                {name: 'Source:', description: `${fundingSource.name}`},
                 {name: 'Recipient:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
-                {name: 'Date Initiated:', description: transaction.transfer.createdAt},
+                {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
         };
         const template = new templates.Template();
@@ -437,14 +440,14 @@ export class MailerService {
             title: 'Payment Notice',
             descriptions: [
                 `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
-                `A payment from ${tenant.name} has failed. Here are the details of this payment:`,
+                `A payment from ${tenant.businessName} has failed. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
-                {name: 'Source', description: `${tenant.name}`},
+                {name: 'Source:', description: `${tenant.businessName}`},
                 {name: 'Destination:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
-                {name: 'Date Initiated:', description: transaction.transfer.createdAt},
+                {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
         };
         const template = new templates.Template();
@@ -472,10 +475,10 @@ export class MailerService {
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
-                {name: 'Source', description: `${fundingSource.name}`},
+                {name: 'Source:', description: `${fundingSource.name}`},
                 {name: 'Recipient:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
-                {name: 'Date Initiated:', description: transaction.transfer.createdAt},
+                {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
         };
         const template = new templates.Template();
@@ -492,14 +495,14 @@ export class MailerService {
             title: 'Payment Notice',
             descriptions: [
                 `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
-                `A payment from ${tenant.name} has completed. Here are the details of this payment:`,
+                `A payment from ${tenant.businessName} has completed. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
-                {name: 'Source', description: `${tenant.name}`},
+                {name: 'Source:', description: `${tenant.businessName}`},
                 {name: 'Destination:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
-                {name: 'Date Initiated:', description: transaction.transfer.createdAt},
+                {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
         };
         const template = new templates.Template();
@@ -660,7 +663,7 @@ export class MailerService {
         };
         const template = new templates.Template();
         template
-            .setSubject('Verification document needed')
+            .setSubject('Verification document is needed')
             .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_NEEDED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_NEEDED_TEXT)
             .setParams(params);
@@ -677,7 +680,7 @@ export class MailerService {
         };
         const template = new templates.Template();
         template
-            .setSubject('Verification document uploaded')
+            .setSubject('Verification document has been uploaded')
             .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_UPLOADED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_UPLOADED_TEXT)
             .setParams(params);
@@ -694,7 +697,7 @@ export class MailerService {
         };
         const template = new templates.Template();
         template
-            .setSubject('Verification document approved')
+            .setSubject('Verification document has been approved')
             .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_APPROVED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_APPROVED_TEXT)
             .setParams(params);
@@ -711,7 +714,7 @@ export class MailerService {
         };
         const template = new templates.Template();
         template
-            .setSubject('Verification document failed')
+            .setSubject('Verification document has failed')
             .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_FAILED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_FAILED_TEXT)
             .setParams(params);
@@ -728,7 +731,7 @@ export class MailerService {
         };
         const template = new templates.Template();
         template
-            .setSubject('Verification info needed')
+            .setSubject('Verification info is needed')
             .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_RETRY_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_RETRY_TEXT)
             .setParams(params);

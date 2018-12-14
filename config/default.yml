@@ -32,7 +32,7 @@ dwolla:
     secret: xBikRTlJID8latnauamPr0oW9IlU6jeqOFBSZB5DoI6RUjEtQa
     environment: sandbox
     webhookSecret: someSecretSecret
-    webhookUri: https://odin-api.gothor.com/dwolla/events
+    webhookUri: https://odin-api.dev.gothor.com/dwolla/events
     masterFunding: https://api-sandbox.dwolla.com/funding-sources/24a53f09-99ae-420d-8adc-2793845714b6
     expirationTime: 3000
     tenantId: 7bc0447a-ea99-4ba2-93bb-c84f5b325c50
@@ -42,9 +42,9 @@ swagger:
 mailer:
   mailgun:
     url: https://api.mailgun.net/v3
-    domain: gothor.com
-    key: 7a6bfca3ea51a176c6915860175de72b-c1fe131e-16d8cc08
     user: api
+    domain: sandboxe0ca2f8eaed14f5a938c9738a3858206.mailgun.org
+    key: 7a6bfca3ea51a176c6915860175de72b-c1fe131e-16d8cc08
 build:
   version: 0.0.5
 invitations:
