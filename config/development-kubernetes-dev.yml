@@ -13,6 +13,5 @@ swagger:
   host: odin-api.dev.gothor.com
   schema: https
 mailer:
-  mailgun:
-    override:
-      to: thorodin@mailinator.com
+  override:
+    to: thorodin@mailinator.com
