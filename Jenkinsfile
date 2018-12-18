@@ -75,7 +75,7 @@ node('docker') {
 
         stage('Build image') {
             if (env.BRANCH_NAME != DEV_BRANCH && env.BRANCH_NAME != STG_BRANCH && env.BRANCH_NAME != PROD_BRANCH) {
-                echo "Skipping. Runs only for ${DEV_BRANCH} and ${PROD_BRANCH} branches"
+                echo "Skipping. Runs only for ${DEV_BRANCH}, ${STG_BRANCH} and ${PROD_BRANCH} branches"
                 return;
             }
             sh "docker build -t ${DOCKER_REPOSITORY}:${version} ."
@@ -83,7 +83,7 @@ node('docker') {
 
         stage('Push image') {
             if (env.BRANCH_NAME != DEV_BRANCH && env.BRANCH_NAME != STG_BRANCH && env.BRANCH_NAME != PROD_BRANCH) {
-                echo "Skipping. Runs only for ${DEV_BRANCH} and ${PROD_BRANCH} branches"
+                echo "Skipping. Runs only for ${DEV_BRANCH}, ${STG_BRANCH} and ${PROD_BRANCH} branches"
                 return;
             }
             docker.withRegistry("${GCR_URL}", "gcr:${GCR_CREDENTIALS}") {
@@ -116,7 +116,7 @@ node('docker') {
                             sh "/root/google-cloud-sdk/bin/gcloud auth activate-service-account ${STG_SERVICE_ACCOUNT} --key-file=${KEY_FILE}"
                             sh "/root/google-cloud-sdk/bin/gcloud container clusters get-credentials ${STG_CLUSTER_NAME} --zone ${STG_ZONE} --project ${STG_GCP_PROJECT}"
                             retry(3) {
-                                sh "helm upgrade --values kubernetes/thor-api/values/values-prod.yaml thor-api kubernetes/thor-api --set env.DOCKER_REPOSITORY=${DOCKER_REPOSITORY} --set env.TAG=${version} --wait --timeout 600"
+                                sh "helm upgrade --values kubernetes/thor-api/values/values-stg.yaml thor-api kubernetes/thor-api --set env.DOCKER_REPOSITORY=${DOCKER_REPOSITORY} --set env.TAG=${version} --wait --timeout 600"
                             }
                         }
                     }
@@ -132,7 +132,7 @@ node('docker') {
                             sh "/root/google-cloud-sdk/bin/gcloud auth activate-service-account ${PROD_SERVICE_ACCOUNT} --key-file=${KEY_FILE}"
                             sh "/root/google-cloud-sdk/bin/gcloud container clusters get-credentials ${PROD_CLUSTER_NAME} --zone ${PROD_ZONE} --project ${PROD_GCP_PROJECT}"
                             retry(3) {
-                                sh "helm upgrade --values kubernetes/thor-api/values/values-stg.yaml thor-api kubernetes/thor-api --set env.DOCKER_REPOSITORY=${DOCKER_REPOSITORY} --set env.TAG=${version} --wait --timeout 600"
+                                sh "helm upgrade --values kubernetes/thor-api/values/values-prod.yaml thor-api kubernetes/thor-api --set env.DOCKER_REPOSITORY=${DOCKER_REPOSITORY} --set env.TAG=${version} --wait --timeout 600"
                             }
                         }
                     }

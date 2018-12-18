@@ -1,0 +1,15 @@
+---
+application:
+  frontUri: https://odin-stg.firebaseapp.com
+db:
+    autoMigrate: true
+    connection:
+        host: 35.233.154.25
+        password: bzm1tdHrM7C9hNdj
+        database: stage
+dwolla:
+    webhookUri: https://odin-api.stg.gothor.com/dwolla/events
+    masterFunding: https://api-sandbox.dwolla.com/funding-sources/c7a91f01-1692-4688-954d-6e785753e775
+swagger:
+    host: odin-api.stg.gothor.com
+    schema: https
