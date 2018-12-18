@@ -10,7 +10,7 @@ image:
   containerPort: 8081
 
 app:
-  nodeEnv: development-kubernetes-prod
+  nodeEnv: development-kubernetes-stg
 
 service:
   type: NodePort
