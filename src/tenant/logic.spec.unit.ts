@@ -46,7 +46,7 @@ describe('Tenant Logic', () => {
     });
 
     it('should create tenant', async () => {
-        const tenant = await sut.execute('thor', 'office@thor.com');
+        const tenant = await sut.execute('thor', 'office@thor.com', {});
 
         expect(tenant).not.null;
     });

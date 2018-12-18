@@ -18,7 +18,8 @@ import {
     UpdateTenantCompanyLogic
 } from './logic';
 import {TenantCompanyDocument} from './models';
-import * as _ from "lodash";
+import * as _ from 'lodash';
+import {Settings} from './settings/models';
 
 @Security('api_key')
 @Path('/tenants')
@@ -58,6 +59,16 @@ export class TenantController extends BaseController {
         // }
         //
         // return this.map(models.TenantResponse, tenant);
+    }
+
+    @GET
+    @Path('/settings')
+    @Preprocessor(BaseController.requireAdminReader)
+    async getTenantSettings(): Promise<any> {
+        const logic = new GetTenantLogic(this.getRequestContext());
+        const tenant = await logic.execute(this.getRequestContext().getTenantId());
+
+        return new Settings(tenant.settings);
     }
 
     @GET

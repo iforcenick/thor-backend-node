@@ -16,6 +16,7 @@ import {Role, Types} from '../user/role/models';
 import * as objection from 'objection';
 import {MailerService} from '../mailer';
 import {Config} from '../config';
+import {Settings} from './settings/models';
 
 @AutoWired
 export class GetTenantLogic extends Logic {
@@ -234,7 +235,7 @@ export class AddTenantLogic extends Logic {
     @Inject logger: Logger;
     @Inject config: Config;
 
-    async execute(name: string, email: string): Promise<Tenant> {
+    async execute(name: string, email: string, settings: any): Promise<Tenant> {
         const tenantEntity: Tenant = await this.tenantService.getOneBy('name', name);
         if (tenantEntity) {
             throw new Error(`Name ${name} for tenant already used`);
@@ -243,7 +244,7 @@ export class AddTenantLogic extends Logic {
         let user: User;
         const adminRole: Role = await this.roleService.find(Types.admin);
         const tenant = await transaction(this.tenantService.transaction(), async trx => {
-            const tenant = await this.addTenantEntity(name, trx);
+            const tenant = await this.addTenantEntity(name, settings, trx);
             user = await this.addAdminUser(trx);
             const profile = await this.addAdminUserProfile(user.id, tenant.id, name, email, trx);
             await this.addRoleForAdminProfile(profile, adminRole, trx);
@@ -262,8 +263,8 @@ export class AddTenantLogic extends Logic {
         return await this.tenantService.get(tenant.id);
     }
 
-    private async addTenantEntity(name: string, trx: objection.Transaction): Promise<Tenant> {
-        const tenant: Tenant = Tenant.factory({name: name});
+    private async addTenantEntity(name: string, settings: Settings, trx: objection.Transaction): Promise<Tenant> {
+        const tenant: Tenant = Tenant.factory({name, settings: new Settings(settings)});
         return await this.tenantService.insert(tenant, trx);
     }
 

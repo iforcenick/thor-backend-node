@@ -9,13 +9,17 @@ const logic: AddTenantLogic = Container.get(AddTenantLogic);
 const config: Config = Container.get(Config);
 const knex = require('knex');
 
-const addTenant = async (name, email) => {
+const addTenant = async (name, email, settings) => {
     const emailSchema = Joi.object().keys({
-        email: Joi.string().required().email()
+        email: Joi.string().required().email(),
     });
 
     const nameSchema = Joi.object().keys({
-        name: Joi.string().required()
+        name: Joi.string().required(),
+    });
+
+    const settingsSchema = Joi.object().keys({
+        settings: Joi.object(),
     });
 
     const validationNameResult = Joi.validate(name, Joi.string().required());
@@ -32,7 +36,7 @@ const addTenant = async (name, email) => {
     const _knex = knex(config.get('db'));
     Model.knex(_knex);
     try {
-        const tenant = await logic.execute(name, email);
+        const tenant = await logic.execute(name, email, settings);
         console.log(tenant);
     } catch (error) {
         console.log(error.message);
@@ -43,5 +47,4 @@ const addTenant = async (name, email) => {
 const name = process.argv.slice(2)[0];
 const email = process.argv.slice(2)[1];
 
-
-addTenant(name, email).then();
+addTenant(name, email, {}).then();

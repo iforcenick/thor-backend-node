@@ -34,6 +34,7 @@ export class Tenant extends db.Model {
     fundingSourceUri?: string = null;
     fundingSourceName?: string = null;
     fundingSourceVerificationStatus?: string = null;
+    settings: any = null;
 
     static get relationMappings() {
         return {
@@ -279,6 +280,3 @@ export class BusinessClassificationsResponse extends Mapper {
     @mapper.fromName('business-classifications')
     businessClassifications: Array<BusinessClassificationsCategory> = mapper.FIELD_ARR;
 }
-
-
-
