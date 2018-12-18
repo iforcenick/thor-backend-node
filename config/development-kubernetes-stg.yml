@@ -9,12 +9,7 @@ db:
         database: development
 dwolla:
     webhookUri: https://odin-api.stg.gothor.com/dwolla/events
-    environment: development
     masterFunding: https://api-sandbox.dwolla.com/funding-sources/c7a91f01-1692-4688-954d-6e785753e775
 swagger:
     host: odin-api.stg.gothor.com
     schema: https
-mailer:
-    mailgun:
-        url: https://api.mailgun.net/v3
-        user: api
