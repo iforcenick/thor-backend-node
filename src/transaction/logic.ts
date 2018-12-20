@@ -36,22 +36,22 @@ export class UpdateTransactionStatusLogic extends Logic {
     @Inject private fundingSourceService: FundingSourceService;
     @Inject private tenantService: TenantService;
 
-    async execute(_transaction: Transaction, status: string): Promise<any> {
+    async execute(_transaction: Transaction, transfer: Transfer, status: string): Promise<any> {
         if (_transaction.status === status) return;
 
         await transaction(this.transactionService.transaction(), async trx => {
             _transaction.status = status;
-            _transaction.transfer.status = status;
+            transfer.status = status;
 
             await this.transactionService.update(_transaction, trx);
-            await this.transferService.update(_transaction.transfer, trx);
+            await this.transferService.update(transfer, trx);
         });
 
         // don't abort transaction if email was not send
         try {
             const user = await this.userService.get(_transaction.userId);
             const admin = await this.userService.get(_transaction.adminId);
-            const destination = await this.fundingSourceService.getByDwollaUri(_transaction.transfer.destinationUri);
+            const destination = await this.fundingSourceService.getByDwollaUri(transfer.destinationUri);
             const tenant = await this.tenantService.get(_transaction.tenantId);
             switch (status) {
                 case Statuses.processing:
@@ -81,8 +81,8 @@ export class UpdateTransactionStatusLogic extends Logic {
                 default:
                     break;
             }
-        } catch (e) {
-            this.logger.error(e);
+        } catch (error) {
+            this.logger.error(error.message);
         }
     }
 }
@@ -96,7 +96,7 @@ export class CancelTransactionLogic extends Logic {
         const result = await this.dwollaClient.cancelTransfer(_transaction.transfer.externalId);
 
         if (result) {
-            await updateStatusLogic.execute(_transaction, models.Statuses.cancelled);
+            await updateStatusLogic.execute(_transaction, _transaction.transfer, models.Statuses.cancelled);
         }
     }
 }
@@ -167,14 +167,16 @@ export class PrepareTransferLogic extends Logic {
     @Inject private transactionService: TransactionService;
     @Inject private transferService: TransferService;
     @Inject private userService: UserService;
+    @Inject protected tenantService: TenantService;
     @Inject private config: Config;
 
     async execute(
         transactions: Array<models.Transaction>,
         user,
         admin: users.User,
-        tenantCharge: Transfer,
+        value: number,
     ): Promise<any> {
+        const tenant: Tenant = await this.tenantService.get(this.context.getTenantId());
         const logic = new ContractorDefaultFundingSourcesLogic(this.context);
         const defaultFunding: FundingSource = await logic.execute(user.id);
         if (!defaultFunding) {
@@ -185,9 +187,11 @@ export class PrepareTransferLogic extends Logic {
         transfer.adminId = admin.id;
         transfer.status = Statuses.new;
         transfer.destinationUri = defaultFunding.dwollaUri;
-        transfer.sourceUri = this.config.get('dwolla.masterFunding');
-        transfer.value = tenantCharge.value;
-        transfer.tenantChargeId = tenantCharge.id;
+        transfer.sourceUri = tenant.fundingSourceUri;
+        transfer.value = value;
+        // transfer.sourceUri = this.config.get('dwolla.masterFunding');
+        // transfer.value = tenantCharge.value;
+        // transfer.tenantChargeId = tenantCharge.id;
         transfer.tenantId = this.context.getTenantId();
 
         await transaction(this.transactionService.transaction(), async trx => {
@@ -266,7 +270,7 @@ export class CreateTransactionTransferLogic extends Logic {
         try {
             _transaction.transfer.externalId = await this.dwollaClient.createTransfer(transfer);
             const _transfer = await this.dwollaClient.getTransfer(_transaction.transfer.externalId);
-            await updateStatusLogic.execute(_transaction, _transfer.status);
+            await updateStatusLogic.execute(_transaction, _transaction.transfer, _transfer.status);
         } catch (e) {
             // handled w/o logic so an email isn't sent
             await transaction(this.transactionService.transaction(), async trx => {
@@ -319,10 +323,10 @@ export class CreateTransactionsTransferLogic extends Logic {
         try {
             const admin = await this.userService.get(this.context.getUserId());
             const user = await this.userService.get(userId);
-            const tenantLogic = new ChargeTenantLogic(this.context);
-            const tenantCharge = await tenantLogic.execute(calculateTransactionsValue(transactions), admin);
+            // const tenantLogic = new ChargeTenantLogic(this.context);
+            // const tenantCharge = await tenantLogic.execute(calculateTransactionsValue(transactions), admin);
             const logic = new PrepareTransferLogic(this.context);
-            const transfer = await logic.execute(transactions, user, admin, tenantCharge);
+            const transfer = await logic.execute(transactions, user, admin, calculateTransactionsValue(transactions));
             await this.createExternalTransfer(transfer, transactions);
             // TODO: send email
             return transfer;

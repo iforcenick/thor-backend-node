@@ -13,4 +13,9 @@ export class TransferService extends db.ModelService<models.Transfer> {
     protected setModelType() {
         this.modelType = models.Transfer;
     }
+
+    async getByExternalId(id: string) {
+        const query = this.modelType.query().findOne({['externalId']: id});
+        return await query;
+    }
 }

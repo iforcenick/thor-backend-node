@@ -30,6 +30,7 @@ export class FundingSourceService extends db.ModelService<FundingSource> {
     }
 
     async getByDwollaUri(uri: string) {
-        return await this.getOneBy('dwollaUri', uri);
+        const query = this.getOneBy('dwollaUri', uri);
+        return await query;
     }
 }
