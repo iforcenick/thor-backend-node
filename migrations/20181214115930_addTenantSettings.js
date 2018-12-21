@@ -7,6 +7,6 @@ exports.up = (knex) => {
 
 exports.down = (knex) => {
     return knex.schema.table(tableName, (t) => {
-      t.jsonb('settings');
+      t.dropColumn('settings');
     });
 };
