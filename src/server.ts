@@ -165,7 +165,7 @@ export class ApiServer {
             UserFundingSourceController,
             BeneficialOwnerController,
             TenantFundingSourcesController,
-            FundingSourceController
+            FundingSourceController,
         );
     }
 

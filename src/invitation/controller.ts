@@ -22,6 +22,8 @@ import * as _ from 'lodash';
 import * as dwolla from '../dwolla';
 import {BatchInvitationsLogic} from './logic';
 import {InvitationsResponse} from './models';
+import {WorkerPublisher} from '../worker/publisher';
+import {SendInvitationEmailMessage} from './messages';
 
 @Security('api_key')
 @Path('/contractors/invitations')
@@ -31,6 +33,7 @@ export class InvitationController extends BaseController {
     @Inject private userService: UserService;
     @Inject private tenantService: TenantService;
     @Inject private mailer: MailerService;
+    @Inject private publisher: WorkerPublisher;
 
     @GET
     @Path('')
@@ -58,6 +61,10 @@ export class InvitationController extends BaseController {
         );
     }
 
+
+     /*
+     * @deprecated Should be delete after deploy RMQ on Kubernetes
+     */
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
@@ -101,6 +108,57 @@ export class InvitationController extends BaseController {
                 link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`,
                 companyName: tenant.businessName
             });
+        } catch (e) {
+            this.logger.error(e);
+        }
+
+        return this.map(models.InvitationResponse, invitation);
+    }
+
+    @POST
+    @Path('background')
+    @Preprocessor(BaseController.requireAdmin)
+    async sendInvitationByRmq(data: models.InvitationRequest): Promise<models.InvitationResponse> {
+        this.service.setRequestContext(this.getRequestContext());
+        this.userService.setRequestContext(this.getRequestContext());
+
+        const parsedData = await this.validate(data, models.requestSchema);
+        const user = await this.getRequestContext().getUserId();
+        let invitation = models.Invitation.factory(parsedData);
+        invitation.status = models.Status.pending;
+
+        if (await this.service.getByEmail(invitation.email)) {
+            throw new Errors.ConflictError('Email already invited');
+        }
+
+        if (await this.userService.findByEmailAndTenant(invitation.email, this.getRequestContext().getTenantId())) {
+            throw  new Errors.ConflictError('Email already used');
+        }
+
+        if (invitation.externalId) {
+            if (await this.service.getByExternalId(invitation.externalId)) {
+                throw new Errors.ConflictError('External Id already used');
+            }
+
+            if (await this.userService.findByExternalIdAndTenant(invitation.externalId, this.getRequestContext().getTenantId())) {
+                throw  new Errors.ConflictError('External Id already used');
+            }
+        }
+
+        try {
+            invitation = await this.service.insert(invitation);
+        } catch (err) {
+            this.logger.error(err);
+            throw new Errors.InternalServerError(err.message);
+        }
+
+        try {
+            const tenant = await this.tenantService.get(this.getRequestContext().getTenantId());
+
+            await this.publisher.publish(new SendInvitationEmailMessage(invitation.email,
+                `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`,
+                tenant.businessName
+            ));
         } catch (e) {
             this.logger.error(e);
         }
