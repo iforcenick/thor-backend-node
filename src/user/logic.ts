@@ -434,6 +434,7 @@ export class AddAdminUserLogic extends Logic {
     }
 }
 
+@AutoWired
 export class DeleteUserLogic extends Logic {
     @Inject service: UserService;
 
