@@ -42,11 +42,11 @@ export class AddUserDocumentLogic extends Logic {
             document = await this.service.insert(document, trx);
             try {
                 const result = await this.googleStorage.saveDocument(userId, document.id, file.buffer);
-                if (!result) throw new Errors.InternalServerError();
+                if (!result) throw new Errors.InternalServerError('failed to save document');
                 return document;
             } catch (e) {
                 await this.service.delete(document, trx);
-                throw new Errors.InternalServerError();
+                throw new Errors.InternalServerError(e);
             }
         });
     }
@@ -85,7 +85,7 @@ export class AddUserDwollaDocumentLogic extends Logic {
             type,
         );
         const dwollaDoc = await this.dwollaClient.getDocument(location);
-        if (dwollaDoc.failureReason) throw new Errors.InternalServerError();
+        if (dwollaDoc.failureReason) throw new Errors.InternalServerError(dwollaDoc.failureReason);
 
         let document: models.UserDocument = models.UserDocument.factory({
             tenantId: this.context.getTenantId(),
@@ -98,11 +98,11 @@ export class AddUserDwollaDocumentLogic extends Logic {
             document = await this.service.insert(document, trx);
             try {
                 const result = await this.googleStorage.saveDocument(userId, document.id, file.buffer);
-                if (!result) throw new Errors.InternalServerError();
+                if (!result) throw new Errors.InternalServerError('failed to save document');
                 return document;
             } catch (e) {
                 await this.service.delete(document, trx);
-                throw new Errors.InternalServerError();
+                throw new Errors.InternalServerError(e);
             }
         });
     }

@@ -13,6 +13,7 @@ export class GoogleStorage {
     constructor() {
         this.storage = new Storage();
         this.bucket = this.storage.bucket(this.config.get('storage.bucket'));
+        this.logger.info(this.config.get('storage.bucket'));
     }
 
     /* istanbul ignore next */
@@ -36,6 +37,7 @@ export class GoogleStorage {
             await new Promise((resolve, reject) => {
                 this._save(file, data, err => {
                     if (err) {
+                        this.logger.error(err);
                         reject(err);
                     }
                     resolve(true);
