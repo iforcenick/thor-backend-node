@@ -70,6 +70,7 @@ export const enum Tables {
     fundingSources = 'fundingSources',
     profilesFundingSources = 'profilesFundingSources',
     passwordReset = 'passwordReset',
+    userDocuments = 'userDocuments'
 }
 
 export class Pagination {

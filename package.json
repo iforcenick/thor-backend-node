@@ -26,6 +26,7 @@
   "license": "ISC",
   "homepage": "https://github.com/thortoken/thor-backend#readme",
   "dependencies": {
+    "@google-cloud/storage": "^2.3.4",
     "@types/amqp-connection-manager": "^2.0.2",
     "@types/amqplib": "^0.5.9",
     "@types/mock-knex": "^0.3.4",

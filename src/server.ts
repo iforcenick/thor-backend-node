@@ -17,8 +17,9 @@ import {DwollaController} from './dwolla/controller';
 import {InvitationController, InvitationCheckController} from './invitation/controller';
 import {ContractorController} from './contractor/controller';
 import {
-    ContractorFundingSourceController, FundingSourceController,
-    UserFundingSourceController
+    ContractorFundingSourceController,
+    FundingSourceController,
+    UserFundingSourceController,
 } from './foundingSource/controller';
 import {BeneficialOwnerController} from './beneficialOwner/controller';
 import {TenantFundingSourcesController} from './tenant/fundingSource/controller';
@@ -29,7 +30,6 @@ const cors = require('cors');
 const methodOverride = require('method-override');
 const bodyParser = require('body-parser');
 const passport = require('./auth/passport');
-
 
 export class ApiServer {
     @Inject private config: Config;
@@ -63,7 +63,9 @@ export class ApiServer {
         this.app.use(middleware.correlationId);
 
         this.addControllers();
-        Server.swagger(this.app, './dist/swagger.json', '/api-docs', this.config.get('swagger.host'), [this.config.get('swagger.schema')]);
+        Server.swagger(this.app, './dist/swagger.json', '/api-docs', this.config.get('swagger.host'), [
+            this.config.get('swagger.schema'),
+        ]);
 
         this.app.use(this.expressLogger.errorMiddleware());
         this.app.use(this.errorHandler.bind(this));
@@ -119,11 +121,11 @@ export class ApiServer {
             autoMigrate: this.config.get('db.autoMigrate'),
             client: this.config.get('db.client'),
             connection: {
-              host: this.config.get('db.connection.host'),
-              port: this.config.get('db.connection.port'),
-              user: this.config.get('db.connection.user'),
-              password: this.config.get('db.connection.password'),
-              database: this.config.get('db.connection.database'),
+                host: this.config.get('db.connection.host'),
+                port: this.config.get('db.connection.port'),
+                user: this.config.get('db.connection.user'),
+                password: this.config.get('db.connection.password'),
+                database: this.config.get('db.connection.database'),
             },
         };
         this.knex = knex(db);

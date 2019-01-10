@@ -20,6 +20,7 @@ import {RoleService} from './role/service';
 import * as _ from 'lodash';
 import {Types} from './role/models';
 import {isAdminRole, roleExists} from './role/checks';
+import { GoogleStorage } from '../googleStorage';
 
 const filterByContractor = (query, contractor) => {
     const likeContractor = `%${contractor}%`;

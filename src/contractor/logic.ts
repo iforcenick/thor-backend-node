@@ -84,10 +84,12 @@ export class AddContractorLogic extends Logic {
         return user;
     }
 
-    private async createTenantProfile(profile: Profile,
-                                      roles: Array<role.models.Role>,
-                                      tenantId: string,
-                                      trx: objection.Transaction,) {
+    private async createTenantProfile(
+        profile: Profile,
+        roles: Array<role.models.Role>,
+        tenantId: string,
+        trx: objection.Transaction,
+    ) {
         profile.tenantId = tenantId;
         profile = await this.profileService.insert(profile, trx);
         await this.addRoles(profile, roles, trx);

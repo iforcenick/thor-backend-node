@@ -39,14 +39,23 @@ export class ContractorController extends BaseController {
     @GET
     @Path('/transactions')
     @Preprocessor(BaseController.requireContractor)
-    async getTransactions(@QueryParam('page') page?: number,
-                          @QueryParam('limit') limit?: number,
-                          @QueryParam('startDate') startDate?: Date,
-                          @QueryParam('endDate') endDate?: Date,
-                          @QueryParam('status') status?: string): Promise<transactions.PaginatedTransactionResponse> {
+    async getTransactions(
+        @QueryParam('page') page?: number,
+        @QueryParam('limit') limit?: number,
+        @QueryParam('startDate') startDate?: Date,
+        @QueryParam('endDate') endDate?: Date,
+        @QueryParam('status') status?: string,
+    ): Promise<transactions.PaginatedTransactionResponse> {
         const logic = new GetContractorTransactionsLogic(this.getRequestContext());
         const dates: any = await this.validate({startDate, endDate}, dateRangeSchema);
-        const transactionsList = await logic.execute(this.getRequestContext().getUserId(), dates.startDate, dates.endDate, status, page, limit);
+        const transactionsList = await logic.execute(
+            this.getRequestContext().getUserId(),
+            dates.startDate,
+            dates.endDate,
+            status,
+            page,
+            limit,
+        );
 
         return this.paginate(
             transactionsList.pagination,

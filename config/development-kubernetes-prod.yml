@@ -12,4 +12,6 @@ dwolla:
 swagger:
   host: odin-api.prod.gothor.com
   schema: https
+storage:
+  bucket: thor-prod
 
