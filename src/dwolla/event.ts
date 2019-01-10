@@ -36,6 +36,16 @@ export const TYPE = {
         activated: 'customer_activated',
         deactivated: 'customer_deactivated',
     },
+    customerBeneficialOwner: {
+        created: 'customer_beneficial_owner_created',
+        removed: 'customer_beneficial_owner_removed',
+        verificationDocumentNeeded: 'customer_beneficial_owner_verification_document_needed',
+        verificationDocumentUploaded: 'customer_beneficial_owner_verification_document_uploaded',
+        verificationDocumentFailed: 'customer_beneficial_owner_verification_document_failed',
+        verificationDocumentApproved: 'customer_beneficial_owner_verification_document_approved',
+        reverificationNeeded: 'customer_beneficial_owner_reverification_needed',
+        verified: 'customer_beneficial_owner_verified',
+    }
 };
 
 export interface IEvent {

@@ -58,6 +58,9 @@ export class EventFactory {
                 // case dwolla.event.TYPE.customerFundingSource.verified:
                 //     break;
 
+                case dwolla.event.TYPE.customerBeneficialOwner.verified:
+                    return new CustomerBeneficialOwnerEventLogic(context);
+
                 default:
                     this.logger.warn(
                         `${TAG} Received unrecognized event eventTopic:'${event.topic} eventId:${
@@ -248,6 +251,34 @@ export class CustomerEventLogic extends Logic {
                 break;
             case dwolla.event.TYPE.customer.suspended:
                 await logic.execute(user, dwolla.customer.CUSTOMER_STATUS.Suspended);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+@AutoWired
+export class CustomerBeneficialOwnerEventLogic extends Logic {
+    @Inject private client: dwolla.Client;
+    @Inject private logger: Logger;
+
+    async execute(event: IEvent): Promise<any> {
+        switch (event.topic) {
+            case dwolla.event.TYPE.customerBeneficialOwner.verificationDocumentNeeded:
+            case dwolla.event.TYPE.customerBeneficialOwner.verificationDocumentUploaded:
+            case dwolla.event.TYPE.customerBeneficialOwner.verificationDocumentApproved:
+            case dwolla.event.TYPE.customerBeneficialOwner.verificationDocumentFailed:
+            case dwolla.event.TYPE.customerBeneficialOwner.reverificationNeeded:
+            case dwolla.event.TYPE.customerBeneficialOwner.created:
+            case dwolla.event.TYPE.customerBeneficialOwner.removed:
+                break;
+            case dwolla.event.TYPE.customerBeneficialOwner.verified:
+                try {
+                    await this.client.certifyBusinessVerifiedBeneficialOwnership(event['_links']['customer']['href']);
+                } catch (e) {
+                    this.logger.error(e);
+                }
                 break;
             default:
                 break;
