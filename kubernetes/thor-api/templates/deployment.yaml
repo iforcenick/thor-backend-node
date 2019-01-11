@@ -19,9 +19,16 @@ spec:
         app: {{ template "thor-api.name" . }}
         release: {{ .Release.Name }}
     spec:
+      volumns:
+        - name: google-cloud-key
+          secret:
+            secretName: storage-key
       containers:
         - name: "{{ .Chart.Name }}-app"
           image: "{{ .Values.env.DOCKER_REPOSITORY }}:{{ .Values.env.TAG }}"
+          volumeMounts:
+          - name: google-cloud-key
+            mountPath: /var/secrets/google
           command: ["npm"]
           args: ["start"]
           ports:
@@ -32,6 +39,8 @@ spec:
           env:
             - name: NODE_ENV
               value: {{ .Values.app.nodeEnv }}
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/key.json
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
