@@ -19,10 +19,6 @@ spec:
         app: {{ template "thor-api.name" . }}
         release: {{ .Release.Name }}
     spec:
-      volumns:
-        - name: google-cloud-key
-          secret:
-            secretName: storage-key
       containers:
         - name: "{{ .Chart.Name }}-app"
           image: "{{ .Values.env.DOCKER_REPOSITORY }}:{{ .Values.env.TAG }}"
@@ -58,3 +54,7 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
     {{- end }}
+      volumns:
+      - name: google-cloud-key
+        secret:
+          secretName: storage-key
