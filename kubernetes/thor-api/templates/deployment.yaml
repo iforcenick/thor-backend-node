@@ -19,6 +19,10 @@ spec:
         app: {{ template "thor-api.name" . }}
         release: {{ .Release.Name }}
     spec:
+      volumes:
+        - name: "google-cloud-key"
+          secret:
+            secretName: "storage-key"
       containers:
         - name: "{{ .Chart.Name }}-app"
           volumeMounts:
@@ -39,10 +43,6 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /var/secrets/google/key.json
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          volumes:
-            - name: "google-cloud-key"
-              secret:
-                secretName: "storage-key"
           resources:
 {{ toYaml .Values.resources | indent 12 }}
       imagePullSecrets:
