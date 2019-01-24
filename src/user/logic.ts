@@ -1,33 +1,40 @@
-import {Logic} from '../logic';
-import {UserService} from './service';
+import * as generator from 'generate-password';
 import {AutoWired, Inject} from 'typescript-ioc';
-import * as transactions from '../transaction/models';
-import * as models from './models';
-import {SearchCriteria, User} from './models';
+import * as _ from 'lodash';
 import * as objection from 'objection';
-import {raw} from 'objection';
-import * as db from '../db';
-import {SYSTEM_TENANT_SKIP} from '../db';
 import {Errors} from 'typescript-rest';
+import {raw} from 'objection';
+
+import {Logic} from '../logic';
+import * as db from '../db';
 import {ApiServer} from '../server';
-import {MailerService} from '../mailer';
 import {Logger} from '../logger';
 import {Config} from '../config';
-import {ProfileService} from '../profile/service';
-import * as role from './role';
-import {Profile} from '../profile/models';
-import {RoleService} from './role/service';
-import * as _ from 'lodash';
-import {Types} from './role/models';
 import {isAdminRole, roleExists} from './role/checks';
-import { GoogleStorage } from '../googleStorage';
+import * as role from './role';
+import {MailerService} from '../mailer';
+import {UserService} from './service';
+import {ProfileService} from '../profile/service';
+import {RoleService} from './role/service';
+import * as transactions from '../transaction/models';
+import * as models from './models';
+import * as profiles from '../profile/models';
+import * as roles from './role/models';
 
 const filterByContractor = (query, contractor) => {
     const likeContractor = `%${contractor}%`;
-    query.where((builder) => {
+    query.where(builder => {
         builder.where(`${models.Relations.tenantProfile}.firstName`, 'ilike', likeContractor);
         builder.orWhere(`${models.Relations.tenantProfile}.lastName`, 'ilike', likeContractor);
-        builder.orWhere(raw(`concat("${models.Relations.tenantProfile}"."firstName", ' ', "${models.Relations.tenantProfile}"."lastName")`), 'ilike', likeContractor);
+        builder.orWhere(
+            raw(
+                `concat("${models.Relations.tenantProfile}"."firstName", ' ', "${
+                    models.Relations.tenantProfile
+                }"."lastName")`,
+            ),
+            'ilike',
+            likeContractor,
+        );
     });
 };
 
@@ -36,7 +43,16 @@ export class RatingJobsListLogic extends Logic {
     @Inject private userService: UserService;
     static sortableFields = ['rank', 'firstName', 'lastName', 'total', 'jobsCount'];
 
-    async execute(start, end: Date, page, limit, status?, orderBy?, order?, contractor?: string): Promise<db.Paginated<any>> {
+    async execute(
+        start,
+        end: Date,
+        page,
+        limit,
+        status?,
+        orderBy?,
+        order?,
+        contractor?: string,
+    ): Promise<db.Paginated<any>> {
         if (!orderBy) {
             orderBy = 'total';
         }
@@ -58,7 +74,9 @@ export class RatingJobsListLogic extends Logic {
         }
 
         if (!RatingJobsListLogic.sortableFields.includes(orderBy)) {
-            throw new Errors.ConflictError('Invalid order by field, allowed: ' + RatingJobsListLogic.sortableFields.join(', '));
+            throw new Errors.ConflictError(
+                'Invalid order by field, allowed: ' + RatingJobsListLogic.sortableFields.join(', '),
+            );
         }
 
         try {
@@ -71,24 +89,27 @@ export class RatingJobsListLogic extends Logic {
         const pag = this.userService.addPagination(query, page, limit);
         const results = await query;
 
-        return new db.Paginated(new db.Pagination(pag.page, pag.limit, results.total), results.results.map((row, index) => {
-            row.ids ? row.transactionsIds = row.ids.split(',') : null;
-            row.jobsCount = row.transactions ? row.transactions.length : 0;
-            row.rank = this.calcRating(index, pag.page, pag.limit, results.total, orderBy, order, contractor);
-            row.total = row.total ? row.total : 0;
-            return row;
-        }));
+        return new db.Paginated(
+            new db.Pagination(pag.page, pag.limit, results.total),
+            results.results.map((row, index) => {
+                row.ids ? (row.transactionsIds = row.ids.split(',')) : null;
+                row.jobsCount = row.transactions ? row.transactions.length : 0;
+                row.rank = this.calcRating(index, pag.page, pag.limit, results.total, orderBy, order, contractor);
+                row.total = row.total ? row.total : 0;
+                return row;
+            }),
+        );
     }
 
     protected calcRating(index, page, limit, total, orderBy, order, contractor) {
-        if (!(['rank', 'total'].includes(orderBy)) || contractor) {
+        if (!['rank', 'total'].includes(orderBy) || contractor) {
             return '-';
         }
 
         if (order == db.Ordering.desc) {
-            return index + 1 + ((page - 1) * limit);
+            return index + 1 + (page - 1) * limit;
         } else {
-            return total - index - ((page - 1) * limit);
+            return total - index - (page - 1) * limit;
         }
     }
 
@@ -130,34 +151,46 @@ export class RatingJobsListLogic extends Logic {
         query.mergeEager(`${models.Relations.transactions}(transactions)`, {
             transactions: builder => {
                 builder.select([
-                    'jobId', 'name', 'status', 'transactions.id',
+                    'jobId',
+                    'name',
+                    'status',
+                    'transactions.id',
                     raw(`sum("${models.Relations.transactions}".value) as total`),
                     raw(`count("${models.Relations.transactions}"."jobId") as jobs`),
                 ]);
                 builder.joinRelation(transactions.Relations.job);
                 transactions.Transaction.filter(builder, start, end, status);
 
-                builder.groupBy(['userId', 'jobId', `${models.Relations.transactions}.value`, 'name', 'status', 'transactions.id']);
+                builder.groupBy([
+                    'userId',
+                    'jobId',
+                    `${models.Relations.transactions}.value`,
+                    'name',
+                    'status',
+                    'transactions.id',
+                ]);
             },
         });
     }
 
     protected selectTransactionsIds(query: any, start, end: Date, status?) {
-        const transactionsQuery = User.relatedQuery(models.Relations.transactions);
+        const transactionsQuery = models.User.relatedQuery(models.Relations.transactions);
         transactions.Transaction.filter(transactionsQuery, start, end, status);
         transactionsQuery
             .select(raw('string_agg("transactions"."id"::character varying, \',\')'))
-            .groupBy('userId').as('ids');
+            .groupBy('userId')
+            .as('ids');
 
         query.select(transactionsQuery);
     }
 
     protected selectTransactionsValue(query: any, start, end: Date, status?) {
-        const transactionsQuery = User.relatedQuery(models.Relations.transactions);
+        const transactionsQuery = models.User.relatedQuery(models.Relations.transactions);
         transactions.Transaction.filter(transactionsQuery, start, end, status);
         transactionsQuery
             .select(raw(`coalesce(sum(value),0)`))
-            .groupBy('userId').as('total');
+            .groupBy('userId')
+            .as('total');
 
         query.select(transactionsQuery);
     }
@@ -180,7 +213,7 @@ export class UsersListLogic extends Logic {
     @Inject private userService: UserService;
     static sortableFields = ['firstName', 'lastName', 'createdAt', 'lastActivity'];
 
-    async execute(searchCriteria: SearchCriteria): Promise<db.Paginated<User>> {
+    async execute(searchCriteria: models.SearchCriteria): Promise<db.Paginated<models.User>> {
         if (!searchCriteria.orderBy) {
             searchCriteria.orderBy = 'lastName';
         }
@@ -190,7 +223,9 @@ export class UsersListLogic extends Logic {
         }
 
         if (!UsersListLogic.sortableFields.includes(searchCriteria.orderBy)) {
-            throw new Errors.ConflictError('Invalid order by field, allowed: ' + UsersListLogic.sortableFields.join(', '));
+            throw new Errors.ConflictError(
+                'Invalid order by field, allowed: ' + UsersListLogic.sortableFields.join(', '),
+            );
         }
 
         try {
@@ -200,7 +235,9 @@ export class UsersListLogic extends Logic {
         }
 
         const options = builder => {
-            builder.orderBy(`${searchCriteria.orderBy}`, searchCriteria.order);
+            builder
+                .orderBy(`${models.Relations.tenantProfile}.status`, db.Ordering.asc)
+                .orderBy(`${searchCriteria.orderBy}`, searchCriteria.order);
         };
 
         const query = this.userService.listQuery(null, options);
@@ -208,12 +245,10 @@ export class UsersListLogic extends Logic {
             filterByContractor(query, searchCriteria.contractor);
         }
         if (searchCriteria.state) {
-            query.where(`${models.Relations.tenantProfile}.state`,
-                'ilike', `%${searchCriteria.state}%`);
+            query.where(`${models.Relations.tenantProfile}.state`, 'ilike', `%${searchCriteria.state}%`);
         }
         if (searchCriteria.city) {
-            query.where(`${models.Relations.tenantProfile}.city`,
-                'ilike', `%${searchCriteria.city}%`);
+            query.where(`${models.Relations.tenantProfile}.city`, 'ilike', `%${searchCriteria.city}%`);
         }
 
         const pag = this.userService.addPagination(query, searchCriteria.page, searchCriteria.limit);
@@ -227,11 +262,13 @@ export class UsersListLogic extends Logic {
 export class UserStatisticsLogic extends Logic {
     @Inject private userService: UserService;
 
-    async execute(userId: string,
-                  currentStartDate,
-                  currentEndDate,
-                  previousStartDate,
-                  previousEndDate: Date): Promise<any> {
+    async execute(
+        userId: string,
+        currentStartDate,
+        currentEndDate,
+        previousStartDate,
+        previousEndDate: Date,
+    ): Promise<any> {
         const tenantId = this.context.getTenantId();
         const knex = ApiServer.db;
 
@@ -254,10 +291,7 @@ where ranking.userId = ?
             .from('transactions')
             .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
             .leftJoin('jobs', 'transactions.jobId', 'jobs.id')
-            .whereRaw('"transactions"."createdAt" between ? and ?', [
-                currentStartDate,
-                currentEndDate,
-            ])
+            .whereRaw('"transactions"."createdAt" between ? and ?', [currentStartDate, currentEndDate])
             .count()
             .select([knex.raw('sum(transactions.value) as current')])
             .groupBy('transactions.userId')
@@ -273,10 +307,7 @@ where ranking.userId = ?
         const prevQuery = ApiServer.db
             .from('transactions')
             .where({'transactions.tenantId': tenantId, 'transactions.userId': userId})
-            .whereRaw('"transactions"."createdAt" between ? and ?', [
-                previousStartDate,
-                previousEndDate,
-            ])
+            .whereRaw('"transactions"."createdAt" between ? and ?', [previousStartDate, previousEndDate])
             .join('transfers', 'transactions.transferId', 'transfers.id')
             .orderBy('transfers.createdAt', 'desc')
             .select(['transfers.value as prev'])
@@ -310,7 +341,7 @@ export class CreatePasswordResetLogic extends Logic {
         }
 
         user.passwordResetToken = await this.userService.getPasswordResetToken();
-        user.passwordResetExpiry = Date.now() + 86400000;    // 24 hr
+        user.passwordResetExpiry = Date.now() + 86400000; // 24 hr
 
         // TODO:
         delete user['lastActivity'];
@@ -378,75 +409,151 @@ export class AddAdminUserLogic extends Logic {
     @Inject private profileService: ProfileService;
     @Inject protected logger: Logger;
 
-    async execute(login, firstName, lastName, password, role: string) {
+    async execute(profileData: any, role: string) {
         if (!roleExists(role) || !isAdminRole(role)) {
             throw new Errors.ConflictError('Invalid role');
         }
 
-        if (await this.userService.findByEmailAndTenant(login, SYSTEM_TENANT_SKIP)) {
-            throw new Errors.NotAcceptableError('User with selected login already exists');
-        }
+        // look for profiles associated with the current tenant
+        // that either have the same email or the same external id
+        const existingTenantProfileQuery = ApiServer.db
+            .from('profiles')
+            .where('profiles.tenantId', this.context.getTenantId())
+            .where('profiles.email', profileData.email)
+            .first();
 
-        let user: User = new User();
-        const profile = new Profile();
-        profile.email = login;
-        profile.firstName = firstName;
-        profile.lastName = lastName;
-        user.password = await this.userService.hashPassword(password);
+        // look for base profiles (no tenant id) with the same email
+        const existingProfileQuery = ApiServer.db
+            .from('profiles')
+            .where({'profiles.email': profileData.email})
+            .whereNull('profiles.tenantId')
+            .first();
 
+        const [existingTenantProfileResult, existingProfileResult] = await Promise.all([
+            existingTenantProfileQuery,
+            existingProfileQuery,
+        ]);
+        if (existingTenantProfileResult)
+            throw new Errors.ConflictError('contractor with that email or id already exist');
+
+        let user: models.User;
+        let tenantProfile: profiles.Profile;
         await objection.transaction(this.userService.transaction(), async _trx => {
-            user = await this.userService.insert(user, _trx);
-            profile.userId = user.id;
-            const adminRole = await this.getRole(Types[role]);
-            const roles = [adminRole];
+            // link the accounts if the email is already associated with an account
+            if (existingProfileResult) {
+                user = await this.userService.getForAllTenants(existingProfileResult.userId, _trx);
+            } else {
+                user = models.User.factory({});
+                const password = generator.generate({length: 20, numbers: true, uppercase: true});
+                user.password = await this.userService.hashPassword(password);
+                user = await this.userService.insert(user, _trx);
+            }
 
-            await this.createBaseProfile(profile, roles, _trx);
-            user.tenantProfile = await this.createTenantProfile(profile, roles, _trx);
+            // create the tenant profile
+            tenantProfile = profiles.Profile.factory(profileData);
+            tenantProfile.status = profiles.Statuses.invited;
+            tenantProfile.userId = user.id;
+            tenantProfile = await this.profileService.insert(tenantProfile, _trx);
+
+            // add a contractor role to the profile
+            tenantProfile.roles = [];
+            const adminRole = await this.roleService.find(roles.Types[role]);
+            await tenantProfile.$relatedQuery(profiles.Relations.roles, _trx).relate(adminRole.id);
+            tenantProfile.roles.push(adminRole);
+
+            // update the user return data
+            user.tenantProfile = tenantProfile;
         });
 
         return user;
     }
+}
 
-    private async createTenantProfile(profile: Profile,
-                                      roles: Array<role.models.Role>,
-                                      trx: objection.Transaction) {
-        profile = await this.profileService.insert(profile, trx);
-        await this.addRoles(profile, roles, trx);
-        return profile;
-    }
+@AutoWired
+export class AddContractorUserLogic extends Logic {
+    @Inject private userService: UserService;
+    @Inject private roleService: RoleService;
+    @Inject private profileService: ProfileService;
+    @Inject protected logger: Logger;
 
-    private async createBaseProfile(profile: Profile, roles: Array<role.models.Role>, trx: objection.Transaction) {
-        let baseProfile = _.clone(profile);
-        baseProfile = await this.profileService.insert(baseProfile, trx, false);
-        await this.addRoles(baseProfile, roles, trx);
-        return baseProfile;
-    }
+    async execute(profileData: any) {
+        // look for profiles associated with the current tenant
+        // that either have the same email or the same external id
+        const existingTenantProfileQuery = ApiServer.db
+            .from('profiles')
+            .where('profiles.tenantId', this.context.getTenantId())
+            .andWhere(builder => {
+                builder
+                    .where('profiles.email', profileData.email)
+                    .orWhere('profiles.externalId', profileData.externalId || '');
+            })
+            .first();
+        // look for base profiles (no tenant id) with the same email
+        const existingProfileQuery = ApiServer.db
+            .from('profiles')
+            .where({'profiles.email': profileData.email})
+            .whereNull('profiles.tenantId')
+            .first();
 
-    private async addRoles(profile: Profile, roles: Array<role.models.Role>, trx: objection.Transaction) {
-        profile.roles = [];
-        for (const role of roles) {
-            await profile.$relatedQuery(models.Relations.roles, trx).relate(role.id);
-            profile.roles.push(role);
-        }
-    }
+        const [existingTenantProfileResult, existingProfileResult] = await Promise.all([
+            existingTenantProfileQuery,
+            existingProfileQuery,
+        ]);
+        if (existingTenantProfileResult)
+            throw new Errors.ConflictError('contractor with that email or id already exist');
 
-    async getRole(role: role.models.Types): Promise<role.models.Role> {
-        return await this.roleService.find(role);
+        let user: models.User;
+        let tenantProfile: profiles.Profile;
+        await objection.transaction(this.userService.transaction(), async _trx => {
+            // link the accounts if the email is already associated with an account
+            if (existingProfileResult) {
+                user = await this.userService.getForAllTenants(existingProfileResult.userId, _trx);
+            } else {
+                user = models.User.factory({});
+                const password = generator.generate({length: 20, numbers: true, uppercase: true});
+                user.password = await this.userService.hashPassword(password);
+                user = await this.userService.insert(user, _trx);
+            }
+
+            // create the tenant profile
+            tenantProfile = profiles.Profile.factory(profileData);
+            tenantProfile.status = profiles.Statuses.invited;
+            tenantProfile.userId = user.id;
+            tenantProfile = await this.profileService.insert(tenantProfile, _trx);
+
+            // add a contractor role to the profile
+            tenantProfile.roles = [];
+            const contractorRole = await this.roleService.find(role.models.Types.contractor);
+            await tenantProfile.$relatedQuery(profiles.Relations.roles, _trx).relate(contractorRole.id);
+            tenantProfile.roles.push(contractorRole);
+
+            // update the user return data
+            user.tenantProfile = tenantProfile;
+        });
+
+        return user;
     }
 }
 
 @AutoWired
 export class DeleteUserLogic extends Logic {
-    @Inject service: UserService;
+    @Inject userService: UserService;
 
-    async execute(user: User): Promise<any> {
-        const hasUnpaidTransactions = await this.service.hasUnpaidTransactions(user.id);
+    async execute(id: string): Promise<any> {
+        const user = await this.userService.get(id);
+        if (!user) {
+            throw new Errors.NotFoundError('User not found');
+        }
+
+        // TODO: delete the invitation if this user hasn't signed up yet
+        // TODO: only delete tenant profile?
+        const hasUnpaidTransactions = await this.userService.hasUnpaidTransactions(user.id);
         if (hasUnpaidTransactions) {
             throw new Errors.ConflictError('User have unprocessed transactions');
         }
 
         try {
-            await this.service.delete(user);
+            await this.userService.delete(user);
         } catch (e) {
             throw new Errors.InternalServerError(e);
         }

@@ -1,15 +1,12 @@
 import {AutoWired, Inject} from 'typescript-ioc';
-import * as models from './models';
-import * as db from '../db';
-import {transaction} from 'objection';
-import {RoleService} from '../user/role/service';
-import * as dwolla from '../dwolla';
-import moment from 'moment';
-import {ValidationError} from '../errors';
-import {FundingSource} from '../foundingSource/models';
-import {Invitation} from '../invitation/models';
-import {Profile} from './models';
 import * as objection from 'objection';
+
+import * as db from '../db';
+import * as dwolla from '../dwolla';
+import {RoleService} from '../user/role/service';
+import {FundingSource} from '../foundingSource/models';
+import {Profile} from './models';
+import * as models from './models';
 
 @AutoWired
 export class ProfileService extends db.ModelService<models.Profile> {
@@ -19,7 +16,6 @@ export class ProfileService extends db.ModelService<models.Profile> {
     protected setModelType() {
         this.modelType = models.Profile;
     }
-
 
     async updateWithDwolla(profile: models.Profile, trx?: objection.Transaction): Promise<any> {
         try {
@@ -33,7 +29,11 @@ export class ProfileService extends db.ModelService<models.Profile> {
         }
     }
 
-    async addFundingSource(profile: models.Profile, fundingSource: FundingSource, trx: objection.Transaction): Promise<any> {
+    async addFundingSource(
+        profile: models.Profile,
+        fundingSource: FundingSource,
+        trx: objection.Transaction,
+    ): Promise<any> {
         return await profile.$relatedQuery(models.Relations.fundingSources, trx).relate(fundingSource.id);
     }
 

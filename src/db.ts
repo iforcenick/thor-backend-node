@@ -66,7 +66,7 @@ export const enum Tables {
     transactions = 'transactions',
     jobs = 'jobs',
     transfers = 'transfers',
-    contractorInvitations = 'contractorInvitations',
+    invitations = 'invitations',
     fundingSources = 'fundingSources',
     profilesFundingSources = 'profilesFundingSources',
     passwordReset = 'passwordReset',
@@ -148,11 +148,11 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
         return await query;
     }
 
-    async getForAllTenants(id: string): Promise<T> {
+    async getForAllTenants(id: string, trx?: objection.Transaction): Promise<T> {
         if (!validate(id)) {
             return undefined;
         }
-        const query = this.modelType.query().findById(id);
+        const query = this.modelType.query(trx).findById(id);
         this.setConditions(query);
         return await query;
     }

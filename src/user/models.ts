@@ -8,6 +8,7 @@ export const enum Relations {
     profile = 'profiles',
     tenantProfile = 'tenantProfile',
     transactions = 'transactions',
+    baseProfile = 'baseProfile',
 }
 
 export class User extends db.Model {
@@ -23,6 +24,14 @@ export class User extends db.Model {
                 },
             },
             [Relations.tenantProfile]: {
+                relation: db.Model.HasOneRelation,
+                modelClass: profile.Profile,
+                join: {
+                    from: `${db.Tables.users}.id`,
+                    to: `${db.Tables.profiles}.userId`,
+                },
+            },
+            [Relations.baseProfile]: {
                 relation: db.Model.HasOneRelation,
                 modelClass: profile.Profile,
                 join: {
@@ -46,6 +55,7 @@ export class User extends db.Model {
     transactions?: Array<Transaction>;
     lastActivity?: Date;
     tenantProfile?: profile.Profile;
+    baseProfile?: profile.Profile;
     passwordResetToken?: string = null;
     passwordResetExpiry?: number = null;
 

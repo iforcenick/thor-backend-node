@@ -19,6 +19,16 @@ export const enum Relations {
     fundingSources = 'fundingSources'
 }
 
+export const enum Statuses {
+    invited = 'invited',    // tenant has invited the contractor to create/link an account
+    tax = 'tax',            // contractor's profile is missing tax information
+    payment = 'payment',    // contractor's payment status requires review
+    document = 'document',  // contractor needs to upload additional documentation
+    bank = 'bank',          // contractor needs to add their bank info
+    active = 'active',      // contractor account is ready to be paid
+    job = 'job',            // contractor must complete additional onboarding steps for a job
+}
+
 export class Profile extends db.Model {
     static tableName = db.Tables.profiles;
     firstName?: string = null;
@@ -43,6 +53,7 @@ export class Profile extends db.Model {
     roles?: Array<role.models.Role>;
     deletedAt?: Date = null;
     externalId?: string = null;
+    status?: string = null;
 
     get externalStatus() {
         return this.dwollaStatus;
@@ -160,6 +171,7 @@ export class ProfileResponse extends ProfileBaseInfo {
     tenantId: string = mapper.FIELD_STR;
     externalStatus: string = mapper.FIELD_STR;
     externalType: string = mapper.FIELD_STR;
+    status: string = mapper.FIELD_STR;
     @mapper.array(role.models.RoleResponse)
     roles: Array<role.models.RoleResponse> = mapper.FIELD_ARR;
     createdAt: Date = mapper.FIELD_DATE;

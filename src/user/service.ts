@@ -1,14 +1,14 @@
 import crypto = require('crypto');
 import {AutoWired, Inject} from 'typescript-ioc';
-import * as models from './models';
+import {transaction} from 'objection';
+
+import {RequestContext} from '../context';
 import * as db from '../db';
 import * as role from './role';
+import {ProfileService} from '../profile/service';
 import * as profile from '../profile/models';
 import * as transactions from '../transaction/models';
-import {ProfileService} from '../profile/service';
-import {transaction} from 'objection';
-import {RequestContext} from '../context';
-import {SYSTEM_TENANT_SKIP} from '../db';
+import * as models from './models';
 
 const bcrypt = require('bcrypt');
 
@@ -42,6 +42,16 @@ export class UserService extends db.ModelService<models.User> {
         });
     }
 
+    selectBaseProfile(query) {
+        query.mergeEager(`${models.Relations.baseProfile}(baseProfile).[${profile.Relations.roles}]`, {
+            baseProfile: builder => {
+                builder.where(function() {
+                    this.whereNull('tenantId').limit(1);
+                });
+            },
+        });
+    }
+
     selectLastActivity(query) {
         query.select([
             `${db.Tables.users}.*`,
@@ -58,10 +68,10 @@ export class UserService extends db.ModelService<models.User> {
         const tenantId = this.getTenantId();
         this.setBasicConditions(query);
 
-        if (tenantId && tenantId !== SYSTEM_TENANT_SKIP) {
+        if (tenantId && tenantId !== db.SYSTEM_TENANT_SKIP) {
             this.selectProfileForTenant(query, tenantId);
         }
-
+        this.selectBaseProfile(query);
         this.selectLastActivity(query);
     }
 
@@ -76,9 +86,9 @@ export class UserService extends db.ModelService<models.User> {
 
     useTenantContext(query) {
         const tenantId = this.getTenantId();
-        if (tenantId && tenantId !== SYSTEM_TENANT_SKIP) {
+        if (tenantId && tenantId !== db.SYSTEM_TENANT_SKIP) {
             query.where({
-                [`${models.Relations.tenantProfile}.tenantId`]: tenantId
+                [`${models.Relations.tenantProfile}.tenantId`]: tenantId,
             });
         }
     }

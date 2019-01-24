@@ -13,7 +13,6 @@ export class ContractorRequest extends ContractorBaseModel {
     invitationToken: string = mapper.FIELD_STR;
 }
 
-
 export class ContractorResponse extends ContractorBaseModel {
     id: string = mapper.FIELD_STR;
     createdAt: Date = mapper.FIELD_DATE;

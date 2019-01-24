@@ -1,24 +1,26 @@
-import {Logic} from '../logic';
 import {AutoWired, Inject} from 'typescript-ioc';
-import {Status} from '../invitation/models';
-import * as dwolla from '../dwolla';
-import {User} from '../user/models';
-import * as models from '../profile/models';
-import {Profile} from '../profile/models';
-import {UserService} from '../user/service';
-import {InvitationService} from '../invitation/service';
-import * as role from '../user/role';
-import {RoleService} from '../user/role/service';
 import * as _ from 'lodash';
 import * as objection from 'objection';
-import {ProfileService} from '../profile/service';
-import {Errors} from 'typescript-rest';
-import {Logger} from '../logger';
 import * as generator from 'generate-password';
+import {Errors} from 'typescript-rest';
+
+import {Logic} from '../logic';
+import {Logger} from '../logger';
+import * as dwolla from '../dwolla';
 import {MailerService} from '../mailer';
-import {GenerateJwtLogic} from '../auth/logic';
+import {UserService} from '../user/service';
+import {InvitationService} from '../invitation/service';
+import {RoleService} from '../user/role/service';
+import {ProfileService} from '../profile/service';
 import {TransactionService} from '../transaction/service';
+import {User} from '../user/models';
+import * as profiles from '../profile/models';
+import {Profile} from '../profile/models';
 import {Transaction} from '../transaction/models';
+import * as invitations from '../invitation/models';
+import * as role from '../user/role';
+import {GenerateJwtLogic} from '../auth/logic';
+import { UseInvitationLogic } from '../invitation/logic';
 
 @AutoWired
 export class AddContractorLogic extends Logic {
@@ -109,7 +111,7 @@ export class AddContractorLogic extends Logic {
     private async addRoles(profile: Profile, roles: Array<role.models.Role>, trx: objection.Transaction) {
         profile.roles = [];
         for (const role of roles) {
-            await profile.$relatedQuery(models.Relations.roles, trx).relate(role.id);
+            await profile.$relatedQuery(profiles.Relations.roles, trx).relate(role.id);
             profile.roles.push(role);
         }
     }
@@ -153,18 +155,25 @@ export class AddContractorOnRetryStatusLogic extends Logic {
     }
 }
 
+/**
+ * create a new contractor profile from an invitation
+ *
+ * @export
+ * @class AddInvitedContractorLogic
+ * @extends {Logic}
+ */
 @AutoWired
 export class AddInvitedContractorLogic extends Logic {
     @Inject private invitationService: InvitationService;
+    @Inject private profileService: ProfileService;
+    @Inject private userService: UserService;
+    @Inject private dwollaClient: dwolla.Client;
 
     async execute(profileData: any, invitationToken, password: string) {
         const invitation = await this.invitationService.getForAllTenants(invitationToken);
         if (!invitation) {
             throw new Errors.NotFoundError('Invitation not found');
         }
-
-        const tenantId = invitation.tenantId;
-        let user;
 
         if (!invitation.isPending()) {
             throw new Errors.NotAcceptableError('Invitation already used');
@@ -174,17 +183,63 @@ export class AddInvitedContractorLogic extends Logic {
             throw new Errors.ConflictError('Contractor and invitation emails do not match.');
         }
 
-        await objection.transaction(this.invitationService.transaction(), async trx => {
-            const logic = new AddContractorLogic(this.context);
-            user = await logic.execute(profileData, tenantId, password, invitation.externalId, trx);
+        if (!invitation.isContractorInvitation()) {
+            throw new Errors.NotAcceptableError('Invalid invitation');
+        }
 
-            invitation.status = Status.used;
-            await this.invitationService.update(invitation, trx);
+        this.userService.setTenantId(invitation.tenantId);
+        const user = await this.userService.get(invitation.userId);
+        if (!user) {
+            throw new Errors.NotFoundError('User not found');
+        }
+
+        // Note: the base profile will not have a tenant id or external id
+        // and the tenant profile will not contain the payment account info
+        // both profiles will sync the contact information
+        // and the profiles' statuses are unique
+
+        // update the tenant profile with the provided contact info
+        user.password = await this.userService.hashPassword(password);
+        user.tenantProfile.merge(profileData);
+        user.tenantProfile.status = profiles.Statuses.active;
+
+        // create a new base profile with payment account if none
+        let baseProfile = user.baseProfile;
+        if (!baseProfile) {
+            baseProfile = Profile.factory({
+                ...profileData,
+                userId: user.id,
+            });
+
+            const customer = dwolla.customer.factory(profileData);
+            customer.type = dwolla.customer.TYPE.Personal;
+            baseProfile.dwollaUri = await this.dwollaClient.createCustomer(customer);
+            const dwollaCustomer = await this.dwollaClient.getCustomer(baseProfile.dwollaUri);
+            // TODO: remove dwolla status for more ambiguous status field
+            baseProfile.dwollaStatus = dwollaCustomer.status;
+            baseProfile.status = dwollaCustomer.status;
+            baseProfile.dwollaType = dwollaCustomer.type;
+        } else {
+            baseProfile.merge(profileData);
+        }
+
+        await objection.transaction(this.invitationService.transaction(), async _trx => {
+            // TODO:
+            delete user['lastActivity'];
+            await this.userService.update(user, _trx);
+            if (user.baseProfile) {
+                await this.profileService.update(baseProfile);
+            } else {
+                await this.profileService.insert(baseProfile, _trx, false);
+            }
+            await this.profileService.update(user.tenantProfile, _trx);
+
+            invitation.status = invitations.Status.used;
+            return await this.invitationService.update(invitation, _trx);
         });
 
-        user.token = await new GenerateJwtLogic().execute(user);
-
-        return user;
+        const token = await new GenerateJwtLogic().execute(user);
+        return {...user, token};
     }
 }
 
@@ -201,6 +256,7 @@ export class UpdateContractorStatusLogic extends Logic {
         user.tenantProfile.dwollaStatus = status;
         await this.profileService.update(user.tenantProfile);
 
+        // TODO: move to background task
         try {
             sendCustomerStatusEmail(user, status);
         } catch (e) {
