@@ -30,7 +30,7 @@ Migrations are run based on config files from config directory. In order to use 
 
 ### Secrets
 * Install and initialize the gcloud command line tool along with the kubectl command line tool
-* Select the desired active project: ```gcloud set project [PROJECT_ID]```
+
 * Get the credentials for the desired cluster: ```gcloud container clusters get-credentials [CLUSTER_NAME]```
 * Create a secret from a yaml file: ```kubectl create -f [FILE_NAME].yaml```
 
@@ -47,6 +47,8 @@ Migrations are run based on config files from config directory. In order to use 
     dwolla_webhookSecret: XXXXXXXXXXX
     mailer_mailgun_domain: XXXXXXXXXXX
     mailer_mailgun_key: XXXXXXXXXXX
+    db_connection_host: XXXXXXXXXXXX
+    db_connection_password: XXXXXXXXXXXX
   ```
   Where the data field is a map. Its keys must consist of alphanumeric characters, ‘-’, ‘_’ or ‘.’. The values are arbitrary data, encoded using base64.
   
@@ -87,7 +89,14 @@ node /dist/dev/console create-tenant.js thor godOfThunder@thor.com
    ```
    brew install kubernetes-helm
    ```
+* Sele
+   ```
+   gcloud set project [PROJECT_ID]
+   ```
 * Create the cluster
+
+   *TODO*
+
 * Get the credentials for the desired cluster 
    ```
    gcloud container clusters get-credentials [CLUSTER_NAME]
@@ -126,14 +135,17 @@ node /dist/dev/console create-tenant.js thor godOfThunder@thor.com
    
    helm install --name cert-manager stable/cert-manager --set createCustomResource=false --namespace=thor-api
    ```
-* Add Let's Encrypt Issuer
+* Add Let's Encrypt Issuers
    ```
-   kubectl apply -f ./kubernetes/requirements/letsencrypt-issuer.yaml --namespace thor-api
+   kubectl apply -f ./kubernetes/requirements/production-issuer.yaml --namespace thor-api
+
+   kubectl apply -f ./kubernetes/requirements/staging-issuer.yaml --namespace thor-api
    ```
 * Deploy TLS Ingress Resource
    ```
    kubectl apply -f ./kubernetes/requirements/certificate-stg.yaml --namespace thor-api
    ```
-* Deploy TLS Certificate
-   * ```openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /tmp/tls.key -out /tmp/tls.crt -subj "/CN=odin-api.stg.gothor.com"```
-   * ```kubectl create secret tls odin-api-tls --key /tmp/tls.key --cert /tmp/tls.crt --namespace thor-api```
+
+   *Note: change the issuer reference to 'letsencrypt-staging' for testing*
+* Add Jenkins Access
+
