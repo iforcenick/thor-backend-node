@@ -245,7 +245,7 @@ export class GetIavTokenLogic extends Logic {
 
     async execute(user: User) {
         try {
-            return await this.client.getIavToken(user.tenantProfile.dwollaUri);
+            return await this.client.getIavToken(user.baseProfile.dwollaUri);
         } catch (e) {
             if (e instanceof dwolla.DwollaRequestError) {
                 throw e.toValidationError();

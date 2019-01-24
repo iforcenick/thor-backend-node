@@ -23,6 +23,10 @@ export class InvitationService extends db.ModelService<models.Invitation> {
         return await this.getOneBy('externalId', externalId);
     }
 
+    async getByUserId(userId: string): Promise<models.Invitation> {
+        return await this.getOneBy('userId', userId);
+    }
+
     async batchInsert(invitations: Array<Invitation>, trx?: transaction<any>) {
         this.modelType.query(trx).insert(invitations);
     }

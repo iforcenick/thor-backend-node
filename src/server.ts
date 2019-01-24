@@ -143,7 +143,7 @@ export class ApiServer {
         this.app.use('/transactions', passport.authenticate('jwt', {session: false}));
         this.app.use('/tenants', passport.authenticate('jwt', {session: false}));
         this.app.use('/auth/password', passport.authenticate('jwt', {session: false}));
-        this.app.use('/contractors/invitations', passport.authenticate('jwt', {session: false}));
+        this.app.use('/oldInvitations', passport.authenticate('jwt', {session: false}));
         this.app.use('/contractors/fundingSources', passport.authenticate('jwt', {session: false}));
         this.app.use('/contractors/transactions', passport.authenticate('jwt', {session: false}));
         this.app.use('/fundingSources', passport.authenticate('jwt', {session: false}));
