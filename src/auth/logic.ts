@@ -1,22 +1,25 @@
-import {Logic} from '../logic';
 import {AutoWired, Inject} from 'typescript-ioc';
-import {UserService} from '../user/service';
-import {Profile} from '../profile/models';
 import {Errors} from 'typescript-rest';
+import * as objection from 'objection';
+
+import {Logic} from '../logic';
+import {UserService} from '../user/service';
+import {Profile, Statuses} from '../profile/models';
 import {Logger} from '../logger';
 import {Auth, AuthType} from './models';
 import {User} from '../user/models';
 import {Config} from '../config';
+import {InvitationService} from '../invitation/service';
+import {ProfileService} from '../profile/service';
+import * as invitations from '../invitation/models';
 
 const passportJWT = require('passport-jwt');
-
 const jwt = require('jsonwebtoken');
 
 @AutoWired
-export class UserAuthorization extends Logic {
+export class UserAuthorizationLogic extends Logic {
     @Inject private userService: UserService;
     @Inject private logger: Logger;
-    @Inject private config: Config;
 
     async execute(login, password: string): Promise<any> {
         const tenant = await this.findTenant(login);
@@ -39,7 +42,7 @@ export class UserAuthorization extends Logic {
             throw new Errors.UnauthorizedError();
         }
 
-        user.token = await (new GenerateJwtLogic()).execute(user);
+        user.token = await new GenerateJwtLogic().execute(user);
 
         return user;
     }
@@ -60,7 +63,6 @@ export class UserAuthorization extends Logic {
         }
 
         const check = await this.userService.checkPassword(password, user.password);
-
         if (check !== true) {
             return null;
         }
@@ -69,7 +71,59 @@ export class UserAuthorization extends Logic {
 }
 
 @AutoWired
-export class UserChangePassword extends Logic {
+export class RegisterUserLogic extends Logic {
+    @Inject private userService: UserService;
+    @Inject private invitationService: InvitationService;
+    @Inject private profileService: ProfileService;
+
+    async execute(invitationToken: string, email: string, password: string): Promise<any> {
+        const invitation = await this.invitationService.getForAllTenants(invitationToken);
+        if (!invitation) {
+            throw new Errors.NotFoundError('Invitation not found');
+        }
+
+        if (!invitation.isPending()) {
+            throw new Errors.NotAcceptableError('Invitation already used');
+        }
+
+        if (invitation.email != email) {
+            throw new Errors.ConflictError('Emails do not match');
+        }
+
+        this.userService.setTenantId(invitation.tenantId);
+        const user = await this.userService.get(invitation.userId);
+        if (!user) {
+            throw new Errors.NotFoundError('User not found');
+        }
+
+        user.password = await this.userService.hashPassword(password);
+        // TODO: create function for the status state machine
+        user.tenantProfile.status = Statuses.tax;
+
+        await objection.transaction(this.invitationService.transaction(), async _trx => {
+            // create a new base profile with payment account if none exists
+            await this.userService.update(user, _trx);
+            if (!user.baseProfile) {
+                const baseProfile = Profile.factory({
+                    status: user.tenantProfile.status,
+                    email: user.tenantProfile.email,
+                    userId: user.id,
+                });
+                await this.profileService.insert(baseProfile, _trx, false);
+            }
+            await this.profileService.update(user.tenantProfile, _trx);
+
+            invitation.status = invitations.Status.used;
+            return await this.invitationService.update(invitation, _trx);
+        });
+
+        const token = await new GenerateJwtLogic().execute(user);
+        return {...user, token};
+    }
+}
+
+@AutoWired
+export class UserChangePasswordLogic extends Logic {
     @Inject private userService: UserService;
     @Inject private logger: Logger;
 
@@ -110,7 +164,7 @@ export class GenerateJwtLogic {
         auth.type = AuthType.TENANT;
         auth.userId = user.id;
         auth.tenantId = user.tenantProfile.tenantId;
-        auth.roles = user.tenantProfile.roles.map((role) => {
+        auth.roles = user.tenantProfile.roles.map(role => {
             return role.name;
         });
 
@@ -138,9 +192,9 @@ export class DecodeJwtLogic {
         return new passportJWT.Strategy(
             {
                 jwtFromRequest: passportJWT.ExtractJwt.fromAuthHeaderAsBearerToken(),
-                secretOrKey: this.config.get('authorization.jwtSecret')
+                secretOrKey: this.config.get('authorization.jwtSecret'),
             },
-            callback
+            callback,
         );
     }
 }

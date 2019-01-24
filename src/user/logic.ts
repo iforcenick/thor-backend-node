@@ -39,6 +39,20 @@ const filterByContractor = (query, contractor) => {
 };
 
 @AutoWired
+export class GetUserLogic extends Logic {
+    @Inject private userService: UserService;
+
+    async execute(id: string): Promise<models.User> {
+        const user = await this.userService.get(id);
+
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+        return user;
+    }
+}
+
+@AutoWired
 export class RatingJobsListLogic extends Logic {
     @Inject private userService: UserService;
     static sortableFields = ['rank', 'firstName', 'lastName', 'total', 'jobsCount'];
@@ -342,9 +356,6 @@ export class CreatePasswordResetLogic extends Logic {
 
         user.passwordResetToken = await this.userService.getPasswordResetToken();
         user.passwordResetExpiry = Date.now() + 86400000; // 24 hr
-
-        // TODO:
-        delete user['lastActivity'];
         await this.userService.update(user);
 
         try {
@@ -375,8 +386,6 @@ export class ResetPasswordLogic extends Logic {
             throw new Errors.ConflictError('New password is the same as the old one');
         }
 
-        // TODO:
-        delete user['lastActivity'];
         user.password = await this.userService.hashPassword(newPassword);
         user.passwordResetExpiry = null;
         user.passwordResetToken = null;
@@ -483,9 +492,10 @@ export class AddContractorUserLogic extends Logic {
             .from('profiles')
             .where('profiles.tenantId', this.context.getTenantId())
             .andWhere(builder => {
-                builder
-                    .where('profiles.email', profileData.email)
-                    .orWhere('profiles.externalId', profileData.externalId || '');
+                builder.where('profiles.email', profileData.email);
+                if (profileData.externalId) {
+                    builder.orWhere('profiles.externalId', profileData.externalId);
+                }
             })
             .first();
         // look for base profiles (no tenant id) with the same email

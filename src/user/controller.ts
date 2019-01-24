@@ -35,6 +35,7 @@ import {
     UserStatisticsLogic,
     CreatePasswordResetLogic,
     AddAdminUserLogic,
+    GetUserLogic,
 } from './logic';
 import {
     AddUserDocumentLogic,
@@ -43,7 +44,12 @@ import {
     DeleteUserDocumentLogic,
     GetUserDocumentDownloadLinkLogic,
 } from './document/logic';
-import {CreateContractorInvitationLogic, CreateAdminInvitationLogic, ResendInvitationLogic, DeleteInvitationLogic, GetInvitationsLogic} from '../invitation/logic';
+import {
+    CreateContractorInvitationLogic,
+    CreateAdminInvitationLogic,
+    ResendInvitationLogic,
+    DeleteInvitationLogic,
+} from '../invitation/logic';
 
 @Security('api_key')
 @Path('/users')
@@ -54,16 +60,20 @@ export class UserController extends BaseController {
     @Inject private transactionService: TransactionService;
 
     @GET
+    @Path('myself')
+    async getContractor(): Promise<dto.UserResponse> {
+        const logic = new GetUserLogic(this.getRequestContext());
+        const user = await logic.execute(this.getRequestContext().getUserId());
+
+        return this.map(dto.UserResponse, user);
+    }
+
+    @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdminReader)
     async getUser(@PathParam('id') id: string): Promise<dto.UserResponse> {
-        this.userService.setRequestContext(this.getRequestContext());
-
-        const user = await this.userService.get(id);
-
-        if (!user) {
-            throw new Errors.NotFoundError();
-        }
+        const logic = new GetUserLogic(this.getRequestContext());
+        const user = await logic.execute(id);
 
         return this.map(dto.UserResponse, user);
     }

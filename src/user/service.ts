@@ -1,6 +1,7 @@
 import crypto = require('crypto');
 import {AutoWired, Inject} from 'typescript-ioc';
 import {transaction} from 'objection';
+import * as objection from 'objection';
 
 import {RequestContext} from '../context';
 import * as db from '../db';
@@ -129,6 +130,11 @@ export class UserService extends db.ModelService<models.User> {
             await this.update(user, trx);
             await this.profileService.update(user.tenantProfile, trx);
         });
+    }
+
+    async update(user: models.User, trx?: objection.Transaction): Promise<models.User> {
+        delete user.lastActivity;
+        return await super.update(user, trx);
     }
 
     async findByEmailAndTenant(email: string, tenantId: string): Promise<models.User> {

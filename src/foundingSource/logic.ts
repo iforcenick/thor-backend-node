@@ -11,7 +11,7 @@ import {MailerService} from '../mailer';
 import {Logger} from '../logger';
 import {User} from '../user/models';
 import * as profiles from '../profile/models';
-import {Profile} from '../profile/models';
+import {Profile, Statuses} from '../profile/models';
 import * as db from '../db';
 
 // Private logic
@@ -38,6 +38,12 @@ class FundingSourceCreateAndNotifyLogic extends Logic {
         await transaction(this.profileService.transaction(), async trx => {
             fundingSourceResult = await this.fundingSourceService.insert(fundingSource, trx);
             await this.profileService.addFundingSource(profile, fundingSource, trx);
+
+            // update the user's status
+            user.tenantProfile.status = Statuses.active;
+            user.baseProfile.status = Statuses.active;
+            await this.profileService.update(user.baseProfile, trx);
+            await this.profileService.update(user.tenantProfile, trx);
         });
 
         try {

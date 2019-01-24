@@ -103,7 +103,7 @@ export class BatchInvitationsLogic extends Logic {
 
             try {
                 this.mailer.sendInvitation(invitation.email, {
-                    link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`,
+                    link: `${this.config.get('application.frontUri')}/register/${invitation.id}`,
                     companyName: tenant.businessName,
                 });
             } catch (error) {
@@ -209,12 +209,13 @@ export class CreateAdminInvitationLogic extends Logic {
         try {
             const tenant = await this.tenantService.get(tenantId);
             await this.mailer.sendInvitation(invitation.email, {
-                link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`,
+                link: `${this.config.get('application.frontUri')}/register/${invitation.id}`,
                 companyName: tenant.businessName,
             });
         } catch (e) {
             this.logger.error(e);
         }
+        return invitation;
     }
 }
 
@@ -238,12 +239,13 @@ export class CreateContractorInvitationLogic extends Logic {
         try {
             const tenant = await this.tenantService.get(tenantId);
             await this.mailer.sendInvitation(invitation.email, {
-                link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`,
+                link: `${this.config.get('application.frontUri')}/register/${invitation.id}`,
                 companyName: tenant.businessName,
             });
         } catch (e) {
             this.logger.error(e);
         }
+        return invitation;
     }
 }
 
@@ -306,7 +308,7 @@ export class ResendInvitationLogic extends Logic {
 
         try {
             await this.mailerService.sendInvitation(invitation.email, {
-                link: `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`,
+                link: `${this.config.get('application.frontUri')}/register/${invitation.id}`,
                 companyName: tenant.businessName,
             });
         } catch (e) {

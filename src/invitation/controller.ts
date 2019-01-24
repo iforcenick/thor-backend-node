@@ -25,12 +25,14 @@ import {AddContractorUserLogic} from '../user/logic';
 /**
  * Endpoints for managing contractor and admin invitations
  *
- * @deprecated moved invitations to user controller
  * @requires api_key
+ * @export
+ * @class InvitationController
+ * @extends {BaseController}
  */
 @Security('api_key')
-@Path('oldInvitations')
-@Tags('oldInvitations')
+@Path('users/invitations')
+@Tags('users/invitations')
 export class InvitationController extends BaseController {
     @Inject private invitationService: InvitationService;
     @Inject private userService: UserService;
@@ -85,6 +87,8 @@ export class InvitationController extends BaseController {
     async createAdminInvitation(data: models.InvitationRequest): Promise<models.InvitationResponse> {
         const parsedData = await this.validate(data, models.invitationRequestSchema);
         const logic = new AddContractorUserLogic(this.getRequestContext());
+        // placeholder for the user's table
+        parsedData['firstName'] = parsedData.email;
         const user = await logic.execute(parsedData);
         const invitationLogic = new CreateAdminInvitationLogic(this.getRequestContext());
         const invitation = await invitationLogic.execute(user.tenantProfile);
@@ -109,6 +113,8 @@ export class InvitationController extends BaseController {
     async createContractorInvitation(data: models.InvitationRequest): Promise<models.InvitationResponse> {
         const parsedData = await this.validate(data, models.invitationRequestSchema);
         const logic = new AddContractorUserLogic(this.getRequestContext());
+        // placeholder for the user's table
+        parsedData['firstName'] = parsedData.email;
         const user = await logic.execute(parsedData);
         const invitationLogic = new CreateContractorInvitationLogic(this.getRequestContext());
         const invitation = await invitationLogic.execute(user.tenantProfile);
@@ -118,6 +124,7 @@ export class InvitationController extends BaseController {
 
     /**
      *
+     * @requires {role} admin
      * @param {number} [page]
      * @param {number} [limit]
      * @param {string} [status]
@@ -172,7 +179,7 @@ export class InvitationController extends BaseController {
             await this.publisher.publish(
                 new SendInvitationEmailMessage(
                     invitation.email,
-                    `${this.config.get('application.frontUri')}/on-boarding/${invitation.id}`,
+                    `${this.config.get('application.frontUri')}/register/${invitation.id}`,
                     tenant.businessName,
                 ),
             );

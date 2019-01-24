@@ -12,7 +12,13 @@ export class LoginRequest extends Mapper {
     password: string = mapper.FIELD_STR;
 }
 
-export class PasswordRequest extends Mapper {
+export class RegisterUserRequest extends Mapper {
+    invitationToken: string = mapper.FIELD_STR;
+    email: string = mapper.FIELD_STR;
+    password: string = mapper.FIELD_STR;
+}
+
+export class ChangePasswordRequest extends Mapper {
     oldPassword: string = mapper.FIELD_STR;
     newPassword: string = mapper.FIELD_STR;
 }
@@ -24,6 +30,12 @@ export class ResetPasswordRequest extends Mapper {
 
 export const loginRequestSchema = Joi.object().keys({
     login: Joi.string().required(),
+    password: Joi.string().required(),
+});
+
+export const registerUserRequestSchema = Joi.object().keys({
+    invitationToken: Joi.string().required(),
+    email: Joi.string().required(),
     password: Joi.string().required(),
 });
 
