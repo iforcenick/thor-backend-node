@@ -1,15 +1,8 @@
-import {Errors, GET, Path, PathParam, POST, DELETE, Preprocessor, QueryParam, FileParam, PUT} from 'typescript-rest';
-import {Inject} from 'typescript-ioc';
-import {Security, Tags} from 'typescript-rest-swagger';
 import * as _ from 'lodash';
-
+import {Inject} from 'typescript-ioc';
+import {Errors, GET, Path, PathParam, POST, DELETE, Preprocessor, QueryParam, FileParam, PUT} from 'typescript-rest';
+import {Security, Tags} from 'typescript-rest-swagger';
 import {BaseController} from '../api';
-import {WorkerPublisher} from '../worker/publisher';
-import {SendInvitationEmailMessage} from './messages';
-import {InvitationService} from './service';
-import {UserService} from '../user/service';
-import {TenantService} from '../tenant/service';
-import * as models from './models';
 import {
     BatchInvitationsLogic,
     GetInvitationLogic,
@@ -20,10 +13,16 @@ import {
     CreateContractorInvitationLogic,
     CreateAdminInvitationLogic,
 } from './logic';
-import {AddContractorUserLogic} from '../user/logic';
+import {AddContractorUserLogic, AddAdminUserLogic} from '../user/logic';
+import {SendInvitationEmailMessage} from './messages';
+import * as models from './models';
+import {WorkerPublisher} from '../worker/publisher';
+import {InvitationService} from './service';
+import {UserService} from '../user/service';
+import {TenantService} from '../tenant/service';
 
 /**
- * Endpoints for managing contractor and admin invitations
+ * Manage contractor and administator invitations
  *
  * @requires api_key
  * @export
@@ -40,7 +39,7 @@ export class InvitationController extends BaseController {
     @Inject private publisher: WorkerPublisher;
 
     /**
-     * Endpoint to query for a list of invitations
+     * Query for a list of invitations
      *
      * @requires {role} [admin, adminReader]
      * @param {number} [page]   optional: default 1
@@ -71,25 +70,22 @@ export class InvitationController extends BaseController {
     }
 
     /**
-     * Endpoint to create a new administrator invitation
-     *
-     * similar to the POST /users/admin endpoint,
-     * execpt only an email is required
+     * Create a new administrator invitation
      *
      * @requires {role} admin
-     * @param {models.InvitationRequest} data
+     * @param {models.AdminInvitationRequest} data
      * @returns {Promise<models.InvitationResponse>}
      * @memberof InvitationController
      */
     @POST
     @Path('admins')
     @Preprocessor(BaseController.requireAdmin)
-    async createAdminInvitation(data: models.InvitationRequest): Promise<models.InvitationResponse> {
-        const parsedData = await this.validate(data, models.invitationRequestSchema);
-        const logic = new AddContractorUserLogic(this.getRequestContext());
+    async createAdminInvitation(data: models.AdminInvitationRequest): Promise<models.InvitationResponse> {
+        const parsedData = await this.validate(data, models.adminInvitationRequestSchema);
+        const logic = new AddAdminUserLogic(this.getRequestContext());
         // placeholder for the user's table
         parsedData['firstName'] = parsedData.email;
-        const user = await logic.execute(parsedData);
+        const user = await logic.execute(parsedData.profile, parsedData.profile.role);
         const invitationLogic = new CreateAdminInvitationLogic(this.getRequestContext());
         const invitation = await invitationLogic.execute(user.tenantProfile);
 
@@ -97,21 +93,18 @@ export class InvitationController extends BaseController {
     }
 
     /**
-     * Endpoint to create a new contractor invitation
-     *
-     * similar to the POST /users/contractors endpoint,
-     * except only an email is required
+     * Create a new contractor invitation
      *
      * @requires {role} admin
-     * @param {models.InvitationRequest} data
+     * @param {models.ContractorInvitationRequest} data
      * @returns {Promise<models.InvitationResponse>}
      * @memberof InvitationController
      */
     @POST
     @Path('contractors')
     @Preprocessor(BaseController.requireAdmin)
-    async createContractorInvitation(data: models.InvitationRequest): Promise<models.InvitationResponse> {
-        const parsedData = await this.validate(data, models.invitationRequestSchema);
+    async createContractorInvitation(data: models.ContractorInvitationRequest): Promise<models.InvitationResponse> {
+        const parsedData = await this.validate(data, models.contractorInvitationRequestSchema);
         const logic = new AddContractorUserLogic(this.getRequestContext());
         // placeholder for the user's table
         parsedData['firstName'] = parsedData.email;
@@ -123,22 +116,20 @@ export class InvitationController extends BaseController {
     }
 
     /**
+     * Create a new contractor invitation
      *
-     * @requires {role} admin
-     * @param {number} [page]
-     * @param {number} [limit]
-     * @param {string} [status]
-     * @returns {Promise<models.InvitationPaginatedResponse>}
+     * @param {models.ContractorInvitationRequest} data
+     * @returns {Promise<models.InvitationResponse>}
      * @memberof InvitationController
      */
     @POST
     @Path('contractors/background')
     @Preprocessor(BaseController.requireAdmin)
-    async sendInvitationByRmq(data: models.InvitationRequest): Promise<models.InvitationResponse> {
+    async sendInvitationByRmq(data: models.ContractorInvitationRequest): Promise<models.InvitationResponse> {
         this.invitationService.setRequestContext(this.getRequestContext());
         this.userService.setRequestContext(this.getRequestContext());
 
-        const parsedData = await this.validate(data, models.invitationRequestSchema);
+        const parsedData = await this.validate(data, models.contractorInvitationRequestSchema);
         const user = await this.getRequestContext().getUserId();
         let invitation = models.Invitation.factory(parsedData);
         invitation.status = models.Status.pending;
@@ -191,7 +182,7 @@ export class InvitationController extends BaseController {
     }
 
     /**
-     * Endpoint to resend a contractor's invitation
+     * Resend a contractor's invitation
      *
      * @requires {role} [admin, adminReader]
      * @param {string} userId
@@ -206,7 +197,7 @@ export class InvitationController extends BaseController {
     }
 
     /**
-     * Endpoint to resend an administrator's invitation
+     * Resend an administrator's invitation
      *
      * @requires {role} admin
      * @param {string} userId
@@ -221,7 +212,7 @@ export class InvitationController extends BaseController {
     }
 
     /**
-     * Endpoint to delete a contractor's invitation
+     * Delete a contractor's invitation
      *
      * @requires {role} admin
      * @param {string} userId
@@ -236,7 +227,7 @@ export class InvitationController extends BaseController {
     }
 
     /**
-     * Endpoint to delete an administrator's invitation
+     * Delete an administrator's invitation
      *
      * @requires {role} admin
      * @param {string} userId
@@ -269,7 +260,7 @@ export class InvitationController extends BaseController {
 }
 
 /**
- * public endpoints for retrieving and using invitation tokens
+ * Public endpoints for retrieving and using invitation tokens
  *
  * @export
  * @class InvitationCheckController

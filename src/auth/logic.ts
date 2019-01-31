@@ -1,17 +1,16 @@
+import * as objection from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {Errors} from 'typescript-rest';
-import * as objection from 'objection';
-
-import {Logic} from '../logic';
-import {UserService} from '../user/service';
-import {Profile, Statuses} from '../profile/models';
+import {Config} from '../config';
 import {Logger} from '../logger';
+import {Logic} from '../logic';
+import {Profile, Statuses} from '../profile/models';
 import {Auth, AuthType} from './models';
 import {User} from '../user/models';
-import {Config} from '../config';
+import * as invitations from '../invitation/models';
+import {UserService} from '../user/service';
 import {InvitationService} from '../invitation/service';
 import {ProfileService} from '../profile/service';
-import * as invitations from '../invitation/models';
 
 const passportJWT = require('passport-jwt');
 const jwt = require('jsonwebtoken');
@@ -98,7 +97,7 @@ export class RegisterUserLogic extends Logic {
 
         user.password = await this.userService.hashPassword(password);
         // TODO: create function for the status state machine
-        user.tenantProfile.status = Statuses.tax;
+        user.tenantProfile.status = Statuses.profile;
 
         await objection.transaction(this.invitationService.transaction(), async _trx => {
             // create a new base profile with payment account if none exists

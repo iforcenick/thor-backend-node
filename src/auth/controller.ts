@@ -1,7 +1,6 @@
 import {PATCH, Path, POST, GET, PathParam} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {BaseController} from '../api';
-import {UserAuthorizationLogic, UserChangePasswordLogic, RegisterUserLogic} from './logic';
 import {
     AuthUserResponse,
     LoginRequest,
@@ -13,6 +12,7 @@ import {
     RegisterUserRequest,
     registerUserRequestSchema,
 } from './dto';
+import {UserAuthorizationLogic, UserChangePasswordLogic, RegisterUserLogic} from './logic';
 import {ResetPasswordLogic, GetPasswordResetLogic} from '../user/logic';
 
 @Path('/auth')

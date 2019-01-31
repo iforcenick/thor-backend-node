@@ -74,7 +74,11 @@ export class InvitationBase extends Mapper {
     email: string = mapper.FIELD_STR;
 }
 
-export class InvitationRequest extends InvitationBase {
+export class AdminInvitationRequest extends InvitationBase {
+    role: string = mapper.FIELD_STR;
+}
+
+export class ContractorInvitationRequest extends InvitationBase {
     externalId: string = mapper.FIELD_STR;
 }
 
@@ -93,6 +97,10 @@ export class InvitationsResponse extends Mapper {
     public items: Array<InvitationResponse> = mapper.FIELD_ARR;
 }
 
-export const invitationRequestSchema = Joi.object().keys({
+export const adminInvitationRequestSchema = Joi.object().keys({
+    email: Joi.string().email(),
+});
+
+export const contractorInvitationRequestSchema = Joi.object().keys({
     email: Joi.string().email(),
 });

@@ -1,45 +1,37 @@
-import {Errors, FileParam, GET, PATCH, Path, PathParam, POST, Preprocessor, PUT, QueryParam} from 'typescript-rest';
-import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
-import * as models from './models';
-import {BusinessClassificationsResponse} from './models';
-import {TenantService} from './service';
+import {Errors, FileParam, GET, PATCH, Path, POST, Preprocessor, PUT, QueryParam} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
+
+import {BaseController} from '../api';
 import * as dwolla from '../dwolla';
-import {DwollaNotifier} from '../dwolla/notifier';
-import {UserService} from '../user/service';
+import * as _ from 'lodash';
 import {
     AddTenantCompanyDocumentsLogic,
     AddTenantCompanyLogic,
     GetTenantCompanyLogic,
     GetTenantCompanyOwnerLogic,
-    GetTenantLogic, ListTenantCompanyDocumentsLogic,
+    GetTenantLogic,
+    ListTenantCompanyDocumentsLogic,
     RetryTenantCompanyLogic,
-    UpdateTenantCompanyLogic
+    UpdateTenantCompanyLogic,
 } from './logic';
+import * as models from './models';
+import {BusinessClassificationsResponse} from './models';
 import {TenantCompanyDocument} from './models';
-import * as _ from 'lodash';
-import {Settings} from './settings/models';
 
 @Security('api_key')
 @Path('/tenants')
 export class TenantController extends BaseController {
-    @Inject private service: TenantService;
     @Inject private dwollaClient: dwolla.Client;
-    @Inject private dwollaNotifier: DwollaNotifier;
-    @Inject private userService: UserService;
 
-    @GET
-    @Path('')
-    @Tags('tenants')
-    @Preprocessor(BaseController.requireAdminReader)
-    async getTenant(): Promise<models.TenantResponse> {
-        const logic = new GetTenantLogic(this.getRequestContext());
-        const tenant = await logic.execute(this.getRequestContext().getTenantId());
-
-        return this.map(models.TenantResponse, tenant);
-    }
-
+    /**
+     * Create a new tenant
+     * TODO: require thor
+     *
+     * @param {models.TenantRequest} data
+     * @returns {Promise<models.TenantResponse>}
+     * @memberof TenantController
+     */
     @POST
     @Path('')
     @Tags('tenants')
@@ -61,6 +53,29 @@ export class TenantController extends BaseController {
         // return this.map(models.TenantResponse, tenant);
     }
 
+    /**
+     * Get the current tenant profile
+     *
+     * @returns {Promise<models.TenantResponse>}
+     * @memberof TenantController
+     */
+    @GET
+    @Path('')
+    @Tags('tenants')
+    @Preprocessor(BaseController.requireAdminReader)
+    async getTenant(): Promise<models.TenantResponse> {
+        const logic = new GetTenantLogic(this.getRequestContext());
+        const tenant = await logic.execute(this.getRequestContext().getTenantId());
+
+        return this.map(models.TenantResponse, tenant);
+    }
+
+    /**
+     * Get the current tenant settings
+     *
+     * @returns {Promise<any>}
+     * @memberof TenantController
+     */
     @GET
     @Path('/settings')
     @Preprocessor(BaseController.requireAdminReader)
@@ -68,9 +83,37 @@ export class TenantController extends BaseController {
         const logic = new GetTenantLogic(this.getRequestContext());
         const tenant = await logic.execute(this.getRequestContext().getTenantId());
 
-        return new Settings(tenant.settings);
+        return tenant.settings;
     }
 
+    /**
+     * Create the current tenant company profile
+     *
+     * @param {models.TenantCompanyPostRequest} data
+     * @returns {Promise<models.TenantCompanyResponse>}
+     * @memberof TenantController
+     */
+    @POST
+    @Path('/company')
+    @Tags('tenantCompany')
+    @Preprocessor(BaseController.requireAdmin)
+    async createTenantCompany(data: models.TenantCompanyPostRequest): Promise<models.TenantCompanyResponse> {
+        const parsedData: models.TenantCompanyPostRequest = await this.validate(
+            data,
+            models.tenantCompanyPostRequestSchema,
+        );
+        const logic = new AddTenantCompanyLogic(this.getRequestContext());
+        const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());
+
+        return this.map(models.TenantCompanyResponse, company);
+    }
+
+    /**
+     * Get the current tenant company profile
+     *
+     * @returns {Promise<models.TenantCompanyResponse>}
+     * @memberof TenantController
+     */
     @GET
     @Path('/company')
     @Tags('tenantCompany')
@@ -82,6 +125,56 @@ export class TenantController extends BaseController {
         return this.map(models.TenantCompanyResponse, company);
     }
 
+    /**
+     * Update the current tenant company profile
+     *
+     * @param {models.TenantCompanyPatchRequest} data
+     * @returns {Promise<models.TenantCompanyResponse>}
+     * @memberof TenantController
+     */
+    @PATCH
+    @Path('/company')
+    @Tags('tenantCompany')
+    @Preprocessor(BaseController.requireAdmin)
+    async updateTenantCompany(data: models.TenantCompanyPatchRequest): Promise<models.TenantCompanyResponse> {
+        const parsedData: models.TenantCompanyPatchRequest = await this.validate(
+            data,
+            models.tenantCompanyPatchRequestSchema,
+        );
+        const logic = new UpdateTenantCompanyLogic(this.getRequestContext());
+        const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());
+
+        return this.map(models.TenantCompanyResponse, company);
+    }
+
+    /**
+     * Resubmit the current tenant company profile
+     *
+     * @param {models.TenantCompanyRetryRequest} data
+     * @returns {Promise<models.TenantCompanyResponse>}
+     * @memberof TenantController
+     */
+    @PUT
+    @Path('/company')
+    @Tags('tenantCompany')
+    @Preprocessor(BaseController.requireAdmin)
+    async retryTenantCompany(data: models.TenantCompanyRetryRequest): Promise<models.TenantCompanyResponse> {
+        const parsedData: models.TenantCompanyRetryRequest = await this.validate(
+            data,
+            models.tenantCompanyRetryRequestSchema,
+        );
+        const logic = new RetryTenantCompanyLogic(this.getRequestContext());
+        const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());
+
+        return this.map(models.TenantCompanyResponse, company);
+    }
+
+    /**
+     * Get the current tenant owner profile
+     *
+     * @returns {Promise<models.TenantOwnerResponse>}
+     * @memberof TenantController
+     */
     @GET
     @Path('/company/owner')
     @Tags('tenantCompany')
@@ -93,42 +186,12 @@ export class TenantController extends BaseController {
         return this.map(models.TenantOwnerResponse, owner);
     }
 
-    @POST
-    @Path('/company')
-    @Tags('tenantCompany')
-    @Preprocessor(BaseController.requireAdmin)
-    async createTenantCompany(data: models.TenantCompanyPostRequest): Promise<models.TenantCompanyResponse> {
-        const parsedData: models.TenantCompanyPostRequest = await this.validate(data, models.tenantCompanyPostRequestSchema);
-        const logic = new AddTenantCompanyLogic(this.getRequestContext());
-        const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());
-
-        return this.map(models.TenantCompanyResponse, company);
-    }
-
-    @PATCH
-    @Path('/company')
-    @Tags('tenantCompany')
-    @Preprocessor(BaseController.requireAdmin)
-    async updateTenantCompany(data: models.TenantCompanyPatchRequest): Promise<models.TenantCompanyResponse> {
-        const parsedData: models.TenantCompanyPatchRequest = await this.validate(data, models.tenantCompanyPatchRequestSchema);
-        const logic = new UpdateTenantCompanyLogic(this.getRequestContext());
-        const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());
-
-        return this.map(models.TenantCompanyResponse, company);
-    }
-
-    @PUT
-    @Path('/company')
-    @Tags('tenantCompany')
-    @Preprocessor(BaseController.requireAdmin)
-    async retryTenantCompany(data: models.TenantCompanyRetryRequest): Promise<models.TenantCompanyResponse> {
-        const parsedData: models.TenantCompanyRetryRequest = await this.validate(data, models.tenantCompanyRetryRequestSchema);
-        const logic = new RetryTenantCompanyLogic(this.getRequestContext());
-        const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());
-
-        return this.map(models.TenantCompanyResponse, company);
-    }
-
+    /**
+     * Get the list of business classifications for a tenant company
+     *
+     * @returns
+     * @memberof TenantController
+     */
     @GET
     @Path('/company/businessCategories')
     @Tags('tenantCompany')
@@ -140,6 +203,12 @@ export class TenantController extends BaseController {
         return this.map(BusinessClassificationsResponse, businessCategories);
     }
 
+    /**
+     * Get the list of documents uploaded for the current tenant company
+     *
+     * @returns {Promise<Array<TenantCompanyDocument>>}
+     * @memberof TenantController
+     */
     @GET
     @Path('/company/documents')
     @Preprocessor(BaseController.requireAdminReader)
@@ -147,15 +216,26 @@ export class TenantController extends BaseController {
         const logic = new ListTenantCompanyDocumentsLogic(this.getRequestContext());
         const docs = await logic.execute(this.getRequestContext().getTenantId());
 
-        return docs.map((doc) => {
+        return docs.map(doc => {
             return this.map(TenantCompanyDocument, doc);
         });
     }
 
+    /**
+     * Upload a document for the current tenant company
+     *
+     * @param {string} type
+     * @param {*} file
+     * @returns {Promise<TenantCompanyDocument>}
+     * @memberof TenantController
+     */
     @POST
     @Path('/company/documents')
     @Preprocessor(BaseController.requireAdmin)
-    async createTenantCompanyDocuments(@QueryParam('type') type: string, @FileParam('filepond') file): Promise<TenantCompanyDocument> {
+    async createTenantCompanyDocuments(
+        @QueryParam('type') type: string,
+        @FileParam('filepond') file,
+    ): Promise<TenantCompanyDocument> {
         if (!file) {
             throw new Errors.NotAcceptableError('File missing');
         }

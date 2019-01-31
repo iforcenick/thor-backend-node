@@ -1,15 +1,13 @@
 import crypto = require('crypto');
+import {transaction, Transaction} from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
-import {transaction} from 'objection';
-import * as objection from 'objection';
-
 import {RequestContext} from '../context';
 import * as db from '../db';
-import * as role from './role';
-import {ProfileService} from '../profile/service';
 import * as profile from '../profile/models';
 import * as transactions from '../transaction/models';
 import * as models from './models';
+import * as role from './role';
+import {ProfileService} from '../profile/service';
 
 const bcrypt = require('bcrypt');
 
@@ -132,7 +130,7 @@ export class UserService extends db.ModelService<models.User> {
         });
     }
 
-    async update(user: models.User, trx?: objection.Transaction): Promise<models.User> {
+    async update(user: models.User, trx?: Transaction): Promise<models.User> {
         delete user.lastActivity;
         return await super.update(user, trx);
     }

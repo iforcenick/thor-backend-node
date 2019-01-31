@@ -1,21 +1,19 @@
+import * as parserAsync from 'csv-parse';
+import Joi = require('joi');
+import * as _ from 'lodash';
 import * as objection from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
-import * as _ from 'lodash';
 import {Errors} from 'typescript-rest';
-import Joi = require('joi');
-import * as parserAsync from 'csv-parse';
-
-import {Logic} from '../logic';
-import {MailerService} from '../mailer';
-import {InvitationService} from './service';
-import * as models from './models';
-import {Invitation} from './models';
-import {TenantService} from '../tenant/service';
 import {Config} from '../config';
 import {Logger} from '../logger';
-import {ProfileService} from '../profile/service';
+import {Logic} from '../logic';
+import {MailerService} from '../mailer';
+import * as models from './models';
+import {Invitation} from './models';
 import {Profile} from '../profile/models';
-import {UserService} from '../user/service';
+import {InvitationService} from './service';
+import {TenantService} from '../tenant/service';
+import {ProfileService} from '../profile/service';
 
 @AutoWired
 export class BatchInvitationsLogic extends Logic {
@@ -199,12 +197,14 @@ export class CreateAdminInvitationLogic extends Logic {
     @Inject private config: Config;
     @Inject private logger: Logger;
 
-    async execute(profile: Profile) {
+    async execute(profile: Profile, trx?: objection.Transaction) {
         const tenantId = await this.context.getTenantId();
-        let invitation = models.Invitation.factory(profile);
-        invitation.status = models.Status.pending;
-        invitation.type = models.Types.admin;
-        invitation = await this.invitationService.insert(invitation);
+        let invitation = models.Invitation.factory({
+            ...profile,
+            type: models.Types.admin,
+            status: models.Status.pending,
+        });
+        invitation = await this.invitationService.insert(invitation, trx);
 
         try {
             const tenant = await this.tenantService.get(tenantId);

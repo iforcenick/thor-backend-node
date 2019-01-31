@@ -1,17 +1,16 @@
-import {Security, Tags} from 'typescript-rest-swagger';
 import {GET, Path, POST, Preprocessor, QueryParam} from 'typescript-rest';
-
+import {Security, Tags} from 'typescript-rest-swagger';
 import {BaseController, dateRangeSchema} from '../api';
+import {CreateContractorLogic, GetContractorTransactionsLogic} from './logic';
 import {ContractorRequest, contractorRequestSchema, ContractorResponse} from './models';
 import * as transactions from '../transaction/models';
-import {CreateContractorLogic, GetContractorTransactionsLogic} from './logic';
 
 @Security('api_key')
 @Path('/contractors')
 @Tags('contractors')
 export class ContractorController extends BaseController {
     /**
-     * TODO:
+     * Initialize a contractor's profile and create their payments account
      *
      * @param {ContractorRequest} data
      * @returns {Promise<ContractorResponse>}

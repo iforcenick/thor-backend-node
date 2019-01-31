@@ -443,7 +443,7 @@ export class AddAdminUserLogic extends Logic {
             existingProfileQuery,
         ]);
         if (existingTenantProfileResult)
-            throw new Errors.ConflictError('contractor with that email or id already exist');
+            throw new Errors.ConflictError('An admin with that email already exists');
 
         let user: models.User;
         let tenantProfile: profiles.Profile;

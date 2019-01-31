@@ -1,13 +1,18 @@
-import {PaginatedResponse, mapper} from '../api';
-import {Mapper} from '../mapper';
-import * as db from '../db';
-import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import Joi = require('joi');
-import {Profile} from '../profile/models';
+import {mapper} from '../api';
+import * as db from '../db';
 import * as dwolla from '../dwolla';
+import {Mapper} from '../mapper';
+import {Profile} from '../profile/models';
 
 export const enum Relations {
     profiles = 'profiles',
+}
+
+export const enum Statuses {
+    company = 'company', // tenant is missing company information
+    bank = 'bank', // tenant needs to add their bank info
+    active = 'active', // tenant account is ready to manage contractors
 }
 
 export class Tenant extends db.Model {
@@ -35,6 +40,7 @@ export class Tenant extends db.Model {
     fundingSourceName?: string = null;
     fundingSourceVerificationStatus?: string = null;
     settings: any = null;
+    status?: string = null;
 
     static get relationMappings() {
         return {
@@ -43,9 +49,9 @@ export class Tenant extends db.Model {
                 modelClass: Profile,
                 join: {
                     from: `${db.Tables.tenants}.id`,
-                    to: `${db.Tables.profiles}.tenantId`
-                }
-            }
+                    to: `${db.Tables.profiles}.tenantId`,
+                },
+            },
         };
     }
 
@@ -74,7 +80,7 @@ export class Tenant extends db.Model {
             businessType: this.businessType,
             businessClassification: this.businessClassification,
             website: this.website,
-            status: this.dwollaStatus
+            status: this.dwollaStatus,
         };
     }
 }
@@ -106,6 +112,8 @@ export class TenantResponse extends TenantBaseInfo {
     id: string = mapper.FIELD_STR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
+    status: string = mapper.FIELD_STR;
+    settings: object = mapper.object;
 }
 
 export class TenantOwnerAddressResponse extends Mapper {
@@ -181,8 +189,7 @@ export class TenantCompanyPatchRequest extends Mapper {
 
 export class TenantCompanyRetryRequest extends TenantCompanyPostRequest {}
 
-export class TenantRequest extends TenantBaseInfo {
-}
+export class TenantRequest extends TenantBaseInfo {}
 
 export class TenantCompanyDocument extends Mapper {
     type: string = mapper.FIELD_STR;
@@ -196,61 +203,83 @@ export const tenantRequestSchema = Joi.object().keys({
     dwollaUri: Joi.string(),
 });
 
-export const tenantOwnerAddressSchema = Joi.object().keys({
-    address1: Joi.string().required(),
-    address2: Joi.string().allow('', null),
-    city: Joi.string().required(),
-    stateProvinceRegion: Joi.string().required(),
-    postalCode: Joi.string().required(),
-    country: Joi.string().required(),
+export const tenantControllerPassportSchema = Joi.object().keys({
+    number: Joi.string().required(),
+    country: Joi.string().length(2).required(),
 });
 
-export const tenantOwnerSchema = Joi.object().keys({
+export const tenantControllerAddressSchema = Joi.object().keys({
+    address1: Joi.string().required(),
+    address2: Joi.string().allow('', null),
+    address3: Joi.string().allow('', null),
+    city: Joi.string().required(),
+    stateProvinceRegion: Joi.string().required().length(2),
+    postalCode: Joi.string().allow('', null), // optional,
+    country: Joi.string().required().length(2).default('US'),
+});
+
+export const tenantControllerSchema = Joi.object().keys({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
     title: Joi.string().required(),
     dateOfBirth: Joi.string().required(),
-    ssn: Joi.string().required(),
-    address: tenantOwnerAddressSchema.required(),
+    ssn: Joi.string().required().invalid(['0000']),
+    address: tenantControllerAddressSchema.required(),
+    // passport: tenantControllerPassportSchema,
 });
 
 export const tenantCompanyPostRequestSchema = Joi.object().keys({
-    firstName: Joi.string().required(),
-    lastName: Joi.string().required(),
-    phone: Joi.string().required(),
-    email: Joi.string().required().email(),
-    dateOfBirth: Joi.string().required(),
-    ssn: Joi.string().required().invalid(['0000']),
-    country: Joi.string().required(),
-    state: Joi.string().required().uppercase().length(2),
-    city: Joi.string().required().regex(/[a-zA-Z]+/),
-    postalCode: Joi.string().required(),
-    address1: Joi.string().required().max(50),
-    address2: Joi.string().allow('', null).max(50),
+    // company profile
     businessName: Joi.string().required(),
-    doingBusinessAs: Joi.string().allow('', null),
+    doingBusinessAs: Joi.string().allow('', null), // optional
     businessType: Joi.string().required(),
     businessClassification: Joi.string().required(),
-    ein: Joi.string().allow('', null),
-    website: Joi.string().allow('', null),
-    controller: tenantOwnerSchema.when('businessType', {
+    website: Joi.string().allow('', null), // optional
+    ein: Joi.string().when('businessType', {
+        is: Joi.equal(dwolla.customer.BUSINESS_TYPE.Sole),
+        then: Joi.allow('', null), // optional for sole
+        otherwise: Joi.required(),
+    }),
+    address1: Joi.string().required().max(50),
+    address2: Joi.string().allow('', null).max(50), // optional
+    city: Joi.string().required().regex(/[a-zA-Z]+/),
+    state: Joi.string().required().uppercase().length(2),
+    postalCode: Joi.string().required(),
+    country: Joi.string().length(2).default('US'), // optional
+    phone: Joi.string(), // optional
+    // business owner or admin
+    firstName: Joi.string().required(),
+    lastName: Joi.string().required(),
+    email: Joi.string().required().email(),
+    dateOfBirth: Joi.string().when('businessType', {
+        is: Joi.equal(dwolla.customer.BUSINESS_TYPE.Sole),
+        then: Joi.allow('', null), // optional for sole
+        otherwise: Joi.required(),
+    }),
+    ssn: Joi.string().invalid(['0000']).when('businessType', {
+        is: Joi.equal(dwolla.customer.BUSINESS_TYPE.Sole),
+        then: Joi.allow('', null), // optional for sole
+        otherwise: Joi.required(),
+    }),
+    // controller
+    controller: tenantControllerSchema.when('businessType', {
         is: Joi.equal(dwolla.customer.BUSINESS_TYPE.Sole),
         then: Joi.forbidden(),
-        otherwise: Joi.required()
+        otherwise: Joi.required(),
     }),
 });
 
 export const tenantCompanyPatchRequestSchema = Joi.object().keys({
-    phone: Joi.string().required(),
+    phone: Joi.string(), // optional
     email: Joi.string().required().email(),
-    country: Joi.string().required(),
-    state: Joi.string().required().uppercase().length(2),
-    city: Joi.string().required().regex(/[a-zA-Z]+/),
-    postalCode: Joi.string().required(),
     address1: Joi.string().required().max(50),
     address2: Joi.string().allow('', null).max(50),
-    doingBusinessAs: Joi.string().allow('', null),
-    website: Joi.string().allow('', null),
+    city: Joi.string().required().regex(/[a-zA-Z]+/),
+    state: Joi.string().required().uppercase().length(2),
+    country: Joi.string().length(2).default('US'), // optional
+    postalCode: Joi.string().required(),
+    doingBusinessAs: Joi.string().allow('', null), // optional
+    website: Joi.string().allow('', null), // optional
 });
 
 export const tenantCompanyRetryRequestSchema = tenantCompanyPostRequestSchema;

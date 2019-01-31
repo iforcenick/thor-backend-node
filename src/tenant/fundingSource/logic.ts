@@ -2,7 +2,7 @@ import {AutoWired, Inject} from 'typescript-ioc';
 import {CreateTenantFundingSourceRequest} from './models';
 import * as dwolla from '../../dwolla';
 import {TenantService} from '../service';
-import {Tenant} from '../models';
+import {Tenant, Statuses} from '../models';
 import {Logic} from '../../logic';
 import {Errors} from 'typescript-rest';
 import {FundingSource, VerificationStatuses} from '../../foundingSource/models';
@@ -10,11 +10,8 @@ import {FundingSourceService} from '../../foundingSource/services';
 import {UserService} from '../../user/service';
 import {User} from '../../user/models';
 import {ISource} from '../../dwolla/funding';
-import {ProfileService} from '../../profile/service';
 import {MailerService} from '../../mailer';
 import {Logger} from '../../logger';
-import {transaction} from 'objection';
-import {GetUserFundingSourcesLogic} from '../../foundingSource/logic';
 
 
 @AutoWired
@@ -182,6 +179,7 @@ export class AddVerifyingFundingSourceForTenantLogic extends Logic {
         tenant.fundingSourceName = dwollaFunding.name;
         tenant.fundingSourceUri = uri;
         tenant.fundingSourceVerificationStatus = dwollaFunding.verificationStatus();
+        tenant.status = Statuses.active;
 
         tenant = await this.tenantService.update(tenant);
 

@@ -1,6 +1,6 @@
 import {AutoWired} from 'typescript-ioc';
-import * as models from './models';
 import * as db from '../db';
+import * as models from './models';
 
 @AutoWired
 export class TenantService extends db.ModelService<models.Tenant> {

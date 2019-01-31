@@ -1,14 +1,13 @@
-import {BaseController} from '../../api';
-import * as models from './models';
-import * as dwolla from '../../dwolla';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {DELETE, GET, PATCH, Path, POST, Preprocessor} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
-import * as logicLayer from './logic';
-import {UserService} from '../../user/service';
 import {NotFoundError} from 'typescript-rest/dist/server-errors';
-import {User} from '../../user/models';
+import {BaseController} from '../../api';
+import * as dwolla from '../../dwolla';
 import {GetIavTokenForTenantLogic} from './logic';
+import * as logicLayer from './logic';
+import * as models from './models';
+import {UserService} from '../../user/service';
 import {TenantService} from '../service';
 
 @AutoWired

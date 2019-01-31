@@ -1,47 +1,45 @@
-import {Errors, GET, Path, PathParam, POST, Preprocessor} from 'typescript-rest';
-import {BaseController} from '../api';
-import {Inject} from 'typescript-ioc';
-import * as models from './models';
-import {transaction} from 'objection';
-import {ProfileService} from './service';
+import {GET, Path, PathParam, PATCH, Preprocessor} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
+import {BaseController} from '../api';
+import { UpdateProfileLogic, GetProfileLogic } from './logic';
+import {ProfileResponse, ProfileRequest, profilePatchSchema} from './models';
 
 @Security('api_key')
 @Path('/profiles')
 @Tags('profiles')
 export class ProfileController extends BaseController {
-    @Inject private service: ProfileService;
-
-    @GET
-    @Path(':id')
+    /**
+     * Update an admin's profile
+     *
+     * @param {AdminRequest} data
+     * @returns {Promise<ProfileResponse>}
+     * @memberof ProfileController
+     */
+    @PATCH
+    @Path('')
     @Preprocessor(BaseController.requireAdminReader)
-    async getProfile(@PathParam('id') id: string): Promise<models.ProfileResponse> {
-        this.service.setRequestContext(this.getRequestContext());
-        const profile = await this.service.get(id);
-        if (!profile) {
-            throw new Errors.NotFoundError;
-        }
+    async updateProfile(data: ProfileRequest): Promise<ProfileResponse> {
+        const parsedData = await this.validate(data, profilePatchSchema);
+        const logic = new UpdateProfileLogic(this.getRequestContext());
+        const profile = await logic.execute(parsedData);
 
-        return this.map(models.ProfileResponse, profile);
+        return this.map(ProfileResponse, profile);
     }
 
-    @POST
+    /**
+     * Get the current user's profile
+     *
+     * @param {string} id
+     * @returns {Promise<ProfileResponse>}
+     * @memberof ProfileController
+     */
+    @GET
     @Path('')
-    @Preprocessor(BaseController.requireAdmin)
-    async createProfile(data: models.ProfileRequest): Promise<models.ProfileResponse> {
-        this.service.setRequestContext(this.getRequestContext());
-        const parsedData = await this.validate(data, models.profileRequestSchema);
-        let profile = models.Profile.factory(parsedData);
-        try {
-            await transaction(models.Profile.knex(), async (trx) => {
-                profile = await this.service.insert(profile, trx);
-            });
-            profile = await this.service.get(profile.id);
-        } catch (err) {
-            this.logger.error(err);
-            throw new Errors.InternalServerError(err.message);
-        }
+    @Preprocessor(BaseController.requireAdminReader)
+    async getProfile(): Promise<ProfileResponse> {
+        const logic = new GetProfileLogic(this.getRequestContext());
+        const profile = await logic.execute();
 
-        return this.map(models.ProfileResponse, profile);
+        return this.map(ProfileResponse, profile);
     }
 }

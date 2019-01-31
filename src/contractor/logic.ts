@@ -1,17 +1,17 @@
-import {AutoWired, Inject} from 'typescript-ioc';
 import * as _ from 'lodash';
 import * as objection from 'objection';
+import {AutoWired, Inject} from 'typescript-ioc';
 import {Errors} from 'typescript-rest';
-import {Logic} from '../logic';
-import {Logger} from '../logger';
 import * as dwolla from '../dwolla';
+import {Logger} from '../logger';
+import {Logic} from '../logic';
 import {MailerService} from '../mailer';
-import {UserService} from '../user/service';
-import {ProfileService} from '../profile/service';
-import {TransactionService} from '../transaction/service';
 import {User} from '../user/models';
 import * as profiles from '../profile/models';
 import {Transaction} from '../transaction/models';
+import {UserService} from '../user/service';
+import {ProfileService} from '../profile/service';
+import {TransactionService} from '../transaction/service';
 
 @AutoWired
 export class AddContractorOnRetryStatusLogic extends Logic {
@@ -35,7 +35,7 @@ export class AddContractorOnRetryStatusLogic extends Logic {
         const customer = dwolla.customer.factory(profileData);
         customer.type = dwolla.customer.TYPE.Personal;
         const updateableFields = customer.updateableFields();
-        await this.dwollaClient.updateCustomer(user.tenantProfile.dwollaUri, updateableFields);
+        await this.dwollaClient.updateCustomer(user.baseProfile.dwollaUri, updateableFields);
         const dwollaCustomer = await this.dwollaClient.getCustomer(user.baseProfile.dwollaUri);
         user.baseProfile.dwollaType = dwollaCustomer.type;
 

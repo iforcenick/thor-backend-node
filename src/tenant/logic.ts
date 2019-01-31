@@ -1,22 +1,23 @@
-import {Logic} from '../logic';
 import * as generator from 'generate-password';
+import {transaction} from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
-import {TenantService} from './service';
 import {Errors} from 'typescript-rest';
+import {Config} from '../config';
 import * as dwolla from '../dwolla';
 import {Logger} from '../logger';
-import {Tenant} from './models';
-import {transaction} from 'objection';
+import {Logic} from '../logic';
+import {MailerService} from '../mailer';
+import {Tenant, Statuses} from './models';
 import {User} from '../user/models';
+import * as profiles from '../profile/models';
+import {Role, Types} from '../user/role/models';
+import {Settings} from './settings/models';
+import * as invitations from '../invitation/models';
 import {UserService} from '../user/service';
 import {ProfileService} from '../profile/service';
-import {Profile} from '../profile/models';
+import {TenantService} from './service';
 import {RoleService} from '../user/role/service';
-import {Role, Types} from '../user/role/models';
-import * as objection from 'objection';
-import {MailerService} from '../mailer';
-import {Config} from '../config';
-import {Settings} from './settings/models';
+import {InvitationService} from '../invitation/service';
 
 @AutoWired
 export class GetTenantLogic extends Logic {
@@ -27,7 +28,7 @@ export class GetTenantLogic extends Logic {
         if (!tenant) {
             throw new Errors.NotFoundError();
         }
-
+        tenant.settings = new Settings(tenant.settings);
         return tenant;
     }
 }
@@ -94,6 +95,7 @@ export class AddTenantCompanyLogic extends Logic {
             const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.dwollaUri);
             tenant.dwollaStatus = dwollaCustomer.status;
             tenant.dwollaType = dwollaCustomer.type;
+            tenant.status = Statuses.bank;
             tenant.merge(data);
 
             await this.tenantService.update(tenant);
@@ -232,71 +234,61 @@ export class AddTenantLogic extends Logic {
     @Inject profileService: ProfileService;
     @Inject roleService: RoleService;
     @Inject mailerService: MailerService;
+    @Inject invitationService: InvitationService;
     @Inject logger: Logger;
     @Inject config: Config;
 
     async execute(name: string, email: string, settings: any): Promise<Tenant> {
         const tenantEntity: Tenant = await this.tenantService.getOneBy('name', name);
         if (tenantEntity) {
-            throw new Error(`Name ${name} for tenant already used`);
+            throw new Error(`A company named, ${name}, already exists`);
         }
 
         let user: User;
-        const adminRole: Role = await this.roleService.find(Types.admin);
+        let tenantProfile: profiles.Profile;
         const tenant = await transaction(this.tenantService.transaction(), async trx => {
-            const tenant = await this.addTenantEntity(name, settings, trx);
-            user = await this.addAdminUser(trx);
-            const profile = await this.addAdminUserProfile(user.id, tenant.id, name, email, trx);
-            await this.addRoleForAdminProfile(profile, adminRole, trx);
+            // create the tenant
+            let tenant: Tenant = Tenant.factory({name, status: Statuses.company, settings: new Settings(settings)});
+            tenant = await this.tenantService.insert(tenant, trx);
+
+            // TODO: link the accounts if the email is already associated with an account
+            user = User.factory({});
+            const password = generator.generate({length: 20, numbers: true, uppercase: true});
+            user.password = await this.userService.hashPassword(password);
+            user = await this.userService.insert(user, trx);
+
+            // create the tenant profile
+            tenantProfile = profiles.Profile.factory({email, firstName: email});
+            tenantProfile.status = profiles.Statuses.invited;
+            tenantProfile.userId = user.id;
+            tenantProfile.tenantId = tenant.id;
+            tenantProfile = await this.profileService.insert(tenantProfile, trx);
+
+            // add an admin role to the profile
+            tenantProfile.roles = [];
+            const adminRole: Role = await this.roleService.find(Types.admin);
+            await tenantProfile.$relatedQuery(profiles.Relations.roles, trx).relate(adminRole.id);
+            tenantProfile.roles.push(adminRole);
 
             return tenant;
         });
 
+        let invitation = invitations.Invitation.factory({
+            userId: user.id,
+            tenantId: tenant.id,
+            email,
+            type: invitations.Types.admin,
+            status: invitations.Status.pending,
+        });
+        invitation = await this.invitationService.insert(invitation);
+
         try {
-            const link = `${this.config.get('application.frontUri')}/reset-password/${user.passwordResetToken}`;
+            const link = `${this.config.get('application.frontUri')}/register/${invitation.id}`;
             await this.mailerService.sendTenantConfirmAccount(email, name, link);
         } catch (error) {
-            console.log(error);
             this.logger.error(error.message);
         }
 
         return await this.tenantService.get(tenant.id);
-    }
-
-    private async addTenantEntity(name: string, settings: Settings, trx: objection.Transaction): Promise<Tenant> {
-        const tenant: Tenant = Tenant.factory({name, settings: new Settings(settings)});
-        return await this.tenantService.insert(tenant, trx);
-    }
-
-    private async addAdminUser(trx: objection.Transaction): Promise<User> {
-        const user: User = User.factory({});
-        user.password = generator.generate({length: 20, numbers: true, uppercase: true});
-        user.passwordResetToken = await this.userService.getPasswordResetToken();
-        user.passwordResetExpiry = Date.now() + 604800000; // 7 days
-        return await this.userService.insert(user, trx);
-    }
-
-    private async addAdminUserProfile(
-        adminUserId: string,
-        tenantId: string,
-        tenantName: string,
-        email: string,
-        trx: objection.Transaction,
-    ) {
-        const profile: Profile = Profile.factory({});
-        profile.tenantId = tenantId;
-        profile.userId = adminUserId;
-
-        profile.firstName = `admin_${tenantName}`;
-        profile.lastName = `admin_${tenantName}`;
-
-        profile.email = email;
-        profile.phone = '0123456789';
-
-        return await this.profileService.insert(profile, trx);
-    }
-
-    private async addRoleForAdminProfile(profile: Profile, adminRole: Role, trx: objection.Transaction) {
-        await this.profileService.setRoleForProfile(profile, adminRole.id, trx);
     }
 }

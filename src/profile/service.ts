@@ -1,12 +1,11 @@
-import {AutoWired, Inject} from 'typescript-ioc';
 import * as objection from 'objection';
-
+import {AutoWired, Inject} from 'typescript-ioc';
 import * as db from '../db';
 import * as dwolla from '../dwolla';
-import {RoleService} from '../user/role/service';
 import {FundingSource} from '../foundingSource/models';
 import {Profile} from './models';
 import * as models from './models';
+import {RoleService} from '../user/role/service';
 
 @AutoWired
 export class ProfileService extends db.ModelService<models.Profile> {
