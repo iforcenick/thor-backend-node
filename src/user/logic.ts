@@ -141,9 +141,10 @@ export class RatingJobsListLogic extends Logic {
         return query;
     }
 
-    protected allContractorsAndTheirTransactions(start, end: Date, status?) {
+    protected allContractorsAndTheirTransactions(start: Date, end: Date, status?: string) {
         const query = this.userService.query();
-        this.userService.filterCustomerRole(query);
+        this.userService.filterContractorRole(query);
+        this.userService.filterContractorStatus(query);
         query.leftJoinRelation(models.Relations.transactions);
         query.leftJoin(db.Tables.jobs, `${db.Tables.transactions}.jobId`, `${db.Tables.jobs}.id`);
 

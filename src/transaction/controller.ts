@@ -17,18 +17,16 @@ const validate = require('uuid-validate');
 @Path('/transactions')
 @Tags('transactions')
 export class TransactionController extends BaseController {
-    @Inject private service: TransactionService;
+    @Inject private transactionService: TransactionService;
     @Inject private userService: UserService;
-    @Inject private jobService: JobService;
-    @Inject private fundingService: FundingSourceService;
 
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdminReader)
     async getTransaction(@PathParam('id') id: string): Promise<models.TransactionResponse> {
-        this.service.setRequestContext(this.getRequestContext());
+        this.transactionService.setRequestContext(this.getRequestContext());
 
-        const transaction = await this.service.get(id);
+        const transaction = await this.transactionService.get(id);
         if (!transaction) {
             throw new Errors.NotFoundError();
         }
@@ -54,7 +52,7 @@ export class TransactionController extends BaseController {
                           @QueryParam('dateTill') dateTill?: Date,
                           @QueryParam('userId') userId?: string,
                           @QueryParam('status') status?: string): Promise<models.PaginatedTransactionResponse> {
-        this.service.setRequestContext(this.getRequestContext());
+        this.transactionService.setRequestContext(this.getRequestContext());
 
         if (userId && !validate(userId)) {
             throw new Errors.BadRequestError('userId must be uuid');
@@ -64,7 +62,7 @@ export class TransactionController extends BaseController {
             models.Transaction.filter(builder, dateFrom, dateTill, status, userId);
         };
 
-        const transactions = await this.service.listPaginated(page, limit, filter);
+        const transactions = await this.transactionService.listPaginated(page, limit, filter);
 
         return this.paginate(
             transactions.pagination,
@@ -174,17 +172,17 @@ export class TransactionController extends BaseController {
                          @QueryParam('limit') limit?: number,
                          @QueryParam('page') page?: number,
                          @QueryParam('status') status?: string): Promise<models.PeriodsStatsResponse> {
-        this.service.setRequestContext(this.getRequestContext());
+        this.transactionService.setRequestContext(this.getRequestContext());
         const _startDate = new Date(startDate);
         const _endDate = new Date(endDate);
         const _prevEndDate = moment(_startDate).subtract(1, 'second').toDate();
         const _prevStartDate = moment(_prevEndDate).subtract(14, 'day').toDate();
 
-        const current: any = await this.service.getPeriodStats(_startDate, _endDate, page, limit, status);
+        const current: any = await this.transactionService.getPeriodStats(_startDate, _endDate, page, limit, status);
         current.startDate = _startDate;
         current.endDate = _endDate;
 
-        const previous: any = await this.service.getPeriodStats(_prevStartDate, _prevEndDate, page, limit, status);
+        const previous: any = await this.transactionService.getPeriodStats(_prevStartDate, _prevEndDate, page, limit, status);
         previous.startDate = _prevStartDate;
         previous.endDate = _prevEndDate;
 
@@ -196,9 +194,9 @@ export class TransactionController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async cancelTransactionTransfer(@PathParam('id') id: string): Promise<models.TransactionResponse> {
         this.userService.setRequestContext(this.getRequestContext());
-        this.service.setRequestContext(this.getRequestContext());
+        this.transactionService.setRequestContext(this.getRequestContext());
 
-        const _transaction = await this.service.get(id);
+        const _transaction = await this.transactionService.get(id);
         if (!_transaction) {
             throw new Errors.NotFoundError();
         }

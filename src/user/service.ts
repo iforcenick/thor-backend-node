@@ -74,12 +74,16 @@ export class UserService extends db.ModelService<models.User> {
         this.selectLastActivity(query);
     }
 
-    filterCustomerRole(query) {
+    filterContractorRole(query) {
         query.where(`${models.Relations.tenantProfile}:roles.name`, role.models.Types.contractor);
     }
 
+    filterContractorStatus(query) {
+        query.where(`${models.Relations.tenantProfile}.status`, profile.Statuses.active);
+    }
+
     setListConditions(query) {
-        this.filterCustomerRole(query);
+        this.filterContractorRole(query);
         this.setConditions(query);
     }
 
@@ -113,7 +117,7 @@ export class UserService extends db.ModelService<models.User> {
             .joinRelation(`${models.Relations.transactions}`)
             .count()
             .first();
-        this.filterCustomerRole(query);
+        this.filterContractorRole(query);
         this.useTenantContext(query);
         this.setBasicConditions(query);
         const {count} = await query;
