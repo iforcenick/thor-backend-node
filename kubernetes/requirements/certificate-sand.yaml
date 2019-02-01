@@ -1,0 +1,19 @@
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: odin-api-tls
+  namespace: thor-api
+spec:
+  secretName: odin-api-tls
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+  commonName: odin-api.sand.gothor.com
+  dnsNames:
+  - odin-api.sand.gothor.com
+  acme:
+    config:
+    - http01:
+        ingress: thor-api
+      domains:
+      - odin-api.sand.gothor.com
