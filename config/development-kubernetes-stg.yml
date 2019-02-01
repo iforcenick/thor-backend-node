@@ -13,3 +13,6 @@ swagger:
   schema: https
 storage:
   bucket: thor-stg
+mailer:
+  override:
+    to: thorodin@mailinator.com
