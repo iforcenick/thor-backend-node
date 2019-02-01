@@ -68,13 +68,13 @@ node /dist/dev/console create-tenant.js thor godOfThunder@thor.com
    ```
    gcloud container clusters create ${CLUSTER_NAME} \
     --preemptible \
+    --region us-west1 \
     --zone us-west1-a \
     --scopes cloud-platform \
     --enable-autorepair \
     --enable-autoscaling --min-nodes 1 --max-nodes 10 \
     --num-nodes 1
    ```
-
 * Get the credentials for the desired cluster 
    ```
    gcloud container clusters get-credentials ${CLUSTER_NAME}
@@ -83,7 +83,8 @@ node /dist/dev/console create-tenant.js thor godOfThunder@thor.com
    ```
    gcloud compute addresses create ${STATIC_ADDRESS_NAME} --global
    ```
-* Install Tiller 
+* Add IP address to domain DNS
+* Install Tiller on Cluster 
    ```
    kubectl create serviceaccount tiller --namespace=kube-system
 
@@ -147,7 +148,6 @@ node /dist/dev/console create-tenant.js thor godOfThunder@thor.com
    ```
    kubectl apply -f ${CERTIFICATE_YAML} --namespace thor-api
    ```
-
    *Note: change the issuer reference to 'letsencrypt-staging' for testing*
 * Add Jenkins Access
 

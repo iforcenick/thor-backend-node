@@ -4,7 +4,7 @@ application:
 db:
   autoMigrate: true
   connection:
-    database: stage
+    database: sandbox
 dwolla:
   webhookUri: https://odin-api.sand.gothor.com/dwolla/events
   masterFunding: https://api-sandbox.dwolla.com/funding-sources/c7a91f01-1692-4688-954d-6e785753e775
