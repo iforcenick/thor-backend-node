@@ -11,4 +11,12 @@ export class TenantService extends db.ModelService<models.Tenant> {
     useTenantContext(query) { // roles are not tenant specific
         return query;
     }
+
+    async getByPaymentsUri(uri: string) {
+        return await this.getOneBy('paymentsUri', uri);
+    }
+
+    async getByFundingSourceUri(uri: string) {
+        return await this.getOneBy('fundingSourceUri', uri);
+    }
 }

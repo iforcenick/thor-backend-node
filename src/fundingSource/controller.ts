@@ -1,22 +1,30 @@
-import {BaseController} from '../api';
+import {AutoWired, Inject} from 'typescript-ioc';
 import {
-    Context, DELETE, Errors, GET, PATCH, Path, PathParam, POST, Preprocessor, QueryParam,
-    ServiceContext
+    Context,
+    DELETE,
+    Errors,
+    GET,
+    PATCH,
+    Path,
+    PathParam,
+    POST,
+    Preprocessor,
+    QueryParam,
+    ServiceContext,
 } from 'typescript-rest';
-import * as models from './models';
-import {MailerService} from '../mailer';
+import {Security, Tags} from 'typescript-rest-swagger';
+import {BaseController} from '../api';
+import {Pagination} from '../db';
 import * as dwolla from '../dwolla';
+import * as logicLayer from './logic';
+import {CreateUserFundingSourceLogic} from './logic';
+import {MailerService} from '../mailer';
+import * as models from './models';
+import {User} from '../user/models';
+import {FundingSource, FundingSourceRequest, fundingSourceRequestSchema, FundingSourceResponse} from './models';
 import {UserService} from '../user/service';
 import {ProfileService} from '../profile/service';
 import {FundingSourceService} from './services';
-import {AutoWired, Inject} from 'typescript-ioc';
-import {Security, Tags} from 'typescript-rest-swagger';
-import {User} from '../user/models';
-import {Pagination} from '../db';
-import * as logicLayer from './logic';
-import {FundingSource, FundingSourceRequest, fundingSourceRequestSchema, FundingSourceResponse} from './models';
-import {CreateUserFundingSourceLogic} from './logic';
-
 
 @AutoWired
 @Security('api_key')
@@ -36,7 +44,10 @@ export class FundingSourceController extends BaseController {
     @PATCH
     @Path(':id/verify')
     async verifyFundingSource(@PathParam('id') id: string, data: models.UserFundingSourceVerificationRequest) {
-        const parsedData: models.UserFundingSourceVerificationRequest = await this.validate(data, models.contractorFundingSourceVerificationRequestSchema);
+        const parsedData: models.UserFundingSourceVerificationRequest = await this.validate(
+            data,
+            models.contractorFundingSourceVerificationRequestSchema,
+        );
         const logic = new logicLayer.VerifyContractorFundingSourceLogic(this.getRequestContext());
         await logic.execute(parsedData.amount1, parsedData.amount2, id);
     }
@@ -58,7 +69,7 @@ export abstract class FundingSourceBaseController extends BaseController {
     }
 
     protected async _getDefaultFundingSource(user: User): Promise<models.FundingSource> {
-        const logic = new logicLayer.ContractorDefaultFundingSourcesLogic(this.getRequestContext());
+        const logic = new logicLayer.GetDefaultFundingSourceLogic(this.getRequestContext());
         const fundingSource = await logic.execute(user.id);
         if (!fundingSource) {
             throw new Errors.NotFoundError();
@@ -80,17 +91,30 @@ export abstract class FundingSourceBaseController extends BaseController {
         }
     }
 
-    protected async _getFundingSources(user: User, page: number = 1, limit: number = this.config.get('pagination.limit')) {
+    protected async _getFundingSources(
+        user: User,
+        page: number = 1,
+        limit: number = this.config.get('pagination.limit'),
+    ) {
         const logic = new logicLayer.GetUserFundingSourcesLogic(this.getRequestContext());
         const fundingSources = await logic.execute(user);
 
-        return this.paginate(new Pagination(page, limit, fundingSources.length), fundingSources.map(fundingSource => {
-            return this.map(models.FundingSourceResponse, fundingSource);
-        }));
+        return this.paginate(
+            new Pagination(page, limit, fundingSources.length),
+            fundingSources.map(fundingSource => {
+                return this.map(models.FundingSourceResponse, fundingSource);
+            }),
+        );
     }
 
-    protected async _addVerifyingFundingSource(user: User, data: models.FundingSourceIavRequest): Promise<FundingSource> {
-        const parsedData: models.FundingSourceIavRequest = await this.validate(data, models.fundingSourceIavRequestSchema);
+    protected async _addVerifyingFundingSource(
+        user: User,
+        data: models.FundingSourceIavRequest,
+    ): Promise<FundingSource> {
+        const parsedData: models.FundingSourceIavRequest = await this.validate(
+            data,
+            models.fundingSourceIavRequestSchema,
+        );
         const logic = new logicLayer.AddVerifyingFundingSourceLogic(this.getRequestContext());
         return await logic.execute(user, parsedData.uri);
     }
@@ -100,7 +124,6 @@ export abstract class FundingSourceBaseController extends BaseController {
         return await logic.execute(user);
     }
 }
-
 
 @AutoWired
 @Security('api_key')
@@ -131,7 +154,10 @@ export class UserFundingSourceController extends FundingSourceBaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async createUserFundingSource(@PathParam('userId') userId: string, data: FundingSourceRequest): Promise<FundingSourceResponse> {
+    async createUserFundingSource(
+        @PathParam('userId') userId: string,
+        data: FundingSourceRequest,
+    ): Promise<FundingSourceResponse> {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
         const parsedData: FundingSourceRequest = await this.validate(data, fundingSourceRequestSchema);
@@ -171,8 +197,11 @@ export class UserFundingSourceController extends FundingSourceBaseController {
     @GET
     @Path('')
     @Preprocessor(BaseController.requireAdminReader)
-    async getFundingSources(@PathParam('userId') userId: string, @QueryParam('page') page?: number,
-                            @QueryParam('limit') limit?: number) {
+    async getFundingSources(
+        @PathParam('userId') userId: string,
+        @QueryParam('page') page?: number,
+        @QueryParam('limit') limit?: number,
+    ) {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
         if (!user) {
@@ -184,7 +213,10 @@ export class UserFundingSourceController extends FundingSourceBaseController {
     @POST
     @Path('iav')
     @Preprocessor(BaseController.requireAdmin)
-    async addVerifyingFundingSource(@PathParam('userId') userId: string, data: models.FundingSourceIavRequest): Promise<models.FundingSourceResponse> {
+    async addVerifyingFundingSource(
+        @PathParam('userId') userId: string,
+        data: models.FundingSourceIavRequest,
+    ): Promise<models.FundingSourceResponse> {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(userId);
         if (!user) {
@@ -219,8 +251,7 @@ export class ContractorFundingSourceController extends FundingSourceBaseControll
 
     @GET
     @Path('')
-    async getFundingSources(@QueryParam('page') page?: number,
-                            @QueryParam('limit') limit?: number) {
+    async getFundingSources(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number) {
         this.userService.setRequestContext(this.getRequestContext());
         const user = await this.userService.get(this.getRequestContext().getUserId());
         return await super._getFundingSources(user, page, limit);

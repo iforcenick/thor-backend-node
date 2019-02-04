@@ -1,17 +1,15 @@
 import * as db from '../db';
-import * as tenant from '../tenant/models';
+import {Profile} from '../profile/models';
 import * as mapper from '../mapper';
 import {Mapper} from '../mapper';
 import Joi = require('joi');
 
-
-export const enum VerificationStatuses {
+export const enum Statuses {
     initiated = 'initiated',
-    completed = 'completed'
+    verified = 'verified'
 }
 
 export const enum Relations {
-    tenant = 'tenant',
     profile = 'profile'
 }
 
@@ -19,30 +17,24 @@ export class FundingSource extends db.Model {
     static tableName = db.Tables.fundingSources;
     type?: string = null;
     name?: string = null;
-    dwollaUri?: string = null;
-    tenantId?: string = null;
+    paymentsUri?: string = null;
     profileId?: string = null;
     isDefault?: boolean = null;
-    verificationStatus?: string = null;
-
-    get externalUri() {
-        return this.dwollaUri;
-    }
+    status?: string = null;
 
     static get relationMappings() {
         return {
-            [Relations.tenant]: {
+            [Relations.profile]: {
                 relation: db.Model.BelongsToOneRelation,
-                modelClass: tenant.Tenant,
+                modelClass: Profile,
                 join: {
-                    from: `${db.Tables.fundingSources}.tenantId`,
-                    to: `${db.Tables.tenants}.id`,
+                    from: `${db.Tables.fundingSources}.profileId`,
+                    to: `${db.Tables.profiles}.id`,
                 },
             },
         };
     }
 }
-
 
 export class FundingSourceBaseInfo extends Mapper {
     name: string = mapper.FIELD_STR;
@@ -54,8 +46,7 @@ export class FundingSourceRequest extends FundingSourceBaseInfo {
 export class FundingSourceResponse extends FundingSourceBaseInfo {
     id: string = mapper.FIELD_STR;
     type: string = mapper.FIELD_STR;
-    externalUri: string = mapper.FIELD_STR;
-    tenantId: string = mapper.FIELD_STR;
+    paymentsUri: string = mapper.FIELD_STR;
     profileId: string = mapper.FIELD_STR;
     isDefault: boolean = mapper.FIELD_BOOLEAN;
     verificationStatus: string = mapper.FIELD_STR;
@@ -88,4 +79,3 @@ export const contractorFundingSourceVerificationRequestSchema = Joi.object().key
     amount1: Joi.number().required(),
     amount2: Joi.number().required(),
 });
-

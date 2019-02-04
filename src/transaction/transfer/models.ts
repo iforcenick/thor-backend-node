@@ -14,7 +14,7 @@ export {Statuses};
 export class Transfer extends db.Model {
     static tableName = db.Tables.transfers;
     adminId?: string;
-    externalId?: string;
+    paymentsUri?: string;
     tenantId?: string = null;
     tenantChargeId?: string;
     sourceUri?: string;

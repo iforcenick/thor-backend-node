@@ -74,12 +74,12 @@ export class AddUserDwollaDocumentLogic extends Logic {
             throw new Errors.NotFoundError('User not found');
         }
 
-        if (user.baseProfile.externalStatus != dwolla.customer.CUSTOMER_STATUS.Document) {
+        if (user.baseProfile.paymentsStatus != dwolla.customer.CUSTOMER_STATUS.Document) {
             throw new Errors.NotAcceptableError('User cannot upload documents');
         }
 
         const location = await this.dwollaClient.createDocument(
-            user.baseProfile.dwollaUri,
+            user.baseProfile.paymentsUri,
             file.buffer,
             file.originalname,
             type,

@@ -19,10 +19,6 @@ export class InvitationService extends db.ModelService<models.Invitation> {
         return await this.getOneBy('email', email);
     }
 
-    async getByExternalId(externalId: string): Promise<models.Invitation> {
-        return await this.getOneBy('externalId', externalId);
-    }
-
     async getByUserId(userId: string): Promise<models.Invitation> {
         return await this.getOneBy('userId', userId);
     }
@@ -35,10 +31,5 @@ export class InvitationService extends db.ModelService<models.Invitation> {
         const query = this.query();
 
         return query.whereIn('email', emails);
-    }
-
-    getByExternalIds(externalIds: Array<string>): Promise<Array<Invitation>> {
-        const query = this.query();
-        return query.whereIn('externalId', externalIds);
     }
 }

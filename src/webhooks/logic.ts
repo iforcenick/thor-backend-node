@@ -1,22 +1,22 @@
 import {AutoWired, Inject} from 'typescript-ioc';
-import * as dwolla from '../dwolla';
-import {Logger} from '../logger';
-import {IEvent} from '../dwolla/event';
-import {Logic} from '../logic';
 import {RequestContext} from '../context';
-import {UpdateTransactionStatusLogic} from '../transaction/logic';
+import * as dwolla from '../dwolla';
+import {IEvent} from '../dwolla/event';
+import {Logger} from '../logger';
+import {Logic} from '../logic';
+import {UpdateTransactionStatusLogic as UpdateTransactionsStatusLogic} from '../transaction/logic';
+import {UpdateContractorStatusLogic} from '../contractor/logic';
 import {MailerService} from '../mailer';
+import {Statuses, Transaction} from '../transaction/models';
+import {Profile} from '../profile/models';
+import {FundingSource} from '../fundingSource/models';
 import {ProfileService} from '../profile/service';
 import {UserService} from '../user/service';
-import {FundingSourceService} from '../foundingSource/services';
-import {TenantService} from '../tenant/service';
+import {FundingSourceService} from '../fundingSource/services';
 import {TransactionService} from '../transaction/service';
-import {Transaction} from '../transaction/models';
-import {UpdateContractorStatusLogic} from '../contractor/logic';
-import {Statuses} from '../transaction/models';
-import {TransferService} from '../transaction/transfer/service';
-import { Profile } from '../profile/models';
-import { Transfer } from '../transaction/transfer/models';
+import {TenantService} from '../tenant/service';
+import {User} from '../user/models';
+import {Tenant} from '../tenant/models';
 
 const TAG = '[dwolla-webhook]';
 
@@ -52,11 +52,10 @@ export class EventFactory {
                 case dwolla.event.TYPE.transfer.cancelled:
                     return new CustomerTransferEventLogic(context);
 
-                // TODO: unsupported events
-                // case dwolla.event.TYPE.customerFundingSource.added:
-                // case dwolla.event.TYPE.customerFundingSource.removed:
-                // case dwolla.event.TYPE.customerFundingSource.verified:
-                //     break;
+                case dwolla.event.TYPE.customerFundingSource.added:
+                case dwolla.event.TYPE.customerFundingSource.removed:
+                case dwolla.event.TYPE.customerFundingSource.verified:
+                    return new CustomerFundingSourceEventLogic(context);
 
                 case dwolla.event.TYPE.customerBeneficialOwner.verified:
                     return new CustomerBeneficialOwnerEventLogic(context);
@@ -71,6 +70,7 @@ export class EventFactory {
             }
         } catch (error) {
             this.logger.error(`${TAG} ${error.message}`);
+            // don't throw an error back at dwolla right now
             throw error;
         }
     }
@@ -82,27 +82,50 @@ export class CustomerFundingSourceEventLogic extends Logic {
     @Inject private userService: UserService;
     @Inject private profileService: ProfileService;
     @Inject private fundingSourceService: FundingSourceService;
-    @Inject logger: Logger;
+    @Inject private tenantService: TenantService;
+    @Inject private logger: Logger;
 
     async execute(event: IEvent): Promise<any> {
-        // note: there is no tenant id in the context here
-        const profile: Profile = await this.profileService.getByDwollaUri(event['_links']['customer']['href']);
-        if (!profile) {
-            throw new Error(`Could not find profile by dwollaUri ${event['_links']['customer']['href']}`);
-        }
-        // update the context with the tenant id so the rest of the db calls work
-        this.context.setTenantIdOverride(profile.tenantId);
+        // note: tenant context is not available here
 
-        const user = await this.userService.get(profile.userId);
-        if (!user) {
-            throw new Error(`Could not find user by profile ${profile.id}`);
-        }
-
-        const fundingSource = await this.fundingSourceService.getByDwollaUri(
+        // get the funding source using the payments provider uri
+        let fundingSource: FundingSource = await this.fundingSourceService.getByPaymentsUri(
             event['_links']['resource']['href'],
         );
+
+        let tenant: Tenant;
+        let user: User;
         if (!fundingSource) {
-            throw new Error(`Could not find funding source by dwollaUri ${event['_links']['resource']['href']}`);
+            tenant = await this.tenantService.getByFundingSourceUri(event['_links']['resource']['href']);
+            if (!tenant) {
+                throw new Error(
+                    `Could not find funding source by payments uri: ${event['_links']['resource']['href']}`,
+                );
+            }
+        }
+
+        // get the contractor or admin profile to send the notice
+        if (tenant) {
+            user = User.factory({});
+            user.baseProfile = Profile.factory({
+                email: tenant.email,
+                firstName: tenant.firstName,
+                lastName: tenant.lastName,
+            });
+            fundingSource = FundingSource.factory({
+                name: tenant.fundingSourceName,
+                type: 'checking',
+                createdAt: new Date(),
+            });
+        } else {
+            const profile = await this.profileService.getForAllTenants(fundingSource.profileId);
+            if (!profile) {
+                throw new Error(`Could not find profile by payments uri: ${event['_links']['customer']['href']}`);
+            }
+            user = await this.userService.getForAllTenants(profile.userId);
+            if (!user) {
+                throw new Error(`Could not find user by profile`);
+            }
         }
 
         try {
@@ -136,44 +159,37 @@ export class CustomerFundingSourceEventLogic extends Logic {
 @AutoWired
 export class CustomerTransferEventLogic extends Logic {
     @Inject private transactionService: TransactionService;
-    @Inject private transferService: TransferService;
-    @Inject logger: Logger;
 
     async execute(event: IEvent): Promise<any> {
         // note: there is no tenant id in the context here
-        const transfer: Transfer = await this.transferService.getByExternalId(event['_links']['resource']['href']);
-        if (!transfer) {
-            throw new Error(`Could not find transfer by dwollaUri ${event['_links']['resource']['href']}`);
+        const transactions: Array<Transaction> = await this.transactionService.getByTransferPaymentsUri(
+            event['_links']['resource']['href'],
+        );
+        if (transactions.length === 0) {
+            throw new Error(`Could not find transactions by payments uri: ${event['_links']['resource']['href']}`);
         }
-        // update the context with the tenant id so the rest of the db calls work
-        this.context.setTenantIdOverride(transfer.tenantId);
-
-        const transaction = await this.transactionService.getOneBy('transferId', transfer.id);
-        if (!transaction) {
-            throw new Error(`Could not find transaction by transferId`);
-        }
-
-        const logic = new UpdateTransactionStatusLogic(this.context);
+        this.context.setTenantIdOverride(transactions[0].tenantId);
+        const logic = new UpdateTransactionsStatusLogic(this.context);
 
         // transfer event order for current flow:
-        // customer transfer created - send created email (done w/o event)
+        // customer transfer created - send created email
         // customer transfer completed
         // customer bank transfer created
         // customer bank transfer completed - send completed email
         switch (event.topic) {
             case dwolla.event.TYPE.customerTransfer.created:
-                await logic.execute(transaction, transfer, Statuses.processing);
+                await logic.execute(transactions, Statuses.processing);
                 break;
 
             case dwolla.event.TYPE.customerBankTransfer.completed:
-                await logic.execute(transaction, transfer, Statuses.processed);
+                await logic.execute(transactions, Statuses.processed);
                 break;
 
             case dwolla.event.TYPE.transfer.reclaimed:
             case dwolla.event.TYPE.customerBankTransfer.failed:
             case dwolla.event.TYPE.customerTransfer.failed:
             case dwolla.event.TYPE.transfer.failed:
-                await logic.execute(transaction, transfer, Statuses.failed);
+                await logic.execute(transactions, Statuses.failed);
                 break;
 
             // TODO: unsupported transfer events
@@ -186,7 +202,7 @@ export class CustomerTransferEventLogic extends Logic {
             case dwolla.event.TYPE.customerBankTransfer.cancelled:
             case dwolla.event.TYPE.customerTransfer.cancelled:
             case dwolla.event.TYPE.transfer.cancelled:
-                await logic.execute(transaction, transfer, Statuses.cancelled);
+                await logic.execute(transactions, Statuses.cancelled);
                 break;
 
             default:
@@ -198,25 +214,18 @@ export class CustomerTransferEventLogic extends Logic {
 @AutoWired
 export class CustomerEventLogic extends Logic {
     @Inject private mailer: MailerService;
-    @Inject userService: UserService;
-    @Inject profileService: ProfileService;
-    @Inject logger: Logger;
+    @Inject private userService: UserService;
+    @Inject private profileService: ProfileService;
 
     async execute(event: IEvent): Promise<any> {
         // note: there is no tenant id in the context
-        const profile: Profile = await this.profileService.getByDwollaUri(event['_links']['customer']['href']);
+        const profile: Profile = await this.profileService.getByPaymentsUri(event['_links']['customer']['href']);
         if (!profile) {
-            throw new Error(`Could not find profile by dwollaUri ${event['_links']['customer']['href']}`);
+            throw new Error(`Could not find profile by paymentsUri ${event['_links']['customer']['href']}`);
         }
-        // update the context with the tenant id so the rest of the db calls work
-        this.context.setTenantIdOverride(profile.tenantId);
-
-        const user = await this.userService.get(profile.userId);
+        const user = await this.userService.getForAllTenants(profile.userId);
         if (!user) {
             throw new Error(`Could not find user by profile ${profile.id}`);
-        }
-        if (!user.isContractor()) {
-            throw new Error(`This user is not a contractor`);
         }
 
         const logic = new UpdateContractorStatusLogic(this.context);

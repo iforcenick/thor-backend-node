@@ -1,11 +1,11 @@
 import * as db from '../db';
-import * as profile from '../profile/models';
+import {Profile} from '../profile/models';
 import * as role from './role';
 import {Transaction} from '../transaction/models';
 
 export const enum Relations {
     roles = 'roles',
-    profile = 'profiles',
+    profiles = 'profiles',
     tenantProfile = 'tenantProfile',
     transactions = 'transactions',
     baseProfile = 'baseProfile',
@@ -15,9 +15,9 @@ export class User extends db.Model {
     static tableName = db.Tables.users;
     static get relationMappings() {
         return {
-            [Relations.profile]: {
+            [Relations.profiles]: {
                 relation: db.Model.HasManyRelation,
-                modelClass: profile.Profile,
+                modelClass: Profile,
                 join: {
                     from: `${db.Tables.users}.id`,
                     to: `${db.Tables.profiles}.userId`,
@@ -25,7 +25,7 @@ export class User extends db.Model {
             },
             [Relations.tenantProfile]: {
                 relation: db.Model.HasOneRelation,
-                modelClass: profile.Profile,
+                modelClass: Profile,
                 join: {
                     from: `${db.Tables.users}.id`,
                     to: `${db.Tables.profiles}.userId`,
@@ -33,7 +33,7 @@ export class User extends db.Model {
             },
             [Relations.baseProfile]: {
                 relation: db.Model.HasOneRelation,
-                modelClass: profile.Profile,
+                modelClass: Profile,
                 join: {
                     from: `${db.Tables.users}.id`,
                     to: `${db.Tables.profiles}.userId`,
@@ -46,16 +46,16 @@ export class User extends db.Model {
                     from: `${db.Tables.users}.id`,
                     to: `${db.Tables.transactions}.userId`,
                 },
-            }
+            },
         };
     }
     password?: string = null;
     deletedAt?: Date = null;
-    profiles?: Array<profile.Profile>;
+    profiles?: Array<Profile>;
     transactions?: Array<Transaction>;
     lastActivity?: Date;
-    tenantProfile?: profile.Profile;
-    baseProfile?: profile.Profile;
+    tenantProfile?: Profile;
+    baseProfile?: Profile;
     passwordResetToken?: string = null;
     passwordResetExpiry?: number = null;
 
@@ -67,7 +67,6 @@ export class User extends db.Model {
         return this.hasRole(role.models.Types.contractor);
     }
 }
-
 
 export class SearchCriteria {
     public page: number;

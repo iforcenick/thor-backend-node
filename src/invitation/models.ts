@@ -79,7 +79,6 @@ export class AdminInvitationRequest extends InvitationBase {
 }
 
 export class ContractorInvitationRequest extends InvitationBase {
-    externalId: string = mapper.FIELD_STR;
 }
 
 export class InvitationResponse extends InvitationBase {

@@ -5,7 +5,7 @@ import {RequestContext} from '../../context';
 import {sandbox} from '../../test-setup.spec.unit';
 import {Container} from 'typescript-ioc';
 import {AddVerifyingFundingSourceForTenantLogic} from './logic';
-import {FundingSourceService} from '../../foundingSource/services';
+import {FundingSourceService} from '../../fundingSource/services';
 import {TenantService} from '../service';
 import {Tenant} from '../models';
 import * as dwolla from '../../dwolla';
@@ -49,7 +49,7 @@ describe('AddVerifyingFundingSourceForTenantLogic', () => {
             sut = new AddVerifyingFundingSourceForTenantLogic(requestContext);
 
             const fundingSourceServiceStub = Container.get(FundingSourceService);
-            sandbox.stub(fundingSourceServiceStub, 'getByDwollaUri').returns(undefined);
+            sandbox.stub(fundingSourceServiceStub, 'getByPaymentsUri').returns(undefined);
             sut.fundingService = fundingSourceServiceStub;
 
             const tenantServiceStub = Container.get(TenantService);
@@ -86,7 +86,7 @@ describe('AddVerifyingFundingSourceForTenantLogic', () => {
             expect(tenant).not.null;
             expect(tenant.fundingSourceUri).equals('https://dwolla.com/', 'uri is different');
             expect(tenant.fundingSourceName).equals('test account', 'name is different');
-            expect(tenant.fundingSourceVerificationStatus).equals('completed', 'status is different');
+            expect(tenant.fundingSourceStatus).equals('completed', 'status is different');
         });
         it('should thrown error - uri is empty', async () => {
             const tenantProfile = Profile.factory({tenantId: ''});
@@ -107,7 +107,7 @@ describe('AddVerifyingFundingSourceForTenantLogic', () => {
             sut = new AddVerifyingFundingSourceForTenantLogic(requestContext);
 
             const fundingSourceServiceStub = Container.get(FundingSourceService);
-            sandbox.stub(fundingSourceServiceStub, 'getByDwollaUri').returns(undefined);
+            sandbox.stub(fundingSourceServiceStub, 'getByPaymentsUri').returns(undefined);
             sut.fundingService = fundingSourceServiceStub;
 
             const tenantServiceStub = Container.get(TenantService);
@@ -154,7 +154,7 @@ describe('AddVerifyingFundingSourceForTenantLogic', () => {
             sut = new AddVerifyingFundingSourceForTenantLogic(requestContext);
 
             const fundingSourceServiceStub = Container.get(FundingSourceService);
-            sandbox.stub(fundingSourceServiceStub, 'getByDwollaUri').returns(undefined);
+            sandbox.stub(fundingSourceServiceStub, 'getByPaymentsUri').returns(undefined);
             sut.fundingService = fundingSourceServiceStub;
 
             const tenantServiceStub = Container.get(TenantService);

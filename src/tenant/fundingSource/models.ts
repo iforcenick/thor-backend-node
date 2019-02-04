@@ -12,8 +12,8 @@ export class CreateTenantFundingSourceRequest extends Mapper {
 export class TenantFundingSourceResponse extends Mapper {
     @mapper.fromName('fundingSourceName')
     name: string = mapper.FIELD_STR;
-    @mapper.fromName('fundingSourceVerificationStatus')
-    verificationStatus: string = mapper.FIELD_STR;
+    @mapper.fromName('fundingSourceStatus')
+    status: string = mapper.FIELD_STR;
 }
 
 export class TenantFundingSourceVerificationRequest extends Mapper {

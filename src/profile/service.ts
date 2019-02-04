@@ -2,7 +2,7 @@ import * as objection from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
 import * as db from '../db';
 import * as dwolla from '../dwolla';
-import {FundingSource} from '../foundingSource/models';
+import {FundingSource} from '../fundingSource/models';
 import {Profile} from './models';
 import * as models from './models';
 import {RoleService} from '../user/role/service';
@@ -19,9 +19,9 @@ export class ProfileService extends db.ModelService<models.Profile> {
     async updateWithDwolla(profile: models.Profile, trx?: objection.Transaction): Promise<any> {
         try {
             const customer = dwolla.customer.factory(profile);
-            customer.status = profile.dwollaStatus;
-            customer.type = profile.dwollaType;
-            await this.dwollaClient.updateCustomer(profile.dwollaUri, customer.updateableFields());
+            customer.status = profile.paymentsStatus;
+            customer.type = profile.paymentsType;
+            await this.dwollaClient.updateCustomer(profile.paymentsUri, customer.updateableFields());
             return await this.update(profile, trx);
         } catch (err) {
             throw err;
@@ -36,8 +36,16 @@ export class ProfileService extends db.ModelService<models.Profile> {
         return await profile.$relatedQuery(models.Relations.fundingSources, trx).relate(fundingSource.id);
     }
 
-    async getByDwollaUri(uri: string) {
-        const query = this.getOneBy('dwollaUri', uri);
+    /**
+     * Get the profile using their payments provider uri
+     *
+     * @param {string} uri - payments provider uri
+     * @param {boolean} [useTenantContext=false]
+     * @returns
+     * @memberof ProfileService
+     */
+    async getByPaymentsUri(uri: string) {
+        const query = this.modelType.query().findOne({['paymentsUri']: uri});
         return await query;
     }
 

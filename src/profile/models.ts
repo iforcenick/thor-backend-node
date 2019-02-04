@@ -7,7 +7,7 @@ import * as dwolla from '../dwolla';
 import {Mapper} from '../mapper';
 import * as tenant from '../tenant/models';
 import * as user from '../user/models';
-import {FundingSource} from '../foundingSource/models';
+import {FundingSource} from '../fundingSource/models';
 import * as regex from '../validation/regex';
 import * as role from '../user/role';
 
@@ -29,15 +29,15 @@ export const enum Statuses {
 
 export class Profile extends db.Model {
     static tableName = db.Tables.profiles;
+    userId?: string = null;
+    tenantId?: string = null;
     firstName?: string = null;
     lastName?: string = null;
     phone?: string = null;
     email?: string = null;
-    dwollaUri?: string = null;
-    dwollaSourceUri?: string = null;
-    dwollaStatus?: string = null;
-    dwollaType?: string = null;
-    tenantId?: string = null;
+    paymentsUri?: string = null;
+    paymentsStatus?: string = null;
+    paymentsType?: string = null;
     country?: string = null;
     state?: string = null;
     city?: string = null;
@@ -45,23 +45,17 @@ export class Profile extends db.Model {
     address1?: string = null;
     address2?: string = null;
     dateOfBirth?: string = null;
-    userId?: string = null;
     roles?: Array<role.models.Role>;
     deletedAt?: Date = null;
     externalId?: string = null;
     status?: string = null;
-    // ssn?: string = null;
-    // ein?: string = null;
-    // businessName?: string = null;
-    // businessType?: string = null;
-
-    get externalStatus() {
-        return this.dwollaStatus;
-    }
-
-    get externalType() {
-        return this.dwollaType;
-    }
+    ssn?: string = null;
+    ein?: string = null;
+    citizenship?: string = null;
+    businessName?: string = null;
+    doingBusinessAs?: string = null;
+    businessType?: string = null;
+    businessClassification?: string = null;
 
     static get relationMappings() {
         return {
@@ -130,21 +124,24 @@ export class Profile extends db.Model {
         this.address1 = null;
         this.address2 = null;
         this.dateOfBirth = null;
-        this.dwollaUri = null;
-        this.dwollaSourceUri = null;
-        this.dwollaStatus = null;
+        this.paymentsUri = null;
+        this.paymentsStatus = null;
+        this.paymentsType = null;
         this.deletedAt = new Date();
         this.externalId = null;
         this.status = null;
-        // this.ssn = null;
-        // this.ein = null;
-        // this.businessName = null;
-        // this.businessType = null;
+        this.ssn = null;
+        this.ein = null;
+        this.citizenship = null;
+        this.businessName = null;
+        this.businessType = null;
+        this.doingBusinessAs = null;
+        this.businessClassification = null;
     }
 
     dwollaUpdateAvailable() {
         return [dwolla.customer.CUSTOMER_STATUS.Verified, dwolla.customer.CUSTOMER_STATUS.Unverified].includes(
-            this.dwollaStatus,
+            this.paymentsUri,
         );
     }
 }
@@ -167,8 +164,8 @@ export class ProfileResponse extends ProfileBaseInfo {
     id: string = mapper.FIELD_STR;
     userId: string = mapper.FIELD_STR;
     tenantId: string = mapper.FIELD_STR;
-    externalStatus: string = mapper.FIELD_STR;
-    externalType: string = mapper.FIELD_STR;
+    paymentsStatus: string = mapper.FIELD_STR;
+    paymentsType: string = mapper.FIELD_STR;
     status: string = mapper.FIELD_STR;
     @mapper.array(role.models.RoleResponse)
     roles: Array<role.models.RoleResponse> = mapper.FIELD_ARR;

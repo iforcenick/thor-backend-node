@@ -43,7 +43,7 @@ export class GetTenantCompanyLogic extends Logic {
             throw new Errors.NotFoundError();
         }
 
-        if (!tenant.dwollaUri) {
+        if (!tenant.paymentsUri) {
             throw new Errors.NotFoundError('Tenant company details not found');
         }
 
@@ -64,7 +64,7 @@ export class GetTenantCompanyOwnerLogic extends Logic {
         }
 
         try {
-            const customer = await this.dwollaClient.getCustomer(tenant.dwollaUri);
+            const customer = await this.dwollaClient.getCustomer(tenant.paymentsUri);
             return customer.controller;
         } catch (e) {
             this.logger.error(e);
@@ -84,17 +84,17 @@ export class AddTenantCompanyLogic extends Logic {
             throw new Errors.NotFoundError('Tenant not found');
         }
 
-        if (tenant.dwollaUri) {
+        if (tenant.paymentsUri) {
             throw new Errors.NotAcceptableError('Tenant company details already created');
         }
 
         try {
             const customer = dwolla.customer.factory(data);
             customer.type = dwolla.customer.TYPE.Business;
-            tenant.dwollaUri = await this.dwollaClient.createCustomer(customer);
-            const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.dwollaUri);
-            tenant.dwollaStatus = dwollaCustomer.status;
-            tenant.dwollaType = dwollaCustomer.type;
+            tenant.paymentsUri = await this.dwollaClient.createCustomer(customer);
+            const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.paymentsUri);
+            tenant.paymentsStatus = dwollaCustomer.status;
+            tenant.paymentsType = dwollaCustomer.type;
             tenant.status = Statuses.bank;
             tenant.merge(data);
 
@@ -121,7 +121,7 @@ export class UpdateTenantCompanyLogic extends Logic {
             throw new Errors.NotFoundError('Tenant not found');
         }
 
-        if (!tenant.dwollaUri) {
+        if (!tenant.paymentsUri) {
             throw new Errors.NotFoundError('Tenant company details not found');
         }
 
@@ -131,10 +131,10 @@ export class UpdateTenantCompanyLogic extends Logic {
 
         try {
             const customer = dwolla.customer.factory(data);
-            customer.type = tenant.dwollaType;
-            await this.dwollaClient.updateCustomer(tenant.dwollaUri, customer.updateableFields());
-            const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.dwollaUri);
-            tenant.dwollaStatus = dwollaCustomer.status;
+            customer.type = tenant.paymentsType;
+            await this.dwollaClient.updateCustomer(tenant.paymentsUri, customer.updateableFields());
+            const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.paymentsUri);
+            tenant.paymentsStatus = dwollaCustomer.status;
             tenant.merge(data);
 
             await this.tenantService.update(tenant);
@@ -160,7 +160,7 @@ export class RetryTenantCompanyLogic extends Logic {
             throw new Errors.NotFoundError('Tenant not found');
         }
 
-        if (!tenant.dwollaUri) {
+        if (!tenant.paymentsUri) {
             throw new Errors.NotFoundError('Tenant company details not found');
         }
 
@@ -170,10 +170,10 @@ export class RetryTenantCompanyLogic extends Logic {
 
         try {
             const customer = dwolla.customer.factory(data);
-            customer.type = tenant.dwollaType;
-            await this.dwollaClient.updateCustomer(tenant.dwollaUri, customer);
-            const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.dwollaUri);
-            tenant.dwollaStatus = dwollaCustomer.status;
+            customer.type = tenant.paymentsType;
+            await this.dwollaClient.updateCustomer(tenant.paymentsUri, customer);
+            const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.paymentsUri);
+            tenant.paymentsStatus = dwollaCustomer.status;
             tenant.merge(data);
 
             await this.tenantService.update(tenant);
@@ -203,7 +203,7 @@ export class ListTenantCompanyDocumentsLogic extends Logic {
             throw new Errors.NotAcceptableError('Tenant has no pending documents');
         }
 
-        return await this.dwollaClient.listDocuments(tenant.dwollaUri);
+        return await this.dwollaClient.listDocuments(tenant.paymentsUri);
     }
 }
 
@@ -222,7 +222,7 @@ export class AddTenantCompanyDocumentsLogic extends Logic {
             throw new Errors.NotAcceptableError('No additional documents required');
         }
 
-        const location = await this.dwollaClient.createDocument(tenant.dwollaUri, file.buffer, file.originalname, type);
+        const location = await this.dwollaClient.createDocument(tenant.paymentsUri, file.buffer, file.originalname, type);
         return await this.dwollaClient.getDocument(location);
     }
 }

@@ -14,8 +14,16 @@ export class TransferService extends db.ModelService<models.Transfer> {
         this.modelType = models.Transfer;
     }
 
-    async getByExternalId(id: string) {
-        const query = this.modelType.query().findOne({['externalId']: id});
+    /**
+     * find the transfer using the payments uri
+     * no tenant context
+     *
+     * @param {string} uri
+     * @returns
+     * @memberof TransferService
+     */
+    async getByPaymentsUri(uri: string) {
+        const query = this.modelType.query().findOne({['paymentsUri']: uri});
         return await query;
     }
 }

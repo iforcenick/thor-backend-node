@@ -66,6 +66,7 @@ export class UserService extends db.ModelService<models.User> {
     setConditions(query) {
         const tenantId = this.getTenantId();
         this.setBasicConditions(query);
+        query.eager({[models.Relations.profiles]: true});
 
         if (tenantId && tenantId !== db.SYSTEM_TENANT_SKIP) {
             this.selectProfileForTenant(query, tenantId);

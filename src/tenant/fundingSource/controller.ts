@@ -21,7 +21,9 @@ export class TenantFundingSourcesController extends BaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async createFundingSource(request: models.CreateTenantFundingSourceRequest): Promise<models.TenantFundingSourceResponse> {
+    async createFundingSource(
+        request: models.CreateTenantFundingSourceRequest,
+    ): Promise<models.TenantFundingSourceResponse> {
         const parsedData = await this.validate(request, models.createTenantFundingSourceRequestSchema);
         try {
             const logic = new logicLayer.CreateTenantFundingSourceLogic(this.getRequestContext());
@@ -31,7 +33,7 @@ export class TenantFundingSourcesController extends BaseController {
             if (e instanceof dwolla.DwollaRequestError) {
                 throw e.toValidationError(null, {
                     account: 'account',
-                    routing: 'routing'
+                    routing: 'routing',
                 });
             }
 
@@ -68,7 +70,10 @@ export class TenantFundingSourcesController extends BaseController {
     @Path('/verify')
     @Preprocessor(BaseController.requireAdmin)
     async verifyFundingSource(data: models.TenantFundingSourceVerificationRequest) {
-        const parsedData: models.TenantFundingSourceVerificationRequest = await this.validate(data, models.tenantFundingSourceVerificationRequestSchema);
+        const parsedData: models.TenantFundingSourceVerificationRequest = await this.validate(
+            data,
+            models.tenantFundingSourceVerificationRequestSchema,
+        );
         const logic = new logicLayer.VerifyTenantFundingSourceLogic(this.getRequestContext());
         await logic.execute(parsedData.amount1, parsedData.amount2, this.getRequestContext().getTenantId());
     }
@@ -78,11 +83,11 @@ export class TenantFundingSourcesController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async addVeryfingFundingSource(data: models.FundingSourceIavRequest): Promise<models.TenantFundingSourceResponse> {
         this.userService.setRequestContext(this.getRequestContext());
-        const logic = new logicLayer.AddVerifyingFundingSourceForTenantLogic(this.getRequestContext());
         const user = await this.userService.get(this.getRequestContext().getUserId());
         if (!user) {
             throw new NotFoundError();
         }
+        const logic = new logicLayer.AddVerifyingFundingSourceForTenantLogic(this.getRequestContext());
         const result = await logic.execute(user, data.uri);
         return this.map(models.TenantFundingSourceResponse, result);
     }
@@ -96,6 +101,5 @@ export class TenantFundingSourcesController extends BaseController {
 
         const token = await logic.execute(tenant);
         return this.map(models.FundingSourceIavToken, {token});
-
     }
 }

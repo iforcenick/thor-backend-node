@@ -32,7 +32,7 @@ export class BatchInvitationsLogic extends Logic {
             trim: true,
             delimiter: ';',
             from: 2,
-            columns: ['email', 'externalId'],
+            columns: ['email'],
             relax_column_count: true,
             to: this.maxRows,
         });
@@ -53,7 +53,6 @@ export class BatchInvitationsLogic extends Logic {
                         invitations.push(
                             Invitation.factory({
                                 email: record.email,
-                                externalId: record.externalId,
                             }),
                         );
                 }
@@ -81,18 +80,7 @@ export class BatchInvitationsLogic extends Logic {
 
         await this.checkEmailsDuplicates(emails);
         await this.checkExistingUsers(emails);
-        /*
-        const externalIds = new Array<string>();
-        for (const invitation of invitations) {
-            if (invitation.externalId) {
-                externalIds.push(invitation.externalId);
-            }
-        }
-        if (externalIds.length > 0) {
-            await this.checkExternalIdsDuplicates(externalIds);
-            await this.checkRegisteredUsersDuplicates(externalIds);
-        }
-        */
+
         const tenant = await this.tenants.get(this.context.getTenantId());
         for (let invitation of invitations) {
             invitation.status = models.Status.sent;
@@ -133,19 +121,6 @@ export class BatchInvitationsLogic extends Logic {
                 'Emails already registered',
                 profiles.map(prof => {
                     return prof.email;
-                }),
-            );
-        }
-    }
-
-    private async checkExternalIdsDuplicates(externalIds: Array<string>) {
-        const duplicates = await this.invitations.getByExternalIds(externalIds);
-
-        if (!_.isEmpty(duplicates)) {
-            return this.parseError(
-                'ExternalIds already invited',
-                duplicates.map(inv => {
-                    return inv.email;
                 }),
             );
         }

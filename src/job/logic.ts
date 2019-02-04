@@ -2,32 +2,28 @@ import {Logic} from '../logic';
 import {Errors} from 'typescript-rest';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {JobService} from './service';
-import {transaction} from 'objection';
+import {transaction, Transaction} from 'objection';
 import * as models from './models';
-import * as users from '../user/models';
-import {Transaction} from '../transaction/models';
 import {Job, JobRequest, JobPatchRequest} from './models';
 import * as _ from 'lodash';
 import {BaseError} from '../api';
-import {FundingSourceService} from '../foundingSource/services';
-import {UserService} from '../user/service';
 import {TransactionService} from '../transaction/service';
-import {Tenant} from '../tenant/models';
 import {Paginated} from '../db';
-import {options} from 'joi';
 import * as db from '../db';
 
 @AutoWired
 export class CreateJobLogic extends Logic {
     @Inject private jobService: JobService;
 
-    async execute(data: JobRequest): Promise<any> {
-        return await transaction(models.Job.knex(), async trx => {
-            const jobEntity = Job.factory(data);
-            jobEntity.isActive = true;
-            const jobFromDb = await this.jobService.insert(jobEntity, trx);
+    async execute(data: JobRequest, isCustom: boolean = false, trx?: Transaction): Promise<Job> {
+        return await transaction(this.jobService.transaction(trx), async _trx => {
+            const jobEntity = Job.factory({
+                ...data,
+                isActive: true,
+                isCustom,
+            });
 
-            return jobFromDb;
+            return await this.jobService.insert(jobEntity, _trx);
         });
     }
 }
@@ -70,8 +66,7 @@ export class DeleteJobLogic extends Logic {
     }
 }
 
-export class ChargeTenantError extends BaseError {
-}
+export class ChargeTenantError extends BaseError {}
 
 @AutoWired
 export class JobListLogic extends Logic {

@@ -7,7 +7,7 @@ import * as users from '../user/models';
 import * as profiles from '../profile/models';
 import 'mocha';
 import {sandbox} from '../test-setup.spec.unit';
-import { FundingSource } from '../foundingSource/models';
+import {FundingSource} from '../fundingSource/models';
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -56,6 +56,7 @@ describe('Mailer service', () => {
             profile.email = email;
             profile.tenantId = 'test';
             user.tenantProfile = profile;
+            user.baseProfile = profile;
         });
 
         it('should return true', async () => {
@@ -64,7 +65,7 @@ describe('Mailer service', () => {
             const subject = 'test subject';
             const params = {test: 'test'};
             template.setSubject(subject).setParams(params).setHtml('.twig').setText('.twig');
-            expect(await service.sendTemplate(user, template)).to.be.true;
+            expect(await service.sendTemplate(user.baseProfile.email, template)).to.be.true;
             expect(sendSpy.calledOnce).to.be.true;
             expect(sendSpy.getCall(0).args[0]).to.equal(email);
             expect(sendSpy.getCall(0).args[2]).to.equal(subject);

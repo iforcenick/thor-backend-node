@@ -1,6 +1,5 @@
 import Joi = require('joi');
 import moment = require('moment');
-
 import {mapper, PaginatedResponse} from '../api';
 import {Mapper} from '../mapper';
 import * as profile from '../profile/models';
@@ -88,9 +87,7 @@ export const rankingRequestSchema = Joi.object().keys({
 export const adminUserProfileRequestSchema = Joi.object().keys({
     firstName: Joi.string().allow('', null),
     lastName: Joi.string().allow('', null),
-    email: Joi.string()
-        .required()
-        .email(),
+    email: Joi.string().required().email(),
     role: Joi.string().required(),
 });
 
@@ -156,31 +153,19 @@ export class AddContractorUserResponse extends Mapper {
 const addContractorUserProfileRequestSchema = Joi.object().keys({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
-    email: Joi.string()
-        .required()
-        .email(),
-    phone: Joi.string()
-        .allow('', null)
-        .regex(regex.phoneRegex),
+    email: Joi.string().required().email(),
+    phone: Joi.string().allow('', null).regex(regex.phoneRegex),
     dateOfBirth: Joi.date()
-        .max(
-            moment(Date.now())
-                .subtract(18, 'years')
-                .calendar(),
-        )
+        .max(moment(Date.now()).subtract(18, 'years').calendar())
         .error(message => {
             return 'You must be at least 18 years old';
         }),
     country: Joi.string(),
-    state: Joi.string()
-        .uppercase()
-        .length(2),
+    state: Joi.string().uppercase().length(2),
     city: Joi.string().regex(/[a-zA-Z]+/),
     postalCode: Joi.string(),
     address1: Joi.string().max(50),
-    address2: Joi.string()
-        .allow('', null)
-        .max(50),
+    address2: Joi.string().allow('', null).max(50),
     externalId: Joi.string().allow('', null),
 });
 

@@ -4,8 +4,7 @@ import * as users from '../user/models';
 import * as templates from './template';
 import {Logger} from '../logger';
 import {Config} from '../config';
-import {config} from 'winston';
-import {FundingSource} from '../foundingSource/models';
+import {FundingSource} from '../fundingSource/models';
 import {Tenant} from '../tenant/models';
 import {Transaction} from '../transaction/models';
 
@@ -34,9 +33,9 @@ export class MailerService {
         return await this.client.send(to, from, subject, html, text);
     }
 
-    async sendTemplate(user: users.User, template: templates.Template) {
+    async sendTemplate(to: string, template: templates.Template) {
         return await this.send(
-            user.tenantProfile.email,
+            to,
             this.from,
             await template.getSubject(),
             await template.getHtml(),
@@ -118,13 +117,7 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CONTRACTOR_INVITATION_HTML)
             .setText(templates.TemplatesFiles.CONTRACTOR_INVITATION_TEXT)
             .setParams(params);
-        return await this.send(
-            email,
-            this.from,
-            await template.getSubject(),
-            await template.getHtml(),
-            await template.getText(),
-        );
+        return await this.sendTemplate(email, template);
     }
 
     /**
@@ -139,8 +132,8 @@ export class MailerService {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
-                `Follow this link to reset your password for your ${user.tenantProfile.email} account.`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
+                `Follow this link to reset your password for your ${user.baseProfile.email} account.`,
                 `${link}`,
             ],
         };
@@ -150,7 +143,7 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.PASSWORD_RESET_HTML)
             .setText(templates.TemplatesFiles.PASSWORD_RESET_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     /************************************************************************/
@@ -161,7 +154,7 @@ export class MailerService {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `Your ${fundingSource.name} ${fundingSource.type} account was added on ${getDateString(
                     fundingSource.createdAt,
                 )}`,
@@ -176,14 +169,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_ADDED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_ADDED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendFundingSourceRemoved(user: users.User, fundingSource: FundingSource) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `Your ${fundingSource.name} ${fundingSource.type} account was removed on ${getDateString()}`,
             ],
         };
@@ -193,14 +186,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_REMOVED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_REMOVED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendFundingSourceVerified(user: users.User, fundingSource: FundingSource) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `Your ${fundingSource.name} ${fundingSource.type} account was verified on ${getDateString()}`,
             ],
         };
@@ -210,14 +203,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_VERIFIED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_FUNDING_SOURCE_VERIFIED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerMicrodepositsInitiated(user: users.User, fundingSource: FundingSource) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `Micro-deposits were initiated to your ${fundingSource.name} ${
                     fundingSource.type
                 } account on ${getDateString()}`,
@@ -229,14 +222,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_INITIATED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_INITIATED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerMicrodepositsCompleted(user: users.User, fundingSource: FundingSource) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `Micro-deposits were successfully deposited into your ${fundingSource.name} ${
                     fundingSource.type
                 } account on ${getDateString()}`,
@@ -248,14 +241,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_COMPLETED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_COMPLETED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerMicrodepositsFailed(user: users.User, fundingSource: FundingSource) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `Micro-deposits failed to be deposited into your ${fundingSource.name} ${
                     fundingSource.type
                 } account on ${getDateString()}`,
@@ -267,7 +260,7 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_FAILED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_MICRODEPOSITS_FAILED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     /************************************************************************/
@@ -284,14 +277,14 @@ export class MailerService {
             title: 'Payment Notice',
             descriptions: [
                 `Hi ${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName},`,
-                `A payment initiated to ${user.tenantProfile.firstName} ${
-                    user.tenantProfile.lastName
+                `A payment initiated to ${user.baseProfile.firstName} ${
+                    user.baseProfile.lastName
                 } has been created. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
                 {name: 'Source:', description: `${fundingSource.name}`},
-                {name: 'Recipient:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
+                {name: 'Recipient:', description: `${user.baseProfile.firstName} ${user.baseProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
                 {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
@@ -302,20 +295,20 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CREATED_SENDER_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CREATED_SENDER_TEXT)
             .setParams(params);
-        return await this.sendTemplate(admin, template);
+        return await this.sendTemplate(admin.tenantProfile.email, template);
     }
 
     async sendCustomerTransferCreatedReceiver(user: users.User, tenant: Tenant, transaction: Transaction) {
         const params = {
             title: 'Payment Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `A payment from ${tenant.businessName} has been created. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
                 {name: 'Source:', description: `${tenant.businessName}`},
-                {name: 'Destination:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
+                {name: 'Destination:', description: `${user.baseProfile.firstName} ${user.baseProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
                 {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
@@ -326,7 +319,7 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CREATED_RECEIVER_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CREATED_RECEIVER_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     // async sendRecurringPaymentScheduled(user: users.User, params: any) {
@@ -359,14 +352,14 @@ export class MailerService {
             title: 'Payment Notice',
             descriptions: [
                 `Hi ${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName},`,
-                `Your payment to ${user.tenantProfile.firstName} ${
-                    user.tenantProfile.lastName
+                `Your payment to ${user.baseProfile.firstName} ${
+                    user.baseProfile.lastName
                 } has been cancelled. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
                 {name: 'Source:', description: `${fundingSource.name}`},
-                {name: 'Recipient:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
+                {name: 'Recipient:', description: `${user.baseProfile.firstName} ${user.baseProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
                 {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
@@ -377,20 +370,20 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_CANCELLED_SENDER_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_CANCELLED_SENDER_TEXT)
             .setParams(params);
-        return await this.sendTemplate(admin, template);
+        return await this.sendTemplate(admin.tenantProfile.email, template);
     }
 
     async sendCustomerTransferCancelledReceiver(user: users.User, tenant: Tenant, transaction: Transaction) {
         const params = {
             title: 'Payment Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `A payment from ${tenant.businessName} has been cancelled. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
                 {name: 'Source:', description: `${tenant.businessName}`},
-                {name: 'Destination:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
+                {name: 'Destination:', description: `${user.baseProfile.firstName} ${user.baseProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
                 {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
@@ -401,7 +394,7 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_TRANSFER_CANCELLED_RECEIVER_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_TRANSFER_CANCELLED_RECEIVER_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerTransferFailedSender(
@@ -414,14 +407,14 @@ export class MailerService {
             title: 'Payment Notice',
             descriptions: [
                 `Hi ${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName},`,
-                `Your payment to ${user.tenantProfile.firstName} ${
-                    user.tenantProfile.lastName
+                `Your payment to ${user.baseProfile.firstName} ${
+                    user.baseProfile.lastName
                 } has failed. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
                 {name: 'Source:', description: `${fundingSource.name}`},
-                {name: 'Recipient:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
+                {name: 'Recipient:', description: `${user.baseProfile.firstName} ${user.baseProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
                 {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
@@ -432,20 +425,20 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_FAILED_SENDER_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_FAILED_SENDER_TEXT)
             .setParams(params);
-        return await this.sendTemplate(admin, template);
+        return await this.sendTemplate(admin.tenantProfile.email, template);
     }
 
     async sendCustomerTransferFailedReceiver(user: users.User, tenant: Tenant, transaction: Transaction) {
         const params = {
             title: 'Payment Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `A payment from ${tenant.businessName} has failed. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
                 {name: 'Source:', description: `${tenant.businessName}`},
-                {name: 'Destination:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
+                {name: 'Destination:', description: `${user.baseProfile.firstName} ${user.baseProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
                 {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
@@ -456,7 +449,7 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_FAILED_RECEIVER_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_FAILED_RECEIVER_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerTransferCompletedSender(
@@ -469,14 +462,14 @@ export class MailerService {
             title: 'Payment Notice',
             descriptions: [
                 `Hi ${admin.tenantProfile.firstName} ${admin.tenantProfile.lastName},`,
-                `Your payment to ${user.tenantProfile.firstName} ${
-                    user.tenantProfile.lastName
+                `Your payment to ${user.baseProfile.firstName} ${
+                    user.baseProfile.lastName
                 } has completed. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
                 {name: 'Source:', description: `${fundingSource.name}`},
-                {name: 'Recipient:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
+                {name: 'Recipient:', description: `${user.baseProfile.firstName} ${user.baseProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
                 {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
@@ -487,20 +480,20 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_COMPLETED_SENDER_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_COMPLETED_SENDER_TEXT)
             .setParams(params);
-        return await this.sendTemplate(admin, template);
+        return await this.sendTemplate(admin.tenantProfile.email, template);
     }
 
     async sendCustomerTransferCompletedReceiver(user: users.User, tenant: Tenant, transaction: Transaction) {
         const params = {
             title: 'Payment Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `A payment from ${tenant.businessName} has completed. Here are the details of this payment:`,
             ],
             fields: [
                 {name: 'Transfer Type:', description: 'Bank Transfer'},
                 {name: 'Source:', description: `${tenant.businessName}`},
-                {name: 'Destination:', description: `${user.tenantProfile.firstName} ${user.tenantProfile.lastName}`},
+                {name: 'Destination:', description: `${user.baseProfile.firstName} ${user.baseProfile.lastName}`},
                 {name: 'Amount:', description: transaction.transfer.value},
                 {name: 'Date Initiated:', description: getDateString(transaction.transfer.createdAt)},
             ],
@@ -511,7 +504,7 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_COMPLETED_RECEIVER_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_COMPLETED_RECEIVER_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     // async sendCustomerBankTransferCreatedSender(user: users.User, params: any) {
@@ -521,7 +514,7 @@ export class MailerService {
     //         .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CREATED_SENDER_HTML)
     //         .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CREATED_SENDER_TEXT)
     //         .setParams(params);
-    //     return await this.sendTemplate(user, template);
+    //     return await this.sendTemplate(user.baseProfile.email, template);
     // }
 
     // async sendCustomerBankTransferCreatedReceiver(user: users.User, params: any) {
@@ -531,7 +524,7 @@ export class MailerService {
     //         .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CREATED_RECEIVER_HTML)
     //         .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CREATED_RECEIVER_TEXT)
     //         .setParams(params);
-    //     return await this.sendTemplate(user, template);
+    //     return await this.sendTemplate(user.baseProfile.email, template);
     // }
 
     // async sendCustomerBankTransferCancelledSender(user: users.User, params: any) {
@@ -541,7 +534,7 @@ export class MailerService {
     //         .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CANCELLED_SENDER_HTML)
     //         .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CANCELLED_SENDER_TEXT)
     //         .setParams(params);
-    //     return await this.sendTemplate(user, template);
+    //     return await this.sendTemplate(user.baseProfile.email, template);
     // }
 
     // async sendCustomerBankTransferCancelledReceiver(user: users.User, params: any) {
@@ -551,7 +544,7 @@ export class MailerService {
     //         .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CANCELLED_RECEIVER_HTML)
     //         .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_CANCELLED_RECEIVER_TEXT)
     //         .setParams(params);
-    //     return await this.sendTemplate(user, template);
+    //     return await this.sendTemplate(user.baseProfile.email, template);
     // }
 
     // async sendCustomerBankTransferFailedSender(user: users.User, params: any) {
@@ -561,7 +554,7 @@ export class MailerService {
     //         .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_FAILED_SENDER_HTML)
     //         .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_FAILED_SENDER_TEXT)
     //         .setParams(params);
-    //     return await this.sendTemplate(user, template);
+    //     return await this.sendTemplate(user.baseProfile.email, template);
     // }
 
     // async sendCustomerBankTransferFailedReceiver(user: users.User, params: any) {
@@ -571,7 +564,7 @@ export class MailerService {
     //         .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_FAILED_RECEIVER_HTML)
     //         .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_FAILED_RECEIVER_TEXT)
     //         .setParams(params);
-    //     return await this.sendTemplate(user, template);
+    //     return await this.sendTemplate(user.baseProfile.email, template);
     // }
 
     // async sendCustomerBankTransferCompletedSender(user: users.User, params: any) {
@@ -581,7 +574,7 @@ export class MailerService {
     //         .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_COMPLETED_SENDER_HTML)
     //         .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_COMPLETED_SENDER_TEXT)
     //         .setParams(params);
-    //     return await this.sendTemplate(user, template);
+    //     return await this.sendTemplate(user.baseProfile.email, template);
     // }
 
     // async sendCustomerBankTransferCompletedReceiver(user: users.User, params: any) {
@@ -591,7 +584,7 @@ export class MailerService {
     //         .setHtml(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_COMPLETED_RECEIVER_HTML)
     //         .setText(templates.TemplatesFiles.CUSTOMER_BANK_TRANSFER_COMPLETED_RECEIVER_TEXT)
     //         .setParams(params);
-    //     return await this.sendTemplate(user, template);
+    //     return await this.sendTemplate(user.baseProfile.email, template);
     // }
 
     /************************************************************************/
@@ -602,7 +595,7 @@ export class MailerService {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 'Congrats! Your Thor account was successfully created.',
             ],
             footer:
@@ -614,14 +607,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_CREATED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_CREATED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerCreatedAndVerified(user: users.User) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 'Congrats! Your Thor account was successfully created and verified.',
             ],
             footer:
@@ -633,14 +626,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_CREATED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_CREATED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerVerified(user: users.User) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 'Your account has been successfully verified!',
             ],
         };
@@ -650,14 +643,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFIED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_VERIFIED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerVerificationDocumentRequired(user: users.User) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `Additional documentation is required to verify your account. Please contact support@gothor.com to provide a color copy, non-expired US issued ID (such as a Driver's License), or applicable business documentation.`,
             ],
         };
@@ -667,14 +660,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_NEEDED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_NEEDED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerVerificationDocumentUploaded(user: users.User) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 'The document you uploaded for account verification was successfully uploaded. You will receive another email when the document has been reviewed. It will either be approved or rejected.',
             ],
         };
@@ -684,14 +677,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_UPLOADED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_UPLOADED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerVerificationDocumentApproved(user: users.User) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 'The document you uploaded for account verification was approved',
             ],
         };
@@ -701,14 +694,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_APPROVED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_APPROVED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerVerificationDocumentFailed(user: users.User) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `The document uploaded for account verification was rejected. Please contact support@gothor.com to provide another color copy, non-expired US issued ID (such as a Driver's License), or applicable business documentation.`,
             ],
         };
@@ -718,14 +711,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_FAILED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_DOCUMENT_FAILED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerVerificationRetry(user: users.User) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 `Incomplete or incorrect information was received during registration. Please contact support@gothor.com and update your information in order to be verified.`,
             ],
         };
@@ -735,14 +728,14 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_VERIFICATION_RETRY_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_VERIFICATION_RETRY_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 
     async sendCustomerSuspended(user: users.User) {
         const params = {
             title: 'Account Notice',
             descriptions: [
-                `Hi ${user.tenantProfile.firstName} ${user.tenantProfile.lastName},`,
+                `Hi ${user.baseProfile.firstName} ${user.baseProfile.lastName},`,
                 'Your account has been suspended.',
             ],
         };
@@ -752,6 +745,6 @@ export class MailerService {
             .setHtml(templates.TemplatesFiles.CUSTOMER_SUSPENDED_HTML)
             .setText(templates.TemplatesFiles.CUSTOMER_SUSPENDED_TEXT)
             .setParams(params);
-        return await this.sendTemplate(user, template);
+        return await this.sendTemplate(user.baseProfile.email, template);
     }
 }

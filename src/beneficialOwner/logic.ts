@@ -17,7 +17,7 @@ export class AddBeneficialOwnerLogic extends Logic {
         if (!tenant) {
             throw new Errors.NotFoundError('Tenant not found');
         }
-        if (!tenant.dwollaUri) {
+        if (!tenant.paymentsUri) {
             throw new Errors.ConflictError('Could not add beneficial owner for tenant, no tenant company');
         }
         if (tenant.businessType == dwolla.customer.BUSINESS_TYPE.Sole) {
@@ -25,7 +25,7 @@ export class AddBeneficialOwnerLogic extends Logic {
         }
 
         const beneficialOwner = new BeneficialOwner(request);
-        const response = await this.dwollaClient.createBusinessVerifiedBeneficialOwner(tenant.dwollaUri, beneficialOwner);
+        const response = await this.dwollaClient.createBusinessVerifiedBeneficialOwner(tenant.paymentsUri, beneficialOwner);
         return await this.dwollaClient.getBusinessVerifiedBeneficialOwner(response);
     }
 }
@@ -41,7 +41,7 @@ export class GetBeneficialOwnersLogic extends Logic {
             throw new BeneficialOwnerError('Could not find tenant.');
         }
 
-        return await this.dwollaClient.listBusinessVerifiedBeneficialOwners(tenant.dwollaUri);
+        return await this.dwollaClient.listBusinessVerifiedBeneficialOwners(tenant.paymentsUri);
     }
 }
 
@@ -91,7 +91,7 @@ export class AddBeneficialOwnerRetryLogic extends Logic {
         if (!tenant) {
             throw new Errors.NotFoundError('Tenant not found');
         }
-        if (!tenant.dwollaUri) {
+        if (!tenant.paymentsUri) {
             throw new Errors.ConflictError('Could not add beneficial owner for tenant, no tenant company');
         }
         if (tenant.businessType == dwolla.customer.BUSINESS_TYPE.Sole) {

@@ -5,8 +5,8 @@ import {TenantService} from '../service';
 import {Tenant, Statuses} from '../models';
 import {Logic} from '../../logic';
 import {Errors} from 'typescript-rest';
-import {FundingSource, VerificationStatuses} from '../../foundingSource/models';
-import {FundingSourceService} from '../../foundingSource/services';
+import {FundingSource, Statuses as VerificationStatuses} from '../../fundingSource/models';
+import {FundingSourceService} from '../../fundingSource/services';
 import {UserService} from '../../user/service';
 import {User} from '../../user/models';
 import {ISource} from '../../dwolla/funding';
@@ -29,13 +29,13 @@ export class CreateTenantFundingSourceLogic extends Logic {
             throw new Errors.NotAcceptableError('Could not add more funding sources');
         }
 
-        if (!tenant.dwollaUri) {
+        if (!tenant.paymentsUri) {
             throw new Errors.NotAcceptableError('Tenant has to have company details');
 
         }
 
         tenant.fundingSourceUri = await this.dwollaClient.createFundingSource(
-            tenant.dwollaUri, request.routing,
+            tenant.paymentsUri, request.routing,
             request.account, request.bankAccountType, request.name
         );
 
@@ -83,7 +83,7 @@ export class DeleteTenantFundingSourcesLogic extends Logic {
 
         tenant.fundingSourceUri = null;
         tenant.fundingSourceName = null;
-        tenant.fundingSourceVerificationStatus = null;
+        tenant.fundingSourceStatus = null;
 
         await this.tenantService.update(tenant);
     }
@@ -100,7 +100,7 @@ export class InitiateTenantFundingSourceVerificationLogic extends Logic {
             throw new Errors.NotFoundError('Funding source not found');
         }
 
-        if (tenant.fundingSourceVerificationStatus) {
+        if (tenant.fundingSourceStatus) {
             throw new Errors.NotAcceptableError('Funding source verification cannot be initiated');
         }
 
@@ -108,7 +108,7 @@ export class InitiateTenantFundingSourceVerificationLogic extends Logic {
             throw new Errors.NotAcceptableError('Funding source verification initiation failed');
         }
 
-        tenant.fundingSourceVerificationStatus = VerificationStatuses.initiated;
+        tenant.fundingSourceStatus = VerificationStatuses.initiated;
         await this.tenantService.update(tenant);
     }
 }
@@ -124,7 +124,7 @@ export class VerifyTenantFundingSourceLogic extends Logic {
             throw new Errors.NotFoundError('Funding source not found');
         }
 
-        if (tenant.fundingSourceVerificationStatus != VerificationStatuses.initiated) {
+        if (tenant.fundingSourceStatus != VerificationStatuses.initiated) {
             throw new Errors.NotAcceptableError('Funding source verification not initiated');
         }
 
@@ -144,7 +144,7 @@ export class VerifyTenantFundingSourceLogic extends Logic {
             throw e;
         }
 
-        tenant.fundingSourceVerificationStatus = VerificationStatuses.completed;
+        tenant.fundingSourceStatus = VerificationStatuses.verified;
         await this.tenantService.update(tenant);
     }
 }
@@ -161,7 +161,7 @@ export class AddVerifyingFundingSourceForTenantLogic extends Logic {
         if (!uri) {
             throw new Errors.NotAcceptableError('Uri is empty');
         }
-        if (await this.fundingService.getByDwollaUri(uri)) {
+        if (await this.fundingService.getByPaymentsUri(uri)) {
             throw new Errors.NotAcceptableError('Funding source with provided uri is already registered');
         }
         let tenant = await this.tenantService.get(user.tenantProfile.tenantId);
@@ -178,7 +178,7 @@ export class AddVerifyingFundingSourceForTenantLogic extends Logic {
 
         tenant.fundingSourceName = dwollaFunding.name;
         tenant.fundingSourceUri = uri;
-        tenant.fundingSourceVerificationStatus = dwollaFunding.verificationStatus();
+        tenant.fundingSourceStatus = dwollaFunding.verificationStatus();
         tenant.status = Statuses.active;
 
         tenant = await this.tenantService.update(tenant);
@@ -190,12 +190,6 @@ export class AddVerifyingFundingSourceForTenantLogic extends Logic {
             verificationStatus: dwollaFunding.verificationStatus(),
         });
 
-        try {
-            await this.mailer.sendFundingSourceAdded(user, fundingSource);
-        } catch (e) {
-            this.logger.error(e);
-        }
-
         return tenant;
     }
 }
@@ -204,11 +198,10 @@ export class AddVerifyingFundingSourceForTenantLogic extends Logic {
 export class GetIavTokenForTenantLogic extends Logic {
     @Inject protected userService: UserService;
     @Inject private client: dwolla.Client;
-    @Inject private tenantService: TenantService;
 
     async execute(tenant: Tenant) {
         try {
-            return await this.client.getIavToken(tenant.dwollaUri);
+            return await this.client.getIavToken(tenant.paymentsUri);
         } catch (e) {
             if (e instanceof dwolla.DwollaRequestError) {
                 throw e.toValidationError();

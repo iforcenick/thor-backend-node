@@ -13,7 +13,7 @@ const template = new mailer.Template();
 const params = {name: 'Tester Pawel', link: 'gothor-api.gothor.com'};
 template.setSubject('test email').setHtml(mailer.TemplatesFiles.TRANSFER_PROCESSED_HTML).setText(mailer.TemplatesFiles.TRANSFER_PROCESSED_TEXT).setParams(params);
 
-service.sendTemplate(user, template).then(r => {
+service.sendTemplate(user.profiles[0].email, template).then(r => {
     console.log('result', r);
 }).catch(e => {
     console.log(e);

@@ -20,7 +20,7 @@ import {
     ContractorFundingSourceController,
     FundingSourceController,
     UserFundingSourceController,
-} from './foundingSource/controller';
+} from './fundingSource/controller';
 import {BeneficialOwnerController} from './beneficialOwner/controller';
 import {TenantFundingSourcesController} from './tenant/fundingSource/controller';
 

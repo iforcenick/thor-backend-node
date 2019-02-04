@@ -4,10 +4,8 @@ import {Inject} from 'typescript-ioc';
 import * as models from './models';
 import {TransactionService} from './service';
 import {UserService} from '../user/service';
-import {JobService} from '../job/service';
 import {Security, Tags} from 'typescript-rest-swagger';
 import moment from 'moment';
-import {FundingSourceService} from '../foundingSource/services';
 import * as logicLayer from './logic';
 import * as dwolla from '../dwolla';
 
@@ -141,18 +139,18 @@ export class TransactionController extends BaseController {
     @Path(':id/transfers')
     @Preprocessor(BaseController.requireAdmin)
     async createTransactionTransfer(@PathParam('id') id: string): Promise<models.TransactionResponse> {
-        const logic = new logicLayer.CreateTransactionTransferLogic(this.getRequestContext());
-        const transaction = await logic.execute(id);
+        const logic = new logicLayer.CreateTransactionsTransferLogic(this.getRequestContext());
+        const transaction = await logic.execute([id]);
 
         return this.map(models.TransactionResponse, transaction);
     }
 
     @POST
-    @Path('transfers/user/:id')
+    @Path('transfers')
     @Preprocessor(BaseController.requireAdmin)
-    async createTransactionsTransfer(@PathParam('id') id: string, data: models.TransactionsTransferRequest): Promise<models.TransferResponse> {
+    async createTransactionsTransfer(data: models.TransactionsTransferRequest): Promise<models.TransferResponse> {
         const logic = new logicLayer.CreateTransactionsTransferLogic(this.getRequestContext());
-        const transfer = await logic.execute(id, data['transactionsIds']);
+        const transfer = await logic.execute(data['transactionsIds']);
 
         return this.map(models.TransferResponse, transfer);
     }
@@ -206,8 +204,8 @@ export class TransactionController extends BaseController {
                 throw new Errors.NotAcceptableError('Transfer cannot be cancelled');
             }
 
-            const cancelLogic = new logicLayer.CancelTransactionLogic(this.getRequestContext());
-            await cancelLogic.execute(_transaction);
+            const cancelLogic = new logicLayer.CancelTransferLogic(this.getRequestContext());
+            await cancelLogic.execute(_transaction.transferId);
         } catch (e) {
             if (e instanceof Errors.NotAcceptableError) {
                 throw new Errors.NotAcceptableError(e.message);

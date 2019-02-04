@@ -1,112 +1,133 @@
-import {Logic} from '../logic';
-import * as transfer from './transfer/models';
-import {Transfer} from './transfer/models';
-import {Errors} from 'typescript-rest';
+import * as _ from 'lodash';
+import * as objection from 'objection';
+import {transaction} from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
-import {FundingSourceService} from '../foundingSource/services';
+import {Errors} from 'typescript-rest';
+import {BaseError} from '../api';
+import {Config} from '../config';
+import * as dwolla from '../dwolla';
+import {DwollaRequestError} from '../dwolla';
+import {Logger} from '../logger';
+import {Logic} from '../logic';
+import {GetDefaultFundingSourceLogic} from '../fundingSource/logic';
+import {CreateJobLogic} from '../job/logic';
+import {MailerService} from '../mailer';
+import {Transfer} from './transfer/models';
+import {Job, JobRequest} from '../job/models';
+import {User} from '../user/models';
+import * as users from '../user/models';
+import {Tenant} from '../tenant/models';
+import {Statuses, Transaction, TransactionPatchRequest, InvalidTransferDataError} from './models';
+import {FundingSource, Statuses as VerificationStatuses} from '../fundingSource/models';
+import {FundingSourceService} from '../fundingSource/services';
 import {TransactionService} from './service';
 import {UserService} from '../user/service';
 import {TransferService} from './transfer/service';
-import * as users from '../user/models';
-import {transaction} from 'objection';
-import * as dwolla from '../dwolla';
-import {DwollaRequestError} from '../dwolla';
-import * as models from './models';
-import {Statuses, Transaction, TransactionExistingJobRequest, TransactionPatchRequest} from './models';
-import {MailerService} from '../mailer';
-import {Logger} from '../logger';
-import {FundingSource, VerificationStatuses} from '../foundingSource/models';
-import {Config} from '../config';
 import {JobService} from '../job/service';
-import {Job, JobRequest} from '../job/models';
-import * as _ from 'lodash';
-import {BaseError} from '../api';
-import {User} from '../user/models';
 import {TenantService} from '../tenant/service';
-import {Tenant} from '../tenant/models';
-import {ContractorDefaultFundingSourcesLogic} from '../foundingSource/logic';
 
 @AutoWired
 export class UpdateTransactionStatusLogic extends Logic {
     @Inject private transactionService: TransactionService;
     @Inject private transferService: TransferService;
     @Inject private userService: UserService;
-    @Inject protected mailer: MailerService;
-    @Inject protected logger: Logger;
+    @Inject private mailer: MailerService;
+    @Inject private logger: Logger;
     @Inject private fundingSourceService: FundingSourceService;
     @Inject private tenantService: TenantService;
 
-    async execute(_transaction: Transaction, transfer: Transfer, status: string): Promise<any> {
-        if (_transaction.status === status) return;
+    async execute(transactions: Array<Transaction>, status: string): Promise<any> {
+        if (transactions[0].status === status) return;
 
         await transaction(this.transactionService.transaction(), async trx => {
-            _transaction.status = status;
-            transfer.status = status;
+            for (let index = 0; index < transactions.length; index++) {
+                const transaction = transactions[index];
+                transaction.status = status;
+                transaction.transfer.status = status;
 
-            await this.transactionService.update(_transaction, trx);
-            await this.transferService.update(transfer, trx);
+                await this.transactionService.update(transaction, trx);
+                await this.transferService.update(transaction.transfer, trx);
+
+                // send all the contractor emails
+                try {
+                    const user = await this.userService.get(transaction.userId);
+                    const tenant = await this.tenantService.get(transaction.tenantId);
+                    switch (status) {
+                        case Statuses.processing:
+                            await this.mailer.sendCustomerTransferCreatedReceiver(user, tenant, transaction);
+                            break;
+                        case Statuses.processed:
+                            await this.mailer.sendCustomerTransferCompletedReceiver(user, tenant, transaction);
+                            break;
+                        case Statuses.failed:
+                            await this.mailer.sendCustomerTransferFailedReceiver(user, tenant, transaction);
+                            break;
+                        case Statuses.cancelled:
+                            await this.mailer.sendCustomerTransferCancelledReceiver(user, tenant, transaction);
+                            break;
+                        default:
+                            break;
+                    }
+                } catch (error) {
+                    // don't abort if email was not sent
+                    this.logger.error(error.message);
+                }
+            }
         });
 
-        // don't abort transaction if email was not send
+        // send the admin email
         try {
-            const user = await this.userService.get(_transaction.userId);
-            const admin = await this.userService.get(_transaction.adminId);
-            const destination = await this.fundingSourceService.getByDwollaUri(transfer.destinationUri);
-            const tenant = await this.tenantService.get(_transaction.tenantId);
+            const user = await this.userService.get(transactions[0].userId);
+            const admin = await this.userService.get(transactions[0].adminId);
+            const destination = await this.fundingSourceService.getByPaymentsUri(transactions[0].transfer.destinationUri);
             switch (status) {
                 case Statuses.processing:
-                    await Promise.all([
-                        this.mailer.sendCustomerTransferCreatedSender(user, admin, _transaction, destination),
-                        this.mailer.sendCustomerTransferCreatedReceiver(user, tenant, _transaction),
-                    ]);
+                    await this.mailer.sendCustomerTransferCreatedSender(user, admin, transactions[0], destination);
                     break;
                 case Statuses.processed:
-                    await Promise.all([
-                        this.mailer.sendCustomerTransferCompletedSender(user, admin, _transaction, destination),
-                        this.mailer.sendCustomerTransferCompletedReceiver(user, tenant, _transaction),
-                    ]);
+                    await this.mailer.sendCustomerTransferCompletedSender(user, admin, transactions[0], destination);
                     break;
                 case Statuses.failed:
-                    await Promise.all([
-                        this.mailer.sendCustomerTransferFailedSender(user, admin, _transaction, destination),
-                        this.mailer.sendCustomerTransferFailedReceiver(user, tenant, _transaction),
-                    ]);
+                    await this.mailer.sendCustomerTransferFailedSender(user, admin, transactions[0], destination);
                     break;
                 case Statuses.cancelled:
-                    await Promise.all([
-                        this.mailer.sendCustomerTransferCancelledSender(user, admin, _transaction, destination),
-                        this.mailer.sendCustomerTransferCancelledReceiver(user, tenant, _transaction),
-                    ]);
+                    await this.mailer.sendCustomerTransferCancelledSender(user, admin, transactions[0], destination);
                     break;
                 default:
                     break;
             }
         } catch (error) {
+            // don't abort if email was not sent
             this.logger.error(error.message);
         }
     }
 }
 
 @AutoWired
-export class CancelTransactionLogic extends Logic {
-    @Inject protected dwollaClient: dwolla.Client;
+export class CancelTransferLogic extends Logic {
+    @Inject private transactionService: TransactionService;
+    @Inject private dwollaClient: dwolla.Client;
 
-    async execute(_transaction: models.Transaction): Promise<any> {
-        const updateStatusLogic = new UpdateTransactionStatusLogic(this.context);
-        const result = await this.dwollaClient.cancelTransfer(_transaction.transfer.externalId);
+    async execute(transferId: string): Promise<any> {
+        const transactions: Array<Transaction> = await this.transactionService.getByTransferId(transferId);
+        if (transactions.length === 0) {
+            throw new Errors.NotFoundError('transfer could not be found');
+        }
+        const logic = new UpdateTransactionStatusLogic(this.context);
+        const result = await this.dwollaClient.cancelTransfer(transactions[0].transfer.paymentsUri);
 
         if (result) {
-            await updateStatusLogic.execute(_transaction, _transaction.transfer, models.Statuses.cancelled);
+            await logic.execute(transactions, Statuses.cancelled);
         }
     }
 }
 
 @AutoWired
 export class ChargeTenantLogic extends Logic {
-    @Inject protected dwollaClient: dwolla.Client;
-    @Inject protected tenantService: TenantService;
-    @Inject protected transferService: TransferService;
-    @Inject protected config: Config;
+    @Inject private dwollaClient: dwolla.Client;
+    @Inject private tenantService: TenantService;
+    @Inject private transferService: TransferService;
+    @Inject private config: Config;
 
     async execute(value: number, admin: User): Promise<any> {
         const tenant: Tenant = await this.tenantService.get(this.context.getTenantId());
@@ -114,7 +135,7 @@ export class ChargeTenantLogic extends Logic {
             throw new ChargeTenantError('Tenant funding source not found');
         }
 
-        if (tenant.fundingSourceVerificationStatus != VerificationStatuses.completed) {
+        if (tenant.fundingSourceStatus != VerificationStatuses.verified) {
             throw new ChargeTenantError('Tenant funding source not verified');
         }
 
@@ -132,8 +153,8 @@ export class ChargeTenantLogic extends Logic {
         dwollaTransfer.setCurrency('USD');
 
         try {
-            transfer.externalId = await this.dwollaClient.createTransfer(dwollaTransfer);
-            const _transfer = await this.dwollaClient.getTransfer(transfer.externalId);
+            transfer.paymentsUri = await this.dwollaClient.createTransfer(dwollaTransfer);
+            const _transfer = await this.dwollaClient.getTransfer(transfer.paymentsUri);
             transfer.status = _transfer.status;
             transfer.tenantId = tenant.id;
             return await this.transferService.createTransfer(transfer);
@@ -167,26 +188,21 @@ export class PrepareTransferLogic extends Logic {
     @Inject private transactionService: TransactionService;
     @Inject private transferService: TransferService;
     @Inject private userService: UserService;
-    @Inject protected tenantService: TenantService;
+    @Inject private tenantService: TenantService;
     @Inject private config: Config;
 
-    async execute(
-        transactions: Array<models.Transaction>,
-        user,
-        admin: users.User,
-        value: number,
-    ): Promise<any> {
+    async execute(transactions: Array<Transaction>, user, admin: users.User, value: number): Promise<any> {
         const tenant: Tenant = await this.tenantService.get(this.context.getTenantId());
-        const logic = new ContractorDefaultFundingSourcesLogic(this.context);
+        const logic = new GetDefaultFundingSourceLogic(this.context);
         const defaultFunding: FundingSource = await logic.execute(user.id);
         if (!defaultFunding) {
-            throw new models.InvalidTransferDataError('Bank account not configured for recipient');
+            throw new InvalidTransferDataError('Bank account not configured for recipient');
         }
 
         let transfer = new Transfer();
         transfer.adminId = admin.id;
         transfer.status = Statuses.new;
-        transfer.destinationUri = defaultFunding.dwollaUri;
+        transfer.destinationUri = defaultFunding.paymentsUri;
         transfer.sourceUri = tenant.fundingSourceUri;
         transfer.value = value;
         // transfer.sourceUri = this.config.get('dwolla.masterFunding');
@@ -206,84 +222,11 @@ export class PrepareTransferLogic extends Logic {
     }
 }
 
-const calculateTransactionsValue = (transactions: Array<models.Transaction>) => {
+const calculateTransactionsValue = (transactions: Array<Transaction>) => {
     return transactions.reduce((total, trans) => {
         return total + Number(trans.value);
     }, 0);
 };
-
-@AutoWired
-export class CreateTransactionTransferLogic extends Logic {
-    @Inject private transactionService: TransactionService;
-    @Inject private userService: UserService;
-    @Inject private transferService: TransferService;
-    @Inject private dwollaClient: dwolla.Client;
-    @Inject private config: Config;
-
-    async execute(id: string): Promise<any> {
-        const transaction = await this.transactionService.get(id);
-        if (!transaction) {
-            throw new Errors.NotFoundError();
-        }
-
-        try {
-            if (!transaction.transferId) {
-                const admin = await this.userService.get(this.context.getUserId());
-                const user = await this.userService.get(transaction.userId);
-                const tenantLogic = new ChargeTenantLogic(this.context);
-                const tenantCharge = await tenantLogic.execute(calculateTransactionsValue([transaction]), admin);
-                const logic = new PrepareTransferLogic(this.context);
-                transaction.transfer = await logic.execute([transaction], user, admin, tenantCharge);
-            } else {
-                transaction.transfer = await this.transferService.get(transaction.transferId);
-            }
-
-            if (transaction.transfer.status !== transfer.Statuses.new) {
-                throw new Errors.NotAcceptableError('Transfer already pending');
-            }
-
-            await this.createExternalTransfer(transaction);
-        } catch (e) {
-            if (
-                e instanceof models.InvalidTransferDataError ||
-                e instanceof Errors.NotAcceptableError ||
-                e instanceof ChargeTenantError
-            ) {
-                throw new Errors.NotAcceptableError(e.message);
-            }
-
-            throw new Errors.InternalServerError(e.message);
-        }
-
-        return transaction;
-    }
-
-    private async createExternalTransfer(_transaction: models.Transaction) {
-        const transfer = dwolla.transfer.factory({});
-        transfer.setSource(_transaction.transfer.sourceUri);
-        transfer.setDestination(_transaction.transfer.destinationUri);
-        transfer.setAmount(_transaction.transfer.value);
-        transfer.setCurrency('USD');
-
-        const updateStatusLogic = new UpdateTransactionStatusLogic(this.context);
-
-        try {
-            _transaction.transfer.externalId = await this.dwollaClient.createTransfer(transfer);
-            const _transfer = await this.dwollaClient.getTransfer(_transaction.transfer.externalId);
-            await updateStatusLogic.execute(_transaction, _transaction.transfer, _transfer.status);
-        } catch (e) {
-            // handled w/o logic so an email isn't sent
-            await transaction(this.transactionService.transaction(), async trx => {
-                _transaction.status = status;
-                _transaction.transfer.status = status;
-
-                await this.transactionService.update(_transaction, trx);
-                await this.transferService.update(_transaction.transfer, trx);
-            });
-            throw e;
-        }
-    }
-}
 
 @AutoWired
 export class CreateTransactionsTransferLogic extends Logic {
@@ -291,9 +234,8 @@ export class CreateTransactionsTransferLogic extends Logic {
     @Inject private userService: UserService;
     @Inject private transferService: TransferService;
     @Inject private dwollaClient: dwolla.Client;
-    @Inject private config: Config;
 
-    async execute(id: string, data: Array<string>): Promise<any> {
+    async execute(data: Array<string>): Promise<any> {
         const transactions = [];
         let userId;
 
@@ -332,7 +274,7 @@ export class CreateTransactionsTransferLogic extends Logic {
             return transfer;
         } catch (e) {
             if (
-                e instanceof models.InvalidTransferDataError ||
+                e instanceof InvalidTransferDataError ||
                 e instanceof Errors.NotAcceptableError ||
                 e instanceof ChargeTenantError
             ) {
@@ -343,7 +285,7 @@ export class CreateTransactionsTransferLogic extends Logic {
         }
     }
 
-    private async createExternalTransfer(_transfer: Transfer, transactions: Array<models.Transaction>) {
+    private async createExternalTransfer(_transfer: Transfer, transactions: Array<Transaction>) {
         const transfer = dwolla.transfer.factory({});
         transfer.setSource(_transfer.sourceUri);
         transfer.setDestination(_transfer.destinationUri);
@@ -352,8 +294,8 @@ export class CreateTransactionsTransferLogic extends Logic {
 
         // TODO: better error handling
         try {
-            _transfer.externalId = await this.dwollaClient.createTransfer(transfer);
-            const _dwollaTransfer = await this.dwollaClient.getTransfer(_transfer.externalId);
+            _transfer.paymentsUri = await this.dwollaClient.createTransfer(transfer);
+            const _dwollaTransfer = await this.dwollaClient.getTransfer(_transfer.paymentsUri);
             _transfer.status = _dwollaTransfer.status;
             await transaction(this.transactionService.transaction(), async trx => {
                 await this.transferService.update(_transfer, trx);
@@ -381,10 +323,7 @@ export class CreateTransactionsTransferLogic extends Logic {
 
 @AutoWired
 export class CreateTransactionWithExistingJobLogic extends Logic {
-    @Inject private userService: UserService;
-    @Inject private fundingService: FundingSourceService;
     @Inject private jobService: JobService;
-    @Inject private transactionService: TransactionService;
 
     async execute(userId, jobId: string, value: number, externalId?: string): Promise<any> {
         const job = await this.jobService.get(jobId);
@@ -403,36 +342,32 @@ export class CreateTransactionWithExistingJobLogic extends Logic {
 
 @AutoWired
 export class CreateTransactionWithCustomJobLogic extends Logic {
-    @Inject private userService: UserService;
-    @Inject private fundingService: FundingSourceService;
-    @Inject private jobService: JobService;
     @Inject private transactionService: TransactionService;
 
     async execute(userId: string, jobData: JobRequest, value: number, externalId?: string): Promise<any> {
-        const job: Job = Job.factory(jobData);
-        job.isActive = true;
-        job.isCustom = true;
-        const logic = new CreateTransactionLogic(this.context);
-        return await logic.execute(userId, value, job, externalId);
+        const trx = this.transactionService.transaction();
+        const jobLogic = new CreateJobLogic(this.context);
+        const transactionLogic = new CreateTransactionLogic(this.context);
+        const job = await jobLogic.execute(jobData, true, trx);
+        return await transactionLogic.execute(userId, value, job, externalId);
     }
 }
 
 @AutoWired
 export class CreateTransactionLogic extends Logic {
     @Inject private userService: UserService;
-    @Inject private fundingService: FundingSourceService;
-    @Inject private jobService: JobService;
     @Inject private transactionService: TransactionService;
 
-    async execute(userId: string, value: number, job: Job, externalId?: string): Promise<any> {
+    async execute(
+        userId: string,
+        value: number,
+        job: Job,
+        externalId?: string,
+        trx?: objection.Transaction,
+    ): Promise<any> {
         let user: users.User = null;
         if (externalId) {
             user = await this.userService.findByExternalIdAndTenant(externalId, this.context.getTenantId());
-            if (!user) {
-                throw new Errors.NotFoundError('External Id not found');
-            }
-
-            userId = user.id;
         } else {
             user = await this.userService.get(userId);
         }
@@ -445,28 +380,25 @@ export class CreateTransactionLogic extends Logic {
             throw new Errors.NotAcceptableError('User is not a contractor');
         }
 
-        const logic = new ContractorDefaultFundingSourcesLogic(this.context);
+        const logic = new GetDefaultFundingSourceLogic(this.context);
         const defaultFunding = await logic.execute(user.id);
         if (!defaultFunding) {
             throw new Errors.NotAcceptableError('User does not have a bank account');
         }
 
-        return await transaction(models.Transaction.knex(), async trx => {
+        return await transaction(this.transactionService.transaction(trx), async _trx => {
             // override the base job value if a value was provided in the request
             if (!value) {
                 value = job.value;
             }
 
-            if (!job.id) {
-                job = await this.jobService.insert(job, trx);
-            }
-
-            const transactionEntity = models.Transaction.factory({});
-            transactionEntity.adminId = this.context.getUserId();
-            transactionEntity.userId = userId;
-            transactionEntity.jobId = job.id;
-            transactionEntity.value = value;
-            const transactionFromDb = await this.transactionService.insert(transactionEntity, trx);
+            const transactionEntity = Transaction.factory({
+                adminId: this.context.getUserId(),
+                userId: user.id,
+                jobId: job.id,
+                value,
+            });
+            const transactionFromDb = await this.transactionService.insert(transactionEntity, _trx);
             transactionFromDb.job = job;
             return transactionFromDb;
         });

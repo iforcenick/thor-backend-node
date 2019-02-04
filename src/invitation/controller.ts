@@ -142,21 +142,6 @@ export class InvitationController extends BaseController {
             throw new Errors.ConflictError('Email already used');
         }
 
-        if (invitation.externalId) {
-            if (await this.invitationService.getByExternalId(invitation.externalId)) {
-                throw new Errors.ConflictError('External Id already used');
-            }
-
-            if (
-                await this.userService.findByExternalIdAndTenant(
-                    invitation.externalId,
-                    this.getRequestContext().getTenantId(),
-                )
-            ) {
-                throw new Errors.ConflictError('External Id already used');
-            }
-        }
-
         try {
             invitation = await this.invitationService.insert(invitation);
         } catch (err) {

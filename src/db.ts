@@ -70,7 +70,7 @@ export const enum Tables {
     fundingSources = 'fundingSources',
     profilesFundingSources = 'profilesFundingSources',
     passwordReset = 'passwordReset',
-    userDocuments = 'userDocuments'
+    documents = 'documents'
 }
 
 export class Pagination {
@@ -140,7 +140,6 @@ export abstract class ModelService<T extends any> extends ContextAwareInterface 
         if (!validate(id)) {
             throw new Errors.NotFoundError('Invalid id format');
         }
-
         const query = this.modelType.query(trx).findById(id);
         this.setConditions(query);
         this.useTenantContext(query);

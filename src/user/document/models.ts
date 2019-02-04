@@ -11,7 +11,7 @@ export const enum Relations {
 }
 
 export class UserDocument extends db.Model {
-    static tableName = db.Tables.userDocuments;
+    static tableName = db.Tables.documents;
     name?: string = null;
     type?: string = null;
     userId?: string = null;
@@ -23,7 +23,7 @@ export class UserDocument extends db.Model {
                 relation: db.Model.BelongsToOneRelation,
                 modelClass: user.User,
                 join: {
-                    from: `${db.Tables.userDocuments}.userId`,
+                    from: `${db.Tables.documents}.userId`,
                     to: `${db.Tables.users}.id`,
                 },
             },
@@ -31,7 +31,7 @@ export class UserDocument extends db.Model {
                 relation: db.Model.BelongsToOneRelation,
                 modelClass: tenant.Tenant,
                 join: {
-                    from: `${db.Tables.userDocuments}.tenantId`,
+                    from: `${db.Tables.documents}.tenantId`,
                     to: `${db.Tables.tenants}.id`,
                 },
             },
@@ -40,11 +40,11 @@ export class UserDocument extends db.Model {
 
     static filter(query, userId?: string, type?: string) {
         if (userId) {
-            query.where(`${db.Tables.userDocuments}.userId`, userId);
+            query.where(`${db.Tables.documents}.userId`, userId);
         }
 
         if (type) {
-            query.where(`${db.Tables.userDocuments}.type`, type);
+            query.where(`${db.Tables.documents}.type`, type);
         }
     }
 }

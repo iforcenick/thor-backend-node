@@ -275,8 +275,6 @@ export class UsersListLogic extends Logic {
 
 @AutoWired
 export class UserStatisticsLogic extends Logic {
-    @Inject private userService: UserService;
-
     async execute(
         userId: string,
         currentStartDate,

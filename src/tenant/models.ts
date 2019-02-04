@@ -18,9 +18,9 @@ export const enum Statuses {
 export class Tenant extends db.Model {
     static tableName = db.Tables.tenants;
     name?: string = null;
-    dwollaUri?: string = null;
-    dwollaStatus?: string = null;
-    dwollaType?: string = null;
+    paymentsUri?: string = null;
+    paymentsStatus?: string = null;
+    paymentsType?: string = null;
     firstName?: string = null;
     lastName?: string = null;
     phone?: string = null;
@@ -38,9 +38,10 @@ export class Tenant extends db.Model {
     website?: string = null;
     fundingSourceUri?: string = null;
     fundingSourceName?: string = null;
-    fundingSourceVerificationStatus?: string = null;
+    fundingSourceStatus?: string = null;
     settings: any = null;
     status?: string = null;
+    ein?: string = null;
 
     static get relationMappings() {
         return {
@@ -55,32 +56,25 @@ export class Tenant extends db.Model {
         };
     }
 
-    get externalStatus() {
-        return this.dwollaStatus;
-    }
-
-    get externalType() {
-        return this.dwollaType;
-    }
-
     get company() {
         return {
             firstName: this.firstName,
             lastName: this.lastName,
-            phone: this.phone,
             email: this.email,
-            country: this.country,
-            state: this.state,
-            city: this.city,
-            postalCode: this.postalCode,
             address1: this.address1,
             address2: this.address2,
+            city: this.city,
+            state: this.state,
+            country: this.country,
+            postalCode: this.postalCode,
             businessName: this.businessName,
             doingBusinessAs: this.doingBusinessAs,
             businessType: this.businessType,
             businessClassification: this.businessClassification,
+            ein: this.ein,
             website: this.website,
-            status: this.dwollaStatus,
+            phone: this.phone,
+            status: this.paymentsStatus,
         };
     }
 }
@@ -200,7 +194,7 @@ export class TenantCompanyDocument extends Mapper {
 
 export const tenantRequestSchema = Joi.object().keys({
     name: Joi.string().required(),
-    dwollaUri: Joi.string(),
+    paymentsUri: Joi.string(),
 });
 
 export const tenantControllerPassportSchema = Joi.object().keys({

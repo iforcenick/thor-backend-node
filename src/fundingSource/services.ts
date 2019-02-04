@@ -14,6 +14,10 @@ export class FundingSourceService extends db.ModelService<FundingSource> {
         this.modelType = FundingSource;
     }
 
+    useTenantContext(query) { // funding sources are not tenant specific
+        return query;
+    }
+
     async setDefault(fundingSource: FundingSource) {
         const query = this.listQuery();
         query.where(`${db.Tables.fundingSources}.profileId`, fundingSource.profileId);
@@ -29,8 +33,8 @@ export class FundingSourceService extends db.ModelService<FundingSource> {
         });
     }
 
-    async getByDwollaUri(uri: string) {
-        const query = this.getOneBy('dwollaUri', uri);
+    async getByPaymentsUri(uri: string) {
+        const query = this.modelType.query().findOne({['paymentsUri']: uri});
         return await query;
     }
 }
