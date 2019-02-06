@@ -103,13 +103,6 @@ export class UserStatisticsResponse extends Mapper {
     ytd: number = mapper.FIELD_NUM;
 }
 
-export class UserDocument extends Mapper {
-    type: string = mapper.FIELD_STR;
-    status: string = mapper.FIELD_STR;
-    created: Date = mapper.FIELD_DATE;
-    failureReason: string = mapper.FIELD_STR;
-}
-
 export class ContractorOnRetryRequest extends UserBaseInfo {
     @mapper.object(profile.ProfileBaseInfo)
     profile: profile.ProfileBaseInfo = new profile.ProfileBaseInfo();

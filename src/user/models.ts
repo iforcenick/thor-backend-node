@@ -2,6 +2,7 @@ import * as db from '../db';
 import {Profile} from '../profile/models';
 import * as role from './role';
 import {Transaction} from '../transaction/models';
+import {Document} from '../document/models';
 
 export const enum Relations {
     roles = 'roles',
@@ -9,10 +10,22 @@ export const enum Relations {
     tenantProfile = 'tenantProfile',
     transactions = 'transactions',
     baseProfile = 'baseProfile',
+    documents = 'documents',
 }
 
 export class User extends db.Model {
     static tableName = db.Tables.users;
+    password?: string = null;
+    deletedAt?: Date = null;
+    profiles?: Array<Profile>;
+    documents?: Array<Document>;
+    transactions?: Array<Transaction>;
+    lastActivity?: Date;
+    tenantProfile?: Profile;
+    baseProfile?: Profile;
+    passwordResetToken?: string = null;
+    passwordResetExpiry?: number = null;
+
     static get relationMappings() {
         return {
             [Relations.profiles]: {
@@ -47,17 +60,16 @@ export class User extends db.Model {
                     to: `${db.Tables.transactions}.userId`,
                 },
             },
+            [Relations.documents]: {
+                relation: db.Model.HasManyRelation,
+                modelClass: Document,
+                join: {
+                    from: `${db.Tables.users}.id`,
+                    to: `${db.Tables.documents}.userId`,
+                },
+            },
         };
     }
-    password?: string = null;
-    deletedAt?: Date = null;
-    profiles?: Array<Profile>;
-    transactions?: Array<Transaction>;
-    lastActivity?: Date;
-    tenantProfile?: Profile;
-    baseProfile?: Profile;
-    passwordResetToken?: string = null;
-    passwordResetExpiry?: number = null;
 
     hasRole(role: role.models.Types) {
         return this.tenantProfile.hasRole(role);

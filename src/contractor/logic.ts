@@ -64,10 +64,8 @@ export class CreateContractorLogic extends Logic {
         if (!user) {
             throw new Errors.NotFoundError('User not found');
         }
-
-        // TODO: validate the status before attempting to create the dwolla account
+        profileData.status = Statuses.document;
         user.tenantProfile.merge(profileData);
-        user.tenantProfile.status = Statuses.bank;
 
         // if the user hasn't had a payments account created for them yet:
         // 1) update their base (payments) profile with the profile data
@@ -108,7 +106,7 @@ export class UpdateContractorStatusLogic extends Logic {
         // only send an email for a changed status
         if (user.baseProfile.paymentsStatus === status) return;
 
-        // TODO: sync all of the users profiles with the updated payment account status
+        // sync all of the users profiles with the updated payment account status
         await objection.transaction(this.profileService.transaction(trx), async _trx => {
             for (let index = 0; index < user.profiles.length; index++) {
                 let profile = user.profiles[index];
@@ -156,7 +154,6 @@ export class GetContractorTransactionsLogic extends Logic {
         const filter = builder => {
             Transaction.filter(builder, startDate, endDate, status, contractorId);
         };
-
         return await this.transactionService.listPaginated(page, limit, filter);
     }
 }

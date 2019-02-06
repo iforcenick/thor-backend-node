@@ -1,7 +1,7 @@
 import {Inject, AutoWired} from 'typescript-ioc';
 import {Storage} from '@google-cloud/storage';
-import {Config} from './config';
-import {Logger} from './logger';
+import {Config} from '../config';
+import {Logger} from '../logger';
 
 @AutoWired
 export class GoogleStorage {

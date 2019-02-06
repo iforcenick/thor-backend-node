@@ -16,6 +16,7 @@ import * as middleware from './middleware';
 import {DwollaController} from './dwolla/controller';
 import {InvitationController, InvitationCheckController} from './invitation/controller';
 import {ContractorController} from './contractor/controller';
+import {DocumentsController} from './document/controller';
 import {
     ContractorFundingSourceController,
     FundingSourceController,
@@ -146,6 +147,7 @@ export class ApiServer {
         this.app.use('/contractors', passport.authenticate('jwt', {session: false}));
         this.app.use('/fundingSources', passport.authenticate('jwt', {session: false}));
         this.app.use('/profiles', passport.authenticate('jwt', {session: false}));
+        this.app.use('/documents', passport.authenticate('jwt', {session: false}));
     }
 
     private addControllers() {
@@ -167,6 +169,7 @@ export class ApiServer {
             BeneficialOwnerController,
             TenantFundingSourcesController,
             FundingSourceController,
+            DocumentsController,
         );
     }
 

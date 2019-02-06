@@ -1,3 +1,5 @@
+import * as _ from 'lodash';
+import {Inject} from 'typescript-ioc';
 import {
     DELETE,
     Errors,
@@ -12,44 +14,21 @@ import {
     PUT,
     QueryParam,
 } from 'typescript-rest';
-import * as _ from 'lodash';
-import {Inject} from 'typescript-ioc';
 import {Security, Tags} from 'typescript-rest-swagger';
-
+import {BaseController} from '../api';
+import * as dto from './dto';
+import * as dwolla from '../dwolla';
+import {AddContractorOnRetryStatusLogic} from '../contractor/logic';
+import * as usersLogic from './logic';
+import * as documentsLogic from '../document/logic';
+import * as invitationsLogic from '../invitation/logic';
+import * as transactions from '../transaction/models';
+import {ProfileResponse} from '../profile/models';
+import {SearchCriteria} from './models';
+import * as documents from '../document/models';
 import {UserService} from './service';
 import {ProfileService} from '../profile/service';
 import {TransactionService} from '../transaction/service';
-import * as dwolla from '../dwolla';
-import {BaseController} from '../api';
-import * as transactions from '../transaction/models';
-import {ProfileResponse} from '../profile/models';
-import * as dto from './dto';
-import {SearchCriteria} from './models';
-import * as documents from './document/models';
-import {AddContractorOnRetryStatusLogic} from '../contractor/logic';
-import {
-    AddContractorUserLogic,
-    RatingJobsListLogic,
-    UsersListLogic,
-    DeleteUserLogic,
-    UserStatisticsLogic,
-    CreatePasswordResetLogic,
-    AddAdminUserLogic,
-    GetUserLogic,
-} from './logic';
-import {
-    AddUserDocumentLogic,
-    GetUserDocumentsLogic,
-    AddUserDwollaDocumentLogic,
-    DeleteUserDocumentLogic,
-    GetUserDocumentDownloadLinkLogic,
-} from './document/logic';
-import {
-    CreateContractorInvitationLogic,
-    CreateAdminInvitationLogic,
-    ResendInvitationLogic,
-    DeleteInvitationLogic,
-} from '../invitation/logic';
 
 @Security('api_key')
 @Path('/users')
@@ -62,7 +41,7 @@ export class UserController extends BaseController {
     @GET
     @Path('myself')
     async getContractor(): Promise<dto.UserResponse> {
-        const logic = new GetUserLogic(this.getRequestContext());
+        const logic = new usersLogic.GetUserLogic(this.getRequestContext());
         const user = await logic.execute(this.getRequestContext().getUserId());
 
         return this.map(dto.UserResponse, user);
@@ -72,7 +51,7 @@ export class UserController extends BaseController {
     @Path(':id')
     @Preprocessor(BaseController.requireAdminReader)
     async getUser(@PathParam('id') id: string): Promise<dto.UserResponse> {
-        const logic = new GetUserLogic(this.getRequestContext());
+        const logic = new usersLogic.GetUserLogic(this.getRequestContext());
         const user = await logic.execute(id);
 
         return this.map(dto.UserResponse, user);
@@ -102,7 +81,7 @@ export class UserController extends BaseController {
         @QueryParam('contractor') contractor?: string,
     ): Promise<dto.PaginatedRankingJobsResponse> {
         const dates: any = await this.validate({startDate, endDate}, dto.rankingRequestSchema);
-        const logic = new RatingJobsListLogic(this.getRequestContext());
+        const logic = new usersLogic.RatingJobsListLogic(this.getRequestContext());
 
         const rankings = await logic.execute(
             dates.startDate,
@@ -144,7 +123,7 @@ export class UserController extends BaseController {
         @QueryParam('city') city?: string,
         @QueryParam('state') state?: string,
     ): Promise<dto.PaginatedUserResponse> {
-        const logic = new UsersListLogic(this.getRequestContext());
+        const logic = new usersLogic.UsersListLogic(this.getRequestContext());
         const searchCriteria = new SearchCriteria();
         searchCriteria.page = page;
         searchCriteria.limit = limit;
@@ -178,15 +157,10 @@ export class UserController extends BaseController {
             if (!user) {
                 throw new Errors.NotFoundError();
             }
-
-            const profile = user.tenantProfile;
-            if (!profile.dwollaUpdateAvailable()) {
-                throw new Errors.NotAcceptableError('User not in a proper state for modification');
-            }
-
-            profile.$set(parsedData['profile']);
-            const updatedProfile = await this.profileService.updateWithDwolla(profile);
-            updatedProfile.roles = profile.roles;
+            const profileData = parsedData['profile'];
+            user.tenantProfile.merge(profileData);
+            const updatedProfile = await this.profileService.update(user.tenantProfile);
+            updatedProfile.roles = user.tenantProfile.roles;
             return this.map(ProfileResponse, updatedProfile);
         } catch (e) {
             if (e instanceof HttpError) {
@@ -217,7 +191,7 @@ export class UserController extends BaseController {
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
     async delete(@PathParam('id') id: string) {
-        const logic = new DeleteUserLogic(this.getRequestContext());
+        const logic = new usersLogic.DeleteUserLogic(this.getRequestContext());
         await logic.execute(id);
     }
 
@@ -260,7 +234,7 @@ export class UserController extends BaseController {
         @QueryParam('previousStartDate') previousStartDate: string,
         @QueryParam('previousEndDate') previousEndDate: string,
     ): Promise<dto.UserStatisticsResponse> {
-        const logic = new UserStatisticsLogic(this.getRequestContext());
+        const logic = new usersLogic.UserStatisticsLogic(this.getRequestContext());
         const parsed = await this.validate(
             {
                 currentStartDate,
@@ -293,10 +267,10 @@ export class UserController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async createAdminUser(data: dto.AdminUserRequest): Promise<dto.UserResponse> {
         const parsedData: dto.AdminUserRequest = await this.validate(data, dto.adminUserRequestSchema);
-        const logic = new AddAdminUserLogic(this.getRequestContext());
+        const logic = new usersLogic.AddAdminUserLogic(this.getRequestContext());
         const user = await logic.execute(parsedData.profile, parsedData.profile.role);
 
-        const invitationLogic = new CreateAdminInvitationLogic(this.getRequestContext());
+        const invitationLogic = new invitationsLogic.CreateAdminInvitationLogic(this.getRequestContext());
         await invitationLogic.execute(user.tenantProfile);
 
         return this.map(dto.UserResponse, user);
@@ -314,10 +288,10 @@ export class UserController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async addContractorUser(data: dto.AddContractorUserRequest): Promise<dto.AddContractorUserResponse> {
         const parsedData: dto.AddContractorUserRequest = await this.validate(data, dto.addContractorUserRequestSchema);
-        const logic = new AddContractorUserLogic(this.getRequestContext());
+        const logic = new usersLogic.AddContractorUserLogic(this.getRequestContext());
         const user = await logic.execute(parsedData.profile);
 
-        const invitationLogic = new CreateContractorInvitationLogic(this.getRequestContext());
+        const invitationLogic = new invitationsLogic.CreateContractorInvitationLogic(this.getRequestContext());
         await invitationLogic.execute(user.tenantProfile);
 
         return this.map(dto.AddContractorUserResponse, user);
@@ -359,7 +333,7 @@ export class UserController extends BaseController {
     @Path(':userId/invitations/resend')
     @Preprocessor(BaseController.requireAdmin)
     async resendInvitation(@PathParam('userId') userId: string) {
-        const logic = new ResendInvitationLogic(this.getRequestContext());
+        const logic = new invitationsLogic.ResendInvitationLogic(this.getRequestContext());
         await logic.execute(userId);
     }
 
@@ -374,7 +348,7 @@ export class UserController extends BaseController {
     @Path(':userId/invitations')
     @Preprocessor(BaseController.requireAdmin)
     async deleteInvitation(@PathParam('userId') userId: string) {
-        const logic = new DeleteInvitationLogic(this.getRequestContext());
+        const logic = new invitationsLogic.DeleteInvitationLogic(this.getRequestContext());
         await logic.execute(userId);
     }
 
@@ -392,7 +366,7 @@ export class UserController extends BaseController {
     @Path(':userId/passwordReset')
     @Preprocessor(BaseController.requireAdmin)
     async createUserPasswordReset(@PathParam('userId') userId: string): Promise<any> {
-        const logic = new CreatePasswordResetLogic(this.getRequestContext());
+        const logic = new usersLogic.CreatePasswordResetLogic(this.getRequestContext());
         await logic.execute(userId);
     }
 
@@ -412,11 +386,11 @@ export class UserController extends BaseController {
         @PathParam('userId') userId: string,
         @QueryParam('type') type: string,
         @FileParam('filepond') file,
-    ): Promise<dto.UserDocument> {
-        const logic = new AddUserDwollaDocumentLogic(this.getRequestContext());
+    ): Promise<documents.DocumentResponse> {
+        const logic = new documentsLogic.AddDwollaDocumentLogic(this.getRequestContext());
         const document = await logic.execute(userId, type, file);
 
-        return this.map(documents.UserDocumentResponse, document);
+        return this.map(documents.DocumentResponse, document);
     }
 
     /**
@@ -435,11 +409,11 @@ export class UserController extends BaseController {
         @PathParam('userId') userId: string,
         @QueryParam('type') type: string,
         @FileParam('filepond') file,
-    ): Promise<dto.UserDocument> {
-        const logic = new AddUserDocumentLogic(this.getRequestContext());
+    ): Promise<documents.DocumentResponse> {
+        const logic = new documentsLogic.AddDocumentLogic(this.getRequestContext());
         const document = await logic.execute(userId, type, file);
 
-        return this.map(documents.UserDocumentResponse, document);
+        return this.map(documents.DocumentResponse, document);
     }
 
     /**
@@ -460,14 +434,14 @@ export class UserController extends BaseController {
         @QueryParam('type') type?: string,
         @QueryParam('page') page?: number,
         @QueryParam('limit') limit?: number,
-    ): Promise<documents.PaginatedUserDocumentResponse> {
-        const logic = new GetUserDocumentsLogic(this.getRequestContext());
+    ): Promise<documents.PaginatedDocumentResponse> {
+        const logic = new documentsLogic.GetDocumentsLogic(this.getRequestContext());
         const documentsList = await logic.execute(userId, type, page, limit);
 
         return this.paginate(
             documentsList.pagination,
             documentsList.rows.map(document => {
-                return this.map(documents.UserDocumentResponse, document);
+                return this.map(documents.DocumentResponse, document);
             }),
         );
     }
@@ -482,7 +456,7 @@ export class UserController extends BaseController {
     @Path('documents/:id')
     @Preprocessor(BaseController.requireAdmin)
     async deleteUserDocument(@PathParam('id') id: string) {
-        const logic = new DeleteUserDocumentLogic(this.getRequestContext());
+        const logic = new documentsLogic.DeleteDocumentLogic(this.getRequestContext());
         await logic.execute(id);
     }
 
@@ -496,7 +470,7 @@ export class UserController extends BaseController {
     @GET
     @Path('documents/:id')
     async getDocumentDownloadLink(@PathParam('id') id: string): Promise<string> {
-        const logic = new GetUserDocumentDownloadLinkLogic(this.getRequestContext());
+        const logic = new documentsLogic.GetDocumentDownloadLinkLogic(this.getRequestContext());
         return await logic.execute(id);
     }
 }

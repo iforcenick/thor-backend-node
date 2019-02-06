@@ -24,6 +24,7 @@ export class EventFactory {
     @Inject static logger: Logger;
 
     static get(event: IEvent, context: RequestContext): Logic {
+        this.logger.info(`${TAG}: ${event.topic} - ${event['_links']['resource']['href']}`);
         try {
             switch (event.topic) {
                 case dwolla.event.TYPE.customer.verificationDocumentNeeded:

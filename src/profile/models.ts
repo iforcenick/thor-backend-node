@@ -141,7 +141,7 @@ export class Profile extends db.Model {
 
     dwollaUpdateAvailable() {
         return [dwolla.customer.CUSTOMER_STATUS.Verified, dwolla.customer.CUSTOMER_STATUS.Unverified].includes(
-            this.paymentsUri,
+            this.paymentsStatus,
         );
     }
 }

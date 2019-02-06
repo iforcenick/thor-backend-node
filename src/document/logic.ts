@@ -2,18 +2,18 @@ import * as _ from 'lodash';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {transaction} from 'objection';
 import {Errors} from 'typescript-rest';
-import {Logic} from '../../logic';
-import * as models from './models';
-import {Logger} from '../../logger';
-import {UserService} from '../../user/service';
-import {UserDocumentService} from './service';
-import {GoogleStorage} from '../../googleStorage';
-import * as dwolla from '../../dwolla';
+import {Logic} from '../logic';
+import {Document} from './models';
+import {Logger} from '../logger';
+import {UserService} from '../user/service';
+import {DocumentService} from './service';
+import {GoogleStorage} from './client';
+import * as dwolla from '../dwolla';
 
 @AutoWired
-export class AddUserDocumentLogic extends Logic {
+export class AddDocumentLogic extends Logic {
     @Inject private userService: UserService;
-    @Inject private service: UserDocumentService;
+    @Inject private documentService: DocumentService;
     @Inject protected logger: Logger;
     @Inject private googleStorage: GoogleStorage;
 
@@ -31,21 +31,21 @@ export class AddUserDocumentLogic extends Logic {
             throw new Errors.NotFoundError('User not found');
         }
 
-        let document: models.UserDocument = models.UserDocument.factory({
+        let document: Document = Document.factory({
             tenantId: this.context.getTenantId(),
             userId,
             type,
             name: file.originalname,
         });
 
-        return await transaction(this.service.transaction(), async trx => {
-            document = await this.service.insert(document, trx);
+        return await transaction(this.documentService.transaction(), async trx => {
+            document = await this.documentService.insert(document, trx);
             try {
                 const result = await this.googleStorage.saveDocument(userId, document.id, file.buffer);
                 if (!result) throw new Errors.InternalServerError('failed to save document');
                 return document;
             } catch (e) {
-                await this.service.delete(document, trx);
+                await this.documentService.delete(document, trx);
                 throw new Errors.InternalServerError(e);
             }
         });
@@ -53,9 +53,9 @@ export class AddUserDocumentLogic extends Logic {
 }
 
 @AutoWired
-export class AddUserDwollaDocumentLogic extends Logic {
+export class AddDwollaDocumentLogic extends Logic {
     @Inject private userService: UserService;
-    @Inject private service: UserDocumentService;
+    @Inject private documentService: DocumentService;
     @Inject protected logger: Logger;
     @Inject private googleStorage: GoogleStorage;
     @Inject private dwollaClient: dwolla.Client;
@@ -87,21 +87,21 @@ export class AddUserDwollaDocumentLogic extends Logic {
         const dwollaDoc = await this.dwollaClient.getDocument(location);
         if (dwollaDoc.failureReason) throw new Errors.InternalServerError(dwollaDoc.failureReason);
 
-        let document: models.UserDocument = models.UserDocument.factory({
+        let document: Document = Document.factory({
             tenantId: this.context.getTenantId(),
             userId,
             type,
             name: file.originalname,
         });
 
-        return await transaction(this.service.transaction(), async trx => {
-            document = await this.service.insert(document, trx);
+        return await transaction(this.documentService.transaction(), async trx => {
+            document = await this.documentService.insert(document, trx);
             try {
                 const result = await this.googleStorage.saveDocument(userId, document.id, file.buffer);
                 if (!result) throw new Errors.InternalServerError('failed to save document');
                 return document;
             } catch (e) {
-                await this.service.delete(document, trx);
+                await this.documentService.delete(document, trx);
                 throw new Errors.InternalServerError(e);
             }
         });
@@ -109,41 +109,41 @@ export class AddUserDwollaDocumentLogic extends Logic {
 }
 
 @AutoWired
-export class GetUserDocumentsLogic extends Logic {
-    @Inject private service: UserDocumentService;
+export class GetDocumentsLogic extends Logic {
+    @Inject private documentService: DocumentService;
 
     async execute(userId: string, type: string, page, limit: number): Promise<any> {
         const filter = builder => {
-            models.UserDocument.filter(builder, userId, type);
+            Document.filter(builder, userId, type);
         };
 
-        return await this.service.listPaginated(page, limit, filter);
+        return await this.documentService.listPaginated(page, limit, filter);
     }
 }
 
 @AutoWired
-export class DeleteUserDocumentLogic extends Logic {
-    @Inject private service: UserDocumentService;
+export class DeleteDocumentLogic extends Logic {
+    @Inject private documentService: DocumentService;
     @Inject private googleStorage: GoogleStorage;
 
     async execute(id: string): Promise<any> {
-        const document = await this.service.get(id);
+        const document = await this.documentService.get(id);
         if (!document) {
             throw new Errors.NotFoundError('Document not found');
         }
 
         await this.googleStorage.deleteDocument(document.userId, document.id);
-        await this.service.delete(document);
+        await this.documentService.delete(document);
     }
 }
 
 @AutoWired
-export class GetUserDocumentDownloadLinkLogic extends Logic {
-    @Inject private service: UserDocumentService;
+export class GetDocumentDownloadLinkLogic extends Logic {
+    @Inject private documentService: DocumentService;
     @Inject private googleStorage: GoogleStorage;
 
     async execute(id: string): Promise<string> {
-        const document = await this.service.get(id);
+        const document = await this.documentService.get(id);
         if (!document) {
             throw new Errors.NotFoundError('Document not found');
         }

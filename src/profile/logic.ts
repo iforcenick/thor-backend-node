@@ -15,6 +15,10 @@ export class GetProfileLogic extends Logic {
         if (!user) {
             throw new Errors.NotFoundError('User not found');
         }
+
+        if (user.isContractor) {
+            return user.baseProfile;
+        }
         return user.tenantProfile;
     }
 }
@@ -30,9 +34,21 @@ export class UpdateProfileLogic extends Logic {
             throw new Errors.NotFoundError('User not found');
         }
 
-        user.tenantProfile.merge(profileData);
-        user.tenantProfile.status = Statuses.active;
-        await this.profileService.update(user.tenantProfile);
-        return user.tenantProfile;
+        // is this an admin or a contractor
+        let updatedProfile;
+        if (user.isContractor()) {
+            if (!user.baseProfile.dwollaUpdateAvailable()) {
+                throw new Errors.NotAcceptableError('User not in a proper state for modification');
+            }
+
+            user.baseProfile.$set(profileData);
+            updatedProfile = await this.profileService.updateWithDwolla(user.baseProfile);
+        } else {
+            user.tenantProfile.merge(profileData);
+            user.tenantProfile.status = Statuses.active;
+            updatedProfile = await this.profileService.update(user.tenantProfile);
+        }
+
+        return updatedProfile;
     }
 }

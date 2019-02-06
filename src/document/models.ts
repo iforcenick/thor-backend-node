@@ -1,16 +1,15 @@
-import Joi = require('joi');
-import * as db from '../../db';
-import {PaginatedResponse, mapper} from '../../api';
-import * as tenant from '../../tenant/models';
-import * as user from '../../user/models';
-import {Mapper} from '../../mapper';
+import * as db from '../db';
+import {PaginatedResponse, mapper} from '../api';
+import * as tenant from '../tenant/models';
+import * as user from '../user/models';
+import {Mapper} from '../mapper';
 
 export const enum Relations {
     user = 'users',
     tenant = 'tenants',
 }
 
-export class UserDocument extends db.Model {
+export class Document extends db.Model {
     static tableName = db.Tables.documents;
     name?: string = null;
     type?: string = null;
@@ -49,19 +48,16 @@ export class UserDocument extends db.Model {
     }
 }
 
-export class UserDocumentBaseModel extends Mapper {}
+export class DocumentBaseModel extends Mapper {}
 
-export class UserDocumentRequest extends UserDocumentBaseModel {
-    type: string = mapper.FIELD_STR;
-}
-
-export class UserDocumentResponse extends UserDocumentBaseModel {
+export class DocumentResponse extends DocumentBaseModel {
     id: string = mapper.FIELD_STR;
-    name: string = mapper.FIELD_STR;
     type: string = mapper.FIELD_STR;
+    status: string = mapper.FIELD_STR;
     createdOn: Date = mapper.FIELD_DATE;
+    failureReason: string = mapper.FIELD_STR;
 }
 
-export interface PaginatedUserDocumentResponse extends PaginatedResponse {
-    items: Array<UserDocumentResponse>;
+export interface PaginatedDocumentResponse extends PaginatedResponse {
+    items: Array<DocumentResponse>;
 }
