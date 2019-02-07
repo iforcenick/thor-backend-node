@@ -179,7 +179,7 @@ export class UserService extends db.ModelService<models.User> {
     }
 
     query(trx?: transaction<any>) {
-        const query = this.modelType.query();
+        const query = this.modelType.query(trx);
         this.setBasicConditions(query);
         this.useTenantContext(query);
         return query;

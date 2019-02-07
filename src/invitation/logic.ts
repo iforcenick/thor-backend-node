@@ -259,7 +259,7 @@ export class GetInvitationsLogic extends Logic {
 }
 
 @AutoWired
-export class ResendInvitationLogic extends Logic {
+export class ResendUserInvitationLogic extends Logic {
     @Inject private invitationService: InvitationService;
     @Inject private mailerService: MailerService;
     @Inject private tenantService: TenantService;
@@ -293,15 +293,67 @@ export class ResendInvitationLogic extends Logic {
 }
 
 @AutoWired
-export class DeleteInvitationLogic extends Logic {
+export class ResendInvitationLogic extends Logic {
     @Inject private invitationService: InvitationService;
     @Inject private mailerService: MailerService;
     @Inject private tenantService: TenantService;
     @Inject private logger: Logger;
     @Inject private config: Config;
 
+    async execute(id: string) {
+        const invitation = await this.invitationService.get(id);
+        if (!invitation) {
+            throw new Errors.NotFoundError('Invitation not found');
+        }
+
+        if (!invitation.isPending()) {
+            throw new Errors.ConflictError('Invitation already used');
+        }
+
+        const tenant = await this.tenantService.get(this.context.getTenantId());
+        if (!tenant) {
+            throw new Errors.NotFoundError('Tenant not found');
+        }
+
+        try {
+            await this.mailerService.sendInvitation(invitation.email, {
+                link: `${this.config.get('application.frontUri')}/register/${invitation.id}`,
+                companyName: tenant.businessName,
+            });
+        } catch (e) {
+            this.logger.error(e);
+        }
+    }
+}
+
+@AutoWired
+export class DeleteUserInvitationLogic extends Logic {
+    @Inject private invitationService: InvitationService;
+
     async execute(userId: string) {
         const invitation = await this.invitationService.getByUserId(userId);
+        if (!invitation) {
+            throw new Errors.NotFoundError();
+        }
+
+        if (!invitation.isPending()) {
+            throw new Errors.ConflictError('Invitation already used');
+        }
+
+        try {
+            await this.invitationService.delete(invitation);
+        } catch (e) {
+            throw new Errors.InternalServerError(e);
+        }
+    }
+}
+
+@AutoWired
+export class DeleteInvitationLogic extends Logic {
+    @Inject private invitationService: InvitationService;
+
+    async execute(id: string) {
+        const invitation = await this.invitationService.get(id);
         if (!invitation) {
             throw new Errors.NotFoundError();
         }

@@ -1,25 +1,10 @@
 import * as _ from 'lodash';
-import {Inject} from 'typescript-ioc';
-import {Errors, GET, Path, PathParam, POST, DELETE, Preprocessor, QueryParam, FileParam, PUT} from 'typescript-rest';
+import {GET, Path, PathParam, POST, DELETE, Preprocessor, QueryParam, PUT, PATCH} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {BaseController} from '../api';
-import {
-    BatchInvitationsLogic,
-    GetInvitationLogic,
-    UseInvitationLogic,
-    ResendInvitationLogic,
-    DeleteInvitationLogic,
-    GetInvitationsLogic,
-    CreateContractorInvitationLogic,
-    CreateAdminInvitationLogic,
-} from './logic';
+import * as logicLayer from './logic';
 import {AddContractorUserLogic, AddAdminUserLogic} from '../user/logic';
-import {SendInvitationEmailMessage} from './messages';
 import * as models from './models';
-import {WorkerPublisher} from '../worker/publisher';
-import {InvitationService} from './service';
-import {UserService} from '../user/service';
-import {TenantService} from '../tenant/service';
 
 /**
  * Manage contractor and administator invitations
@@ -30,14 +15,9 @@ import {TenantService} from '../tenant/service';
  * @extends {BaseController}
  */
 @Security('api_key')
-@Path('users/invitations')
-@Tags('users/invitations')
+@Path('invitations')
+@Tags('invitations')
 export class InvitationController extends BaseController {
-    @Inject private invitationService: InvitationService;
-    @Inject private userService: UserService;
-    @Inject private tenantService: TenantService;
-    @Inject private publisher: WorkerPublisher;
-
     /**
      * Query for a list of invitations
      *
@@ -58,7 +38,7 @@ export class InvitationController extends BaseController {
         @QueryParam('status') status?: string,
         @QueryParam('type') type?: string,
     ): Promise<models.InvitationPaginatedResponse> {
-        const logic = new GetInvitationsLogic(this.getRequestContext());
+        const logic = new logicLayer.GetInvitationsLogic(this.getRequestContext());
         const invitations = await logic.execute(page, limit, status, type);
 
         return this.paginate(
@@ -70,177 +50,95 @@ export class InvitationController extends BaseController {
     }
 
     /**
-     * Create a new administrator invitation
+     * Create an invitation
      *
      * @requires {role} admin
-     * @param {models.AdminInvitationRequest} data
+     * @param {models.InvitationRequest} data
      * @returns {Promise<models.InvitationResponse>}
      * @memberof InvitationController
      */
     @POST
-    @Path('admins')
+    @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async createAdminInvitation(data: models.AdminInvitationRequest): Promise<models.InvitationResponse> {
-        const parsedData = await this.validate(data, models.adminInvitationRequestSchema);
-        const logic = new AddAdminUserLogic(this.getRequestContext());
-        // placeholder for the user's table
-        parsedData['firstName'] = parsedData.email;
-        const user = await logic.execute(parsedData.profile, parsedData.profile.role);
-        const invitationLogic = new CreateAdminInvitationLogic(this.getRequestContext());
+    async createInvitation(data: models.InvitationRequest): Promise<models.InvitationResponse> {
+        const parsedData = await this.validate(data, models.invitationRequestSchema);
+        let user;
+        let invitationLogic;
+        if (parsedData.type === models.Types.admin) {
+            const logic = new AddAdminUserLogic(this.getRequestContext());
+            // placeholder for the user's table
+            parsedData['firstName'] = parsedData.email;
+            user = await logic.execute(parsedData, parsedData.role);
+            invitationLogic = new logicLayer.CreateAdminInvitationLogic(this.getRequestContext());
+        } else if (parsedData.type === models.Types.contractor) {
+            const logic = new AddContractorUserLogic(this.getRequestContext());
+            user = await logic.execute(parsedData);
+            invitationLogic = new logicLayer.CreateContractorInvitationLogic(this.getRequestContext());
+        }
         const invitation = await invitationLogic.execute(user.tenantProfile);
-
         return this.map(models.InvitationResponse, invitation);
     }
 
     /**
-     * Create a new contractor invitation
+     * Resend an user's invitation
      *
      * @requires {role} admin
-     * @param {models.ContractorInvitationRequest} data
-     * @returns {Promise<models.InvitationResponse>}
+     * @param {models.UserInvitationRequest} data
      * @memberof InvitationController
      */
-    @POST
-    @Path('contractors')
+    @PATCH
+    @Path('resend')
     @Preprocessor(BaseController.requireAdmin)
-    async createContractorInvitation(data: models.ContractorInvitationRequest): Promise<models.InvitationResponse> {
-        const parsedData = await this.validate(data, models.contractorInvitationRequestSchema);
-        const logic = new AddContractorUserLogic(this.getRequestContext());
-        // placeholder for the user's table
-        parsedData['firstName'] = parsedData.email;
-        const user = await logic.execute(parsedData);
-        const invitationLogic = new CreateContractorInvitationLogic(this.getRequestContext());
-        const invitation = await invitationLogic.execute(user.tenantProfile);
-
-        return this.map(models.InvitationResponse, invitation);
+    async resendUserInvitation(data: models.UserInvitationRequest) {
+        const parsedData = await this.validate(data, models.userInvitationRequestSchema);
+        const logic = new logicLayer.ResendUserInvitationLogic(this.getRequestContext());
+        await logic.execute(parsedData.userId);
     }
 
     /**
-     * Create a new contractor invitation
-     *
-     * @param {models.ContractorInvitationRequest} data
-     * @returns {Promise<models.InvitationResponse>}
-     * @memberof InvitationController
-     */
-    @POST
-    @Path('contractors/background')
-    @Preprocessor(BaseController.requireAdmin)
-    async sendInvitationByRmq(data: models.ContractorInvitationRequest): Promise<models.InvitationResponse> {
-        this.invitationService.setRequestContext(this.getRequestContext());
-        this.userService.setRequestContext(this.getRequestContext());
-
-        const parsedData = await this.validate(data, models.contractorInvitationRequestSchema);
-        const user = await this.getRequestContext().getUserId();
-        let invitation = models.Invitation.factory(parsedData);
-        invitation.status = models.Status.pending;
-
-        if (await this.invitationService.getByEmail(invitation.email)) {
-            throw new Errors.ConflictError('Email already invited');
-        }
-
-        if (await this.userService.findByEmailAndTenant(invitation.email, this.getRequestContext().getTenantId())) {
-            throw new Errors.ConflictError('Email already used');
-        }
-
-        try {
-            invitation = await this.invitationService.insert(invitation);
-        } catch (err) {
-            this.logger.error(err);
-            throw new Errors.InternalServerError(err.message);
-        }
-
-        try {
-            const tenant = await this.tenantService.get(this.getRequestContext().getTenantId());
-
-            await this.publisher.publish(
-                new SendInvitationEmailMessage(
-                    invitation.email,
-                    `${this.config.get('application.frontUri')}/register/${invitation.id}`,
-                    tenant.businessName,
-                ),
-            );
-        } catch (e) {
-            this.logger.error(e);
-        }
-
-        return this.map(models.InvitationResponse, invitation);
-    }
-
-    /**
-     * Resend a contractor's invitation
-     *
-     * @requires {role} [admin, adminReader]
-     * @param {string} userId
-     * @memberof InvitationController
-     */
-    @POST
-    @Path('contractors/:userId/resend')
-    @Preprocessor(BaseController.requireAdminReader)
-    async resendContractorInvitation(@PathParam('userId') userId: string) {
-        const logic = new ResendInvitationLogic(this.getRequestContext());
-        await logic.execute(userId);
-    }
-
-    /**
-     * Resend an administrator's invitation
+     * Resend an invitation
      *
      * @requires {role} admin
-     * @param {string} userId
+     * @param {string} id
      * @memberof InvitationController
      */
-    @POST
-    @Path('admin/:userId/resend')
+    @PATCH
+    @Path(':id/resend')
     @Preprocessor(BaseController.requireAdmin)
-    async resendAdminInvitation(@PathParam('userId') userId: string) {
-        const logic = new ResendInvitationLogic(this.getRequestContext());
-        await logic.execute(userId);
+    async resendInvitation(@PathParam('id') id: string) {
+        const logic = new logicLayer.ResendInvitationLogic(this.getRequestContext());
+        await logic.execute(id);
     }
 
     /**
-     * Delete a contractor's invitation
+     * Delete an user's invitation
      *
      * @requires {role} admin
-     * @param {string} userId
+     * @param {models.UserInvitationRequest} data
      * @memberof InvitationController
      */
     @DELETE
-    @Path('contractors/:userId')
+    @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async deleteContractorInvitation(@PathParam('userId') userId: string) {
-        const logic = new DeleteInvitationLogic(this.getRequestContext());
-        await logic.execute(userId);
+    async deleteUserInvitation(data: models.UserInvitationRequest) {
+        const parsedData = await this.validate(data, models.userInvitationRequestSchema);
+        const logic = new logicLayer.DeleteUserInvitationLogic(this.getRequestContext());
+        await logic.execute(parsedData.userId);
     }
 
     /**
-     * Delete an administrator's invitation
+     * Delete an invitation
      *
      * @requires {role} admin
-     * @param {string} userId
+     * @param {string} id
      * @memberof InvitationController
      */
     @DELETE
-    @Path('admin/:userId')
+    @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
-    async deleteAdminInvitation(@PathParam('userId') userId: string) {
-        const logic = new DeleteInvitationLogic(this.getRequestContext());
-        await logic.execute(userId);
-    }
-
-    @POST
-    @Path('contractors/import')
-    @Preprocessor(BaseController.requireAdmin)
-    async importFromCsv(@FileParam('filepond') file: Express.Multer.File): Promise<models.InvitationsResponse> {
-        if (!file) {
-            throw new Errors.NotAcceptableError('File missing');
-        }
-        const logic = new BatchInvitationsLogic(this.getRequestContext());
-        const invitations = await logic.execute(file.buffer);
-
-        const invitationsResponse = new models.InvitationsResponse();
-        invitationsResponse.items = [];
-        invitations.map(invitation => invitationsResponse.items.push(this.map(models.InvitationResponse, invitation)));
-
-        return invitationsResponse;
+    async deleteInvitation(@PathParam('id') id: string) {
+        const logic = new logicLayer.DeleteInvitationLogic(this.getRequestContext());
+        await logic.execute(id);
     }
 }
 
@@ -251,13 +149,13 @@ export class InvitationController extends BaseController {
  * @class InvitationCheckController
  * @extends {BaseController}
  */
-@Path('invitations')
+@Path('public/invitations')
 @Tags('invitations')
 export class InvitationCheckController extends BaseController {
     @GET
     @Path(':id')
     async getInvitation(@PathParam('id') id: string): Promise<models.InvitationResponse> {
-        const logic = new GetInvitationLogic(this.getRequestContext());
+        const logic = new logicLayer.GetInvitationLogic(this.getRequestContext());
         const invitation = await logic.execute(id);
 
         return this.map(models.InvitationResponse, invitation);
@@ -266,7 +164,7 @@ export class InvitationCheckController extends BaseController {
     @PUT
     @Path(':id')
     async useInvitationToken(@PathParam('id') id: string) {
-        const logic = new UseInvitationLogic(this.getRequestContext());
+        const logic = new logicLayer.UseInvitationLogic(this.getRequestContext());
         const invitation = await logic.execute(id);
 
         return this.map(models.InvitationResponse, invitation);

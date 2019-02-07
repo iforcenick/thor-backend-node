@@ -148,6 +148,7 @@ export class ApiServer {
         this.app.use('/fundingSources', passport.authenticate('jwt', {session: false}));
         this.app.use('/profiles', passport.authenticate('jwt', {session: false}));
         this.app.use('/documents', passport.authenticate('jwt', {session: false}));
+        this.app.use('/invitations', passport.authenticate('jwt', {session: false}));
     }
 
     private addControllers() {

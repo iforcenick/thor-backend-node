@@ -1,9 +1,10 @@
-import {PaginatedResponse, mapper} from '../api';
-import {Mapper} from '../mapper';
-import * as db from '../db';
-import * as tenant from '../tenant/models';
-import * as user from '../user/models';
 import Joi = require('joi'); // for ManyToManyRelation compilation
+import {PaginatedResponse, mapper} from '../api';
+import * as db from '../db';
+import {Mapper} from '../mapper';
+import {Tenant} from '../tenant/models';
+import {User} from '../user/models';
+import * as roles from '../user/role/models';
 
 export const enum Relations {
     tenant = 'tenant',
@@ -26,7 +27,7 @@ export class Invitation extends db.Model {
     email?: string = null;
     status?: string = null;
     type?: string = null;
-    user?: user.User;
+    user?: User;
     userId?: string = null;
     tenantId?: string = null;
 
@@ -34,7 +35,7 @@ export class Invitation extends db.Model {
         return {
             [Relations.tenant]: {
                 relation: db.Model.BelongsToOneRelation,
-                modelClass: tenant.Tenant,
+                modelClass: Tenant,
                 join: {
                     from: `${db.Tables.invitations}.tenantId`,
                     to: `${db.Tables.tenants}.id`,
@@ -42,7 +43,7 @@ export class Invitation extends db.Model {
             },
             [Relations.user]: {
                 relation: db.Model.BelongsToOneRelation,
-                modelClass: user.User,
+                modelClass: User,
                 join: {
                     from: `${db.Tables.invitations}.userId`,
                     to: `${db.Tables.users}.id`,
@@ -53,11 +54,11 @@ export class Invitation extends db.Model {
 
     static filter(query, status?: string, type?: string) {
         if (status) {
-            query.where(`${Invitation.tableName}.status`, status);
+            query.where(`${db.Tables.invitations}.status`, status);
         }
 
         if (type) {
-            query.where(`${Invitation.tableName}.type`, status);
+            query.where(`${db.Tables.invitations}.type`, type);
         }
     }
 
@@ -74,11 +75,13 @@ export class InvitationBase extends Mapper {
     email: string = mapper.FIELD_STR;
 }
 
-export class AdminInvitationRequest extends InvitationBase {
+export class InvitationRequest extends InvitationBase {
+    type: string = mapper.FIELD_STR;
     role: string = mapper.FIELD_STR;
 }
 
-export class ContractorInvitationRequest extends InvitationBase {
+export class UserInvitationRequest extends Mapper {
+    userId: string = mapper.FIELD_STR;
 }
 
 export class InvitationResponse extends InvitationBase {
@@ -96,10 +99,16 @@ export class InvitationsResponse extends Mapper {
     public items: Array<InvitationResponse> = mapper.FIELD_ARR;
 }
 
-export const adminInvitationRequestSchema = Joi.object().keys({
-    email: Joi.string().email(),
+export const userInvitationRequestSchema = Joi.object().keys({
+    userId: Joi.string().required(),
 });
 
-export const contractorInvitationRequestSchema = Joi.object().keys({
-    email: Joi.string().email(),
+export const invitationRequestSchema = Joi.object().keys({
+    email: Joi.string().email().required(),
+    type: Joi.string().valid([Types.contractor, Types.admin]).required(),
+    role: Joi.string().when('type', {
+        is: Joi.equal(Types.contractor),
+        then: Joi.forbidden(),
+        otherwise: Joi.required().valid([roles.Types.admin, roles.Types.adminReader]),
+    }),
 });

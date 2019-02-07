@@ -43,7 +43,6 @@ export class UserController extends BaseController {
     async getContractor(): Promise<dto.UserResponse> {
         const logic = new usersLogic.GetUserLogic(this.getRequestContext());
         const user = await logic.execute(this.getRequestContext().getUserId());
-
         return this.map(dto.UserResponse, user);
     }
 
@@ -371,7 +370,7 @@ export class UserController extends BaseController {
     }
 
     /**
-     * Endpoint to upload a document to dwolla for validation
+     * Upload an user's document to dwolla for validation
      *
      * @param {string} userId
      * @param {string} type
@@ -394,7 +393,7 @@ export class UserController extends BaseController {
     }
 
     /**
-     * Endpoint to upload a new user document
+     * Upload an user's document
      *
      * @param {string} userId
      * @param {string} type
@@ -417,7 +416,7 @@ export class UserController extends BaseController {
     }
 
     /**
-     * Endpoint to get a list of a user's documents
+     * Get a list of an user's documents
      *
      * @param {string} userId
      * @param {string} [type]
@@ -447,7 +446,7 @@ export class UserController extends BaseController {
     }
 
     /**
-     * Enpoint to delete a document
+     * Delete an user's document
      *
      * @param {string} id
      * @memberof UserController
@@ -461,7 +460,7 @@ export class UserController extends BaseController {
     }
 
     /**
-     * Endpoint to create a download link for a document
+     * Get a download link for an user's document
      *
      * @param {string} id
      * @returns {Promise<string>}
@@ -469,6 +468,7 @@ export class UserController extends BaseController {
      */
     @GET
     @Path('documents/:id')
+    @Preprocessor(BaseController.requireAdmin)
     async getDocumentDownloadLink(@PathParam('id') id: string): Promise<string> {
         const logic = new documentsLogic.GetDocumentDownloadLinkLogic(this.getRequestContext());
         return await logic.execute(id);
