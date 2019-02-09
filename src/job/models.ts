@@ -1,7 +1,7 @@
+import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import {PaginatedResponse, mapper} from '../api';
 import {Mapper} from '../mapper';
 import * as db from '../db';
-import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import Joi = require('joi');
 import * as tenant from '../tenant/models';
 

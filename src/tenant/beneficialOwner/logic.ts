@@ -1,18 +1,17 @@
-import {AddBeneficialOwnerRequest, EditBeneficialOwnerRequest, RetryBeneficialOwnerRequest} from './models';
-import * as dwolla from '../dwolla/index';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {Errors} from 'typescript-rest';
-import {BeneficialOwner} from '../dwolla/customer';
-import {TenantService} from '../tenant/service';
-import {Logic} from '../logic';
-import {Tenant} from '../tenant/models';
+import {BeneficialOwner} from '../../dwolla/customer';
+import * as dwolla from '../../dwolla';
+import {Logic} from '../../logic';
+import * as models from './models';
+import {TenantService} from '../../tenant/service';
 
 @AutoWired
 export class AddBeneficialOwnerLogic extends Logic {
     @Inject private dwollaClient: dwolla.Client;
     @Inject private tenantService: TenantService;
 
-    async execute(request: AddBeneficialOwnerRequest, tenantId: string): Promise<BeneficialOwner> {
+    async execute(request: models.AddBeneficialOwnerRequest, tenantId: string): Promise<BeneficialOwner> {
         const tenant = await this.tenantService.get(tenantId);
         if (!tenant) {
             throw new Errors.NotFoundError('Tenant not found');
@@ -25,7 +24,10 @@ export class AddBeneficialOwnerLogic extends Logic {
         }
 
         const beneficialOwner = new BeneficialOwner(request);
-        const response = await this.dwollaClient.createBusinessVerifiedBeneficialOwner(tenant.paymentsUri, beneficialOwner);
+        const response = await this.dwollaClient.createBusinessVerifiedBeneficialOwner(
+            tenant.paymentsUri,
+            beneficialOwner,
+        );
         return await this.dwollaClient.getBusinessVerifiedBeneficialOwner(response);
     }
 }
@@ -66,18 +68,11 @@ export class DeleteBeneficialOwnerLogic extends Logic {
 @AutoWired
 export class EditBeneficialOwnerLogic extends Logic {
     @Inject private dwollaClient: dwolla.Client;
-    @Inject private tenantService: TenantService;
 
-    async execute(request: EditBeneficialOwnerRequest): Promise<BeneficialOwner> {
+    async execute(request: models.EditBeneficialOwnerRequest): Promise<BeneficialOwner> {
         const beneficialOwner = new BeneficialOwner(request);
         const response = await this.dwollaClient.editBusinessVerifiedBeneficialOwner(request.id, beneficialOwner);
         return await this.dwollaClient.getBusinessVerifiedBeneficialOwner(response);
-    }
-}
-
-export class BeneficialOwnerError extends Error {
-    constructor(message: string) {
-        super(message);
     }
 }
 
@@ -86,7 +81,7 @@ export class AddBeneficialOwnerRetryLogic extends Logic {
     @Inject private tenantService: TenantService;
     @Inject private dwollaClient: dwolla.Client;
 
-    async execute(request: RetryBeneficialOwnerRequest, tenantId: string): Promise<any> {
+    async execute(request: models.RetryBeneficialOwnerRequest, tenantId: string): Promise<any> {
         const tenant = await this.tenantService.get(tenantId);
         if (!tenant) {
             throw new Errors.NotFoundError('Tenant not found');
@@ -95,10 +90,16 @@ export class AddBeneficialOwnerRetryLogic extends Logic {
             throw new Errors.ConflictError('Could not add beneficial owner for tenant, no tenant company');
         }
         if (tenant.businessType == dwolla.customer.BUSINESS_TYPE.Sole) {
-            throw new Errors.ConflictError('soleProprietorship company cannot have beneficial owners');
+            throw new Errors.ConflictError('Sole proprietorship companies cannot have beneficial owners');
         }
         const beneficialOwner = new BeneficialOwner(request);
         const response = await this.dwollaClient.retryBusinessVerifiedBeneficialOwner(request.id, beneficialOwner);
         return await this.dwollaClient.getBusinessVerifiedBeneficialOwner(response);
+    }
+}
+
+export class BeneficialOwnerError extends Error {
+    constructor(message: string) {
+        super(message);
     }
 }

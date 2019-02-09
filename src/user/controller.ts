@@ -370,7 +370,7 @@ export class UserController extends BaseController {
     }
 
     /**
-     * Upload an user's document to dwolla for validation
+     * Upload a user's document to dwolla for validation
      *
      * @param {string} userId
      * @param {string} type
@@ -393,7 +393,7 @@ export class UserController extends BaseController {
     }
 
     /**
-     * Upload an user's document
+     * Upload a user's document
      *
      * @param {string} userId
      * @param {string} type
@@ -416,7 +416,7 @@ export class UserController extends BaseController {
     }
 
     /**
-     * Get a list of an user's documents
+     * Get a list of a user's documents
      *
      * @param {string} userId
      * @param {string} [type]
@@ -446,7 +446,7 @@ export class UserController extends BaseController {
     }
 
     /**
-     * Delete an user's document
+     * Delete a user's document
      *
      * @param {string} id
      * @memberof UserController
@@ -460,7 +460,7 @@ export class UserController extends BaseController {
     }
 
     /**
-     * Get a download link for an user's document
+     * Get a download link for a user's document
      *
      * @param {string} id
      * @returns {Promise<string>}

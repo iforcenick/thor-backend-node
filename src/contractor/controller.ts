@@ -23,7 +23,6 @@ export class ContractorController extends BaseController {
         const parsedData = await this.validate(data, contractorRequestSchema);
         const logic = new CreateContractorLogic(this.getRequestContext());
         const user = await logic.execute(parsedData.profile);
-
         return this.map(ContractorResponse, user);
     }
 

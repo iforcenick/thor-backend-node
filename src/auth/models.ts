@@ -34,6 +34,3 @@ export class Auth {
         return auth;
     }
 }
-
-
-

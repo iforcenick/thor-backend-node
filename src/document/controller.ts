@@ -2,13 +2,7 @@ import * as _ from 'lodash';
 import {DELETE, FileParam, GET, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {BaseController} from '../api';
-import {
-    AddDwollaDocumentLogic,
-    AddDocumentLogic,
-    GetDocumentsLogic,
-    DeleteDocumentLogic,
-    GetDocumentDownloadLinkLogic,
-} from './logic';
+import * as logicLayer from './logic';
 import {DocumentResponse, PaginatedDocumentResponse} from './models';
 
 @Security('api_key')
@@ -27,7 +21,7 @@ export class DocumentsController extends BaseController {
     @Path('dwolla')
     @Preprocessor(BaseController.requireContractor)
     async addDwollaDocument(@QueryParam('type') type: string, @FileParam('filepond') file): Promise<DocumentResponse> {
-        const logic = new AddDwollaDocumentLogic(this.getRequestContext());
+        const logic = new logicLayer.AddDwollaDocumentLogic(this.getRequestContext());
         const document = await logic.execute(this.getRequestContext().getUserId(), type, file);
 
         return this.map(DocumentResponse, document);
@@ -45,7 +39,7 @@ export class DocumentsController extends BaseController {
     @Path('')
     @Preprocessor(BaseController.requireContractor)
     async addDocument(@QueryParam('type') type: string, @FileParam('filepond') file): Promise<DocumentResponse> {
-        const logic = new AddDocumentLogic(this.getRequestContext());
+        const logic = new logicLayer.AddDocumentLogic(this.getRequestContext());
         const document = await logic.execute(this.getRequestContext().getUserId(), type, file);
 
         return this.map(DocumentResponse, document);
@@ -68,7 +62,7 @@ export class DocumentsController extends BaseController {
         @QueryParam('page') page?: number,
         @QueryParam('limit') limit?: number,
     ): Promise<PaginatedDocumentResponse> {
-        const logic = new GetDocumentsLogic(this.getRequestContext());
+        const logic = new logicLayer.GetDocumentsLogic(this.getRequestContext());
         const documentsList = await logic.execute(this.getRequestContext().getUserId(), type, page, limit);
 
         return this.paginate(
@@ -89,7 +83,7 @@ export class DocumentsController extends BaseController {
     @Path(':id')
     @Preprocessor(BaseController.requireContractor)
     async deleteDocument(@PathParam('id') id: string) {
-        const logic = new DeleteDocumentLogic(this.getRequestContext());
+        const logic = new logicLayer.DeleteDocumentLogic(this.getRequestContext());
         await logic.execute(id);
     }
 
@@ -104,7 +98,7 @@ export class DocumentsController extends BaseController {
     @Path(':id')
     @Preprocessor(BaseController.requireContractor)
     async getDocumentDownloadLink(@PathParam('id') id: string): Promise<string> {
-        const logic = new GetDocumentDownloadLinkLogic(this.getRequestContext());
+        const logic = new logicLayer.GetDocumentDownloadLinkLogic(this.getRequestContext());
         return await logic.execute(id);
     }
 }

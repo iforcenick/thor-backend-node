@@ -254,7 +254,7 @@ export class AddTenantLogic extends Logic {
             // TODO: link the accounts if the email is already associated with an account
             user = User.factory({});
             const password = generator.generate({length: 20, numbers: true, uppercase: true});
-            user.password = await this.userService.hashPassword(password);
+            user.password = await user.hashPassword(password);
             user = await this.userService.insert(user, trx);
 
             // create the tenant profile

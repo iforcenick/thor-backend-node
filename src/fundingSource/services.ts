@@ -14,7 +14,8 @@ export class FundingSourceService extends db.ModelService<FundingSource> {
         this.modelType = FundingSource;
     }
 
-    useTenantContext(query) { // funding sources are not tenant specific
+    useTenantContext(query) {
+        // funding sources are not tenant specific
         return query;
     }
 

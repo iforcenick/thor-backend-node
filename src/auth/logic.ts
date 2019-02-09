@@ -61,7 +61,7 @@ export class UserAuthorizationLogic extends Logic {
             return null;
         }
 
-        const check = await this.userService.checkPassword(password, user.password);
+        const check = await user.checkPassword(password);
         if (check !== true) {
             return null;
         }
@@ -95,7 +95,7 @@ export class RegisterUserLogic extends Logic {
             throw new Errors.NotFoundError('User not found');
         }
 
-        user.password = await this.userService.hashPassword(password);
+        user.password = await user.hashPassword(password);
         // TODO: create function for the status state machine
         user.tenantProfile.status = Statuses.profile;
 
@@ -133,17 +133,17 @@ export class UserChangePasswordLogic extends Logic {
         }
 
         try {
-            const isOldPasswordValid = await this.userService.checkPassword(oldPassword, user.password);
+            const isOldPasswordValid = await user.checkPassword(oldPassword);
             if (!isOldPasswordValid) {
                 throw Error('Invalid old password');
             }
 
-            const isNewOldPasswordSame = await this.userService.checkPassword(newPassword, user.password);
+            const isNewOldPasswordSame = await user.checkPassword(newPassword);
             if (isNewOldPasswordSame) {
                 throw Error('New password is the same as the old one');
             }
 
-            const newPasswordHash = await this.userService.hashPassword(newPassword);
+            const newPasswordHash = await user.hashPassword(newPassword);
             await user.$query().patch({password: newPasswordHash});
         } catch (e) {
             this.logger.debug(e);

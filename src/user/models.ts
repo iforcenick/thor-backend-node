@@ -1,12 +1,17 @@
+import crypto = require('crypto');
 import * as db from '../db';
 import {Profile} from '../profile/models';
-import * as role from './role';
 import {Transaction} from '../transaction/models';
 import {Document} from '../document/models';
+import {Invitation} from '../invitation/models';
+import * as role from './role';
+
+const bcrypt = require('bcrypt');
 
 export const enum Relations {
     roles = 'roles',
     profiles = 'profiles',
+    invitation = 'invitation',
     tenantProfile = 'tenantProfile',
     transactions = 'transactions',
     baseProfile = 'baseProfile',
@@ -28,6 +33,14 @@ export class User extends db.Model {
 
     static get relationMappings() {
         return {
+            [Relations.invitation]: {
+                relation: db.Model.HasOneRelation,
+                modelClass: Invitation,
+                join: {
+                    from: `${db.Tables.users}.id`,
+                    to: `${db.Tables.invitations}.userId`,
+                },
+            },
             [Relations.profiles]: {
                 relation: db.Model.HasManyRelation,
                 modelClass: Profile,
@@ -69,6 +82,19 @@ export class User extends db.Model {
                 },
             },
         };
+    }
+
+    async checkPassword(password: string) {
+        return await bcrypt.compare(password, this.password);
+    }
+
+    async hashPassword(password) {
+        return await bcrypt.hash(password, 10);
+    }
+
+    async getPasswordResetToken() {
+        const buffer = await crypto.randomBytes(20);
+        return buffer.toString('hex');
     }
 
     hasRole(role: role.models.Types) {

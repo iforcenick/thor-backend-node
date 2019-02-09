@@ -22,7 +22,7 @@ import {
     FundingSourceController,
     UserFundingSourceController,
 } from './fundingSource/controller';
-import {BeneficialOwnerController} from './beneficialOwner/controller';
+import {BeneficialOwnerController} from './tenant/beneficialOwner/controller';
 import {TenantFundingSourcesController} from './tenant/fundingSource/controller';
 
 const knex = require('knex');

@@ -52,7 +52,7 @@ export class MailerService {
      * @returns
      * @memberof MailerService
      */
-    async sendAdminConfirmAccount(email: string, companyName: string, link: string) {
+    async sendAdminConfirmAccount(email: string, { companyName, link }) {
         const params = {
             companyName,
             link,

@@ -89,7 +89,7 @@ export class TenantController extends BaseController {
     /**
      * Create the current tenant company profile
      *
-     * @param {models.TenantCompanyPostRequest} data
+     * @param {models.TenantCompanyRequest} data
      * @returns {Promise<models.TenantCompanyResponse>}
      * @memberof TenantController
      */
@@ -97,10 +97,10 @@ export class TenantController extends BaseController {
     @Path('/company')
     @Tags('tenantCompany')
     @Preprocessor(BaseController.requireAdmin)
-    async createTenantCompany(data: models.TenantCompanyPostRequest): Promise<models.TenantCompanyResponse> {
-        const parsedData: models.TenantCompanyPostRequest = await this.validate(
+    async createTenantCompany(data: models.TenantCompanyRequest): Promise<models.TenantCompanyResponse> {
+        const parsedData: models.TenantCompanyRequest = await this.validate(
             data,
-            models.tenantCompanyPostRequestSchema,
+            models.tenantCompanyRequestSchema,
         );
         const logic = new AddTenantCompanyLogic(this.getRequestContext());
         const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());

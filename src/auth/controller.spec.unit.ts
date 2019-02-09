@@ -47,7 +47,7 @@ const expect = chai.expect;
 //         const tenantProfile = new profiles.Profile();
 //         tenantProfile.tenantId = 'test';
 //         user.profiles = [new profiles.Profile(), tenantProfile];
-//         user.password = await service.hashPassword(data.password);
+//         user.password = await user.hashPassword(data.password);
 //
 //         sandbox.stub(service, 'findByEmailAndTenant').returns(user);
 //         const result = await controller.login(data);

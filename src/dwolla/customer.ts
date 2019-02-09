@@ -142,7 +142,7 @@ export class Customer implements ICustomer {
         this.postalCode = data.postalCode;
         this.dateOfBirth = data.dateOfBirth;
         this.ssn = data.ssn;
-        this.phone = data.phone;
+        this.phone = data.phone || undefined;
         this.address1 = data.address1;
         this.address2 = data.address2;
         this.type = data.type;

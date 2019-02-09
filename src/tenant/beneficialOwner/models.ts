@@ -1,7 +1,7 @@
-import {Mapper} from '../mapper';
-import {mapper, PaginatedResponse} from '../api';
 import Joi = require('joi');
-import * as regex from '../validation/regex';
+import {mapper, PaginatedResponse} from '../../api';
+import {Mapper} from '../../mapper';
+import * as regex from '../../validation/regex';
 
 export class BeneficialOwnerAddress extends Mapper {
     address1: string = mapper.FIELD_STR;
@@ -10,7 +10,6 @@ export class BeneficialOwnerAddress extends Mapper {
     stateProvinceRegion: string = mapper.FIELD_STR;
     postalCode: string = mapper.FIELD_STR;
     country: string = mapper.FIELD_STR;
-
 }
 
 export class BeneficialOwnerBaseModel extends Mapper {
@@ -54,13 +53,11 @@ export const addBeneficialOwnerRequestSchema = Joi.object().keys({
 export class EditBeneficialOwnerRequest extends AddBeneficialOwnerRequest {
     id: string = mapper.FIELD_STR;
 }
-export class RetryBeneficialOwnerRequest extends EditBeneficialOwnerRequest {
+export class RetryBeneficialOwnerRequest extends EditBeneficialOwnerRequest {}
 
-}
 export class EditBeneficialOwnerResponse extends BeneficialOwnerBaseModel {
     dateOfBirth: string = mapper.FIELD_STR;
     ssn: string = mapper.FIELD_STR;
-
 }
 
 export const editBeneficialOwnerRequestSchema = Joi.object().keys({

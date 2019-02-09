@@ -12,6 +12,19 @@ import {Paginated} from '../db';
 import * as db from '../db';
 
 @AutoWired
+export class GetJobLogic extends Logic {
+    @Inject private jobService: JobService;
+
+    async execute(id: string): Promise<Job> {
+        const job = await this.jobService.get(id);
+        if (!job) {
+            throw new Errors.NotFoundError('Job not found');
+        }
+        return job;
+    }
+}
+
+@AutoWired
 export class CreateJobLogic extends Logic {
     @Inject private jobService: JobService;
 

@@ -353,7 +353,7 @@ export class CreatePasswordResetLogic extends Logic {
             throw new Errors.NotFoundError('User not found');
         }
 
-        user.passwordResetToken = await this.userService.getPasswordResetToken();
+        user.passwordResetToken = await user.getPasswordResetToken();
         user.passwordResetExpiry = Date.now() + 86400000; // 24 hr
         await this.userService.update(user);
 
@@ -380,12 +380,12 @@ export class ResetPasswordLogic extends Logic {
             throw new Errors.NotAcceptableError('Password reset token has expired');
         }
 
-        const isNewOldPasswordSame = await this.userService.checkPassword(newPassword, user.password);
+        const isNewOldPasswordSame = await user.checkPassword(newPassword);
         if (isNewOldPasswordSame) {
             throw new Errors.ConflictError('New password is the same as the old one');
         }
 
-        user.password = await this.userService.hashPassword(newPassword);
+        user.password = await user.hashPassword(newPassword);
         user.passwordResetExpiry = null;
         user.passwordResetToken = null;
         await this.userService.update(user);
@@ -453,7 +453,7 @@ export class AddAdminUserLogic extends Logic {
             } else {
                 user = models.User.factory({});
                 const password = generator.generate({length: 20, numbers: true, uppercase: true});
-                user.password = await this.userService.hashPassword(password);
+                user.password = await user.hashPassword(password);
                 user = await this.userService.insert(user, _trx);
             }
 
@@ -520,7 +520,7 @@ export class AddContractorUserLogic extends Logic {
             } else {
                 user = models.User.factory({});
                 const password = generator.generate({length: 20, numbers: true, uppercase: true});
-                user.password = await this.userService.hashPassword(password);
+                user.password = await user.hashPassword(password);
                 user = await this.userService.insert(user, _trx);
             }
 

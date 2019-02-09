@@ -1,5 +1,7 @@
 import * as objection from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
+import {Config} from '../config';
+import * as crypto from '../crypto';
 import * as db from '../db';
 import * as dwolla from '../dwolla';
 import {FundingSource} from '../fundingSource/models';
@@ -11,6 +13,7 @@ import {RoleService} from '../user/role/service';
 export class ProfileService extends db.ModelService<models.Profile> {
     @Inject protected roleService: RoleService;
     @Inject protected dwollaClient: dwolla.Client;
+    @Inject protected config: Config;
 
     protected setModelType() {
         this.modelType = models.Profile;
@@ -61,5 +64,13 @@ export class ProfileService extends db.ModelService<models.Profile> {
     async getByExternalIds(externalIds: Array<string>): Promise<Array<Profile>> {
         const query = this.listQuery();
         return query.whereIn('externalId', externalIds);
+    }
+
+    encryptField(value) {
+        return crypto.aesDecrypt(value, this.config.get('authorization.payloadSecret'));
+    }
+
+    decryptField(value) {
+        return crypto.aesDecrypt(value, this.config.get('authorization.payloadSecret'));
     }
 }

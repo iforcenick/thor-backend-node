@@ -49,10 +49,10 @@ export class FundingSourceResponse extends FundingSourceBaseInfo {
     paymentsUri: string = mapper.FIELD_STR;
     profileId: string = mapper.FIELD_STR;
     isDefault: boolean = mapper.FIELD_BOOLEAN;
-    verificationStatus: string = mapper.FIELD_STR;
+    status: string = mapper.FIELD_STR;
 }
 
-export class UserFundingSourceVerificationRequest extends Mapper {
+export class FundingSourceVerificationRequest extends Mapper {
     amount1: number = mapper.FIELD_NUM;
     amount2: number = mapper.FIELD_NUM;
 }
@@ -75,7 +75,7 @@ export const fundingSourceRequestSchema = Joi.object().keys({
     name: Joi.string().allow(null, '').default('default'),
 });
 
-export const contractorFundingSourceVerificationRequestSchema = Joi.object().keys({
+export const fundingSourceVerificationRequestSchema = Joi.object().keys({
     amount1: Joi.number().required(),
     amount2: Joi.number().required(),
 });

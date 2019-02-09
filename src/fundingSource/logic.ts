@@ -1,32 +1,26 @@
-import {Logic} from '../logic';
-import {Errors} from 'typescript-rest';
-import {FundingSourceService} from './services';
-import {ProfileService} from '../profile/service';
-import {AutoWired, Inject} from 'typescript-ioc';
-import {FundingSource, Statuses as VerificationStatuses} from './models';
 import {transaction} from 'objection';
+import {AutoWired, Inject} from 'typescript-ioc';
+import {Errors} from 'typescript-rest';
+import * as db from '../db';
 import * as dwolla from '../dwolla';
-import {UserService} from '../user/service';
+import {Logic} from '../logic';
+import {FundingSource, Statuses as VerificationStatuses} from './models';
 import {User} from '../user/models';
 import * as profiles from '../profile/models';
 import {Profile, Statuses} from '../profile/models';
-import * as db from '../db';
+import {UserService} from '../user/service';
+import {FundingSourceService} from './services';
+import {ProfileService} from '../profile/service';
 
 @AutoWired
 class CreateFundingSourceLogic extends Logic {
-    @Inject private userService: UserService;
     @Inject private profileService: ProfileService;
     @Inject private fundingSourceService: FundingSourceService;
 
     async execute(user: User, fundingSource: FundingSource): Promise<FundingSource> {
-        // const user = await this.userService.get(userId);
-        // if (!user) {
-        //     throw new Errors.NotFoundError('user cannot be found');
-        // }
-
-        const logic = new GetUserFundingSourcesLogic(this.context);
-        const fundingSources = await logic.execute(user);
-        if (!fundingSources || fundingSources.length == 0) {
+        const logic = new GetFundingSourcesLogic(this.context);
+        const fundingSources = await logic.execute(user.id, 1, 1);
+        if (!fundingSources || fundingSources.pagination.total == 0) {
             fundingSource.isDefault = true;
         }
 
@@ -46,17 +40,25 @@ class CreateFundingSourceLogic extends Logic {
 }
 
 @AutoWired
-export class GetUserFundingSourcesLogic extends Logic {
+export class GetFundingSourcesLogic extends Logic {
+    @Inject private userService: UserService;
     @Inject private fundingService: FundingSourceService;
 
-    async execute(user: User): Promise<Array<FundingSource>> {
+    async execute(userId: string, page: number, limit: number): Promise<db.Paginated<FundingSource>> {
+        const user = await this.userService.get(userId);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+
         // NOTE: or clause to check both tenant and base profiles
         // for funding sources in order to be backwards compatible
         const query = this.fundingService
             .query()
             .where(`${db.Tables.fundingSources}.profileId`, user.baseProfile.id)
             .orWhere(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id);
-        return await query;
+        const pag = this.userService.addPagination(query, page, limit);
+        const fundingSources = await query;
+        return new db.Paginated(new db.Pagination(pag.page, pag.limit, fundingSources.total), fundingSources);
     }
 }
 
@@ -80,7 +82,12 @@ export class GetDefaultFundingSourceLogic extends Logic {
             .andWhere('isDefault', true)
             .first();
 
-        return <FundingSource>(<any>await query);
+        const fundingSource = await query;
+        if (!fundingSource) {
+            throw new Errors.NotFoundError();
+        }
+
+        return fundingSource;
     }
 }
 
@@ -106,41 +113,63 @@ export class SetDefaultFundingSourceLogic extends Logic {
 }
 
 @AutoWired
-export class CreateUserFundingSourceLogic extends Logic {
+export class CreateFundingSourceFromBankAccountLogic extends Logic {
+    @Inject private userService: UserService;
     @Inject private dwollaClient: dwolla.Client;
 
-    async execute(data: any, user: User): Promise<any> {
-        const profile = user.baseProfile;
-        const sourceUri = await this.dwollaClient.createFundingSource(
-            profile.paymentsUri,
-            data.routing,
-            data.account,
-            'checking',
-            data.name,
-        );
+    async execute(data: any, userId: string): Promise<any> {
+        try {
+            const user = await this.userService.get(userId);
+            if (!user) {
+                throw new Errors.NotFoundError('user cannot be found');
+            }
 
-        const fundingSource: FundingSource = FundingSource.factory({
-            routing: data.routing,
-            account: data.account,
-            type: 'checking',
-            name: data.name,
-            profileId: profile.id,
-            isDefault: false,
-            paymentsUri: sourceUri,
-        });
+            const profile = user.baseProfile;
+            const sourceUri = await this.dwollaClient.createFundingSource(
+                profile.paymentsUri,
+                data.routing,
+                data.account,
+                'checking',
+                data.name,
+            );
 
-        const logic = new CreateFundingSourceLogic(this.context);
-        return await logic.execute(user, fundingSource);
+            const fundingSource: FundingSource = FundingSource.factory({
+                routing: data.routing,
+                account: data.account,
+                type: 'checking',
+                name: data.name,
+                profileId: profile.id,
+                isDefault: false,
+                paymentsUri: sourceUri,
+            });
+
+            const logic = new CreateFundingSourceLogic(this.context);
+            return await logic.execute(user, fundingSource);
+        } catch (err) {
+            if (err instanceof dwolla.DwollaRequestError) {
+                throw err.toValidationError(null, {
+                    accountNumber: 'account',
+                    routingNumber: 'routing',
+                });
+            }
+            throw err;
+        }
     }
 }
 
 @AutoWired
 export class DeleteFundingSourceLogic extends Logic {
+    @Inject private userService: UserService;
     @Inject private dwollaClient: dwolla.Client;
     @Inject private profileService: ProfileService;
     @Inject private fundingSourceService: FundingSourceService;
 
-    async execute(id: string, user: User): Promise<any> {
+    async execute(id: string, userId: string): Promise<any> {
+        const user = await this.userService.get(userId);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+
         const fundingSource: FundingSource = await this.fundingSourceService.get(id);
         if (!fundingSource) {
             throw new Errors.NotFoundError(`Could not find funding source by id ${id}`);
@@ -168,7 +197,7 @@ export class DeleteFundingSourceLogic extends Logic {
 }
 
 @AutoWired
-export class InitiateContractorFundingSourceVerificationLogic extends Logic {
+export class InitiateFundingSourceVerificationLogic extends Logic {
     @Inject private fundingService: FundingSourceService;
     @Inject private client: dwolla.Client;
 
@@ -192,7 +221,7 @@ export class InitiateContractorFundingSourceVerificationLogic extends Logic {
 }
 
 @AutoWired
-export class VerifyContractorFundingSourceLogic extends Logic {
+export class VerifyFundingSourceLogic extends Logic {
     @Inject private fundingService: FundingSourceService;
     @Inject private client: dwolla.Client;
 
@@ -229,27 +258,37 @@ export class VerifyContractorFundingSourceLogic extends Logic {
 
 @AutoWired
 export class GetIavTokenLogic extends Logic {
+    @Inject private userService: UserService;
     @Inject private client: dwolla.Client;
 
-    async execute(user: User) {
+    async execute(userId: string) {
+        const user = await this.userService.get(userId);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
         try {
             return await this.client.getIavToken(user.baseProfile.paymentsUri);
         } catch (e) {
             if (e instanceof dwolla.DwollaRequestError) {
                 throw e.toValidationError();
             }
-
             throw e;
         }
     }
 }
 
 @AutoWired
-export class AddVerifyingFundingSourceLogic extends Logic {
+export class CreateFundingSourceFromIavLogic extends Logic {
+    @Inject private userService: UserService;
     @Inject private fundingService: FundingSourceService;
     @Inject private client: dwolla.Client;
 
-    async execute(user: User, uri: string): Promise<FundingSource> {
+    async execute(userId: string, uri: string): Promise<FundingSource> {
+        const user = await this.userService.get(userId);
+        if (!user) {
+            throw new Errors.NotFoundError();
+        }
+
         if (await this.fundingService.getByPaymentsUri(uri)) {
             throw new Errors.NotAcceptableError('Funding source with provided uri is already registered');
         }
@@ -267,7 +306,7 @@ export class AddVerifyingFundingSourceLogic extends Logic {
             profileId: user.baseProfile.id,
             isDefault: false,
             paymentsUri: uri,
-            verificationStatus: dwollaFunding.verificationStatus(),
+            status: dwollaFunding.verificationStatus(),
         });
 
         const logic = new CreateFundingSourceLogic(this.context);

@@ -1,7 +1,7 @@
+import { uuidv1 } from 'uuid/v1';
 import * as db from '../../db';
 import * as transaction from '../models';
 import {Statuses} from '../models';
-import {Relation} from 'objection'; // for relations compilation
 import * as user from '../../user/models';
 
 export const enum Relations {
@@ -15,6 +15,7 @@ export class Transfer extends db.Model {
     static tableName = db.Tables.transfers;
     adminId?: string;
     paymentsUri?: string;
+    paymentsId?: string;
     tenantId?: string = null;
     tenantChargeId?: string;
     sourceUri?: string;
@@ -42,5 +43,9 @@ export class Transfer extends db.Model {
                 }
             },
         };
+    }
+
+    createPaymentsId = () => {
+        this.paymentsId = uuidv1();
     }
 }

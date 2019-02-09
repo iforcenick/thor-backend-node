@@ -1,4 +1,3 @@
-import crypto = require('crypto');
 import {transaction, Transaction} from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {RequestContext} from '../context';
@@ -8,8 +7,6 @@ import * as transactions from '../transaction/models';
 import * as models from './models';
 import * as role from './role';
 import {ProfileService} from '../profile/service';
-
-const bcrypt = require('bcrypt');
 
 @AutoWired
 export class UserService extends db.ModelService<models.User> {
@@ -163,19 +160,6 @@ export class UserService extends db.ModelService<models.User> {
         query.first();
         this.clearTenantId();
         return await query;
-    }
-
-    async checkPassword(password: string, userPassword: string) {
-        return await bcrypt.compare(password, userPassword);
-    }
-
-    async hashPassword(password) {
-        return await bcrypt.hash(password, 10);
-    }
-
-    async getPasswordResetToken() {
-        const buffer = await crypto.randomBytes(20);
-        return buffer.toString('hex');
     }
 
     query(trx?: transaction<any>) {

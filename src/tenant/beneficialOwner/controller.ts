@@ -1,27 +1,12 @@
-import {BaseController} from '../api';
 import {AutoWired} from 'typescript-ioc';
-import {Security, Tags} from 'typescript-rest-swagger';
 import {DELETE, GET, PATCH, Path, PathParam, POST, Preprocessor, QueryParam, HttpError, PUT} from 'typescript-rest';
-import {
-    AddBeneficialOwnerRequest,
-    addBeneficialOwnerRequestSchema,
-    BeneficialOwnerResponse,
-    EditBeneficialOwnerRequest,
-    editBeneficialOwnerRequestSchema,
-    EditBeneficialOwnerResponse,
-    PaginatedBeneficialOwnerResponse, RetryBeneficialOwnerRequest, retryBeneficialOwnerRequestSchema
-} from './models';
-import {
-    AddBeneficialOwnerLogic, AddBeneficialOwnerRetryLogic,
-    DeleteBeneficialOwnerLogic,
-    EditBeneficialOwnerLogic,
-    GetBeneficialOwnerLogic,
-    GetBeneficialOwnersLogic
-} from './logic';
-import {Pagination} from '../db';
-import * as dwolla from '../dwolla';
+import {Security, Tags} from 'typescript-rest-swagger';
 import * as Errors from 'typescript-rest/dist/server-errors';
-
+import {BaseController} from '../../api';
+import {Pagination} from '../../db';
+import * as dwolla from '../../dwolla';
+import * as logicLayer from './logic';
+import * as models from './models';
 
 @AutoWired
 @Security('api_key')
@@ -31,12 +16,15 @@ export abstract class BeneficialOwnerController extends BaseController {
     @POST
     @Path('beneficialOwners')
     @Preprocessor(BaseController.requireAdmin)
-    async addBeneficialOwner(request: AddBeneficialOwnerRequest): Promise<BeneficialOwnerResponse> {
-        const validateResult: AddBeneficialOwnerRequest = await this.validate(request, addBeneficialOwnerRequestSchema);
+    async addBeneficialOwner(request: models.AddBeneficialOwnerRequest): Promise<models.BeneficialOwnerResponse> {
+        const validateResult: models.AddBeneficialOwnerRequest = await this.validate(
+            request,
+            models.addBeneficialOwnerRequestSchema,
+        );
         try {
-            const logic = new AddBeneficialOwnerLogic(this.getRequestContext());
+            const logic = new logicLayer.AddBeneficialOwnerLogic(this.getRequestContext());
             const beneficialOwner = await logic.execute(validateResult, this.getRequestContext().getTenantId());
-            return this.map(BeneficialOwnerResponse, beneficialOwner);
+            return this.map(models.BeneficialOwnerResponse, beneficialOwner);
         } catch (err) {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError(null, null);
@@ -53,12 +41,15 @@ export abstract class BeneficialOwnerController extends BaseController {
     @PUT
     @Path('beneficialOwners')
     @Preprocessor(BaseController.requireAdmin)
-    async retryBeneficialOwner(request: RetryBeneficialOwnerRequest): Promise<any> {
-        const validateResult: RetryBeneficialOwnerRequest = await this.validate(request, retryBeneficialOwnerRequestSchema);
+    async retryBeneficialOwner(request: models.RetryBeneficialOwnerRequest): Promise<any> {
+        const validateResult: models.RetryBeneficialOwnerRequest = await this.validate(
+            request,
+            models.retryBeneficialOwnerRequestSchema,
+        );
         try {
-            const retryLogic = new AddBeneficialOwnerRetryLogic(this.getRequestContext());
+            const retryLogic = new logicLayer.AddBeneficialOwnerRetryLogic(this.getRequestContext());
             const beneficialOwner = await retryLogic.execute(validateResult, this.getRequestContext().getTenantId());
-            return this.map(BeneficialOwnerResponse, beneficialOwner);
+            return this.map(models.BeneficialOwnerResponse, beneficialOwner);
         } catch (err) {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError(null, null);
@@ -74,12 +65,15 @@ export abstract class BeneficialOwnerController extends BaseController {
     @PATCH
     @Path('beneficialOwners')
     @Preprocessor(BaseController.requireAdmin)
-    async editBeneficialOwner(request: EditBeneficialOwnerRequest): Promise<EditBeneficialOwnerResponse> {
-        const validateResult: EditBeneficialOwnerRequest = await this.validate(request, editBeneficialOwnerRequestSchema);
+    async editBeneficialOwner(request: models.EditBeneficialOwnerRequest): Promise<models.EditBeneficialOwnerResponse> {
+        const validateResult: models.EditBeneficialOwnerRequest = await this.validate(
+            request,
+            models.editBeneficialOwnerRequestSchema,
+        );
         try {
-            const logic = new EditBeneficialOwnerLogic(this.getRequestContext());
+            const logic = new logicLayer.EditBeneficialOwnerLogic(this.getRequestContext());
             const beneficialOwner = await logic.execute(validateResult);
-            return this.map(EditBeneficialOwnerResponse, beneficialOwner);
+            return this.map(models.EditBeneficialOwnerResponse, beneficialOwner);
         } catch (err) {
             if (err instanceof dwolla.DwollaRequestError) {
                 throw err.toValidationError(null, null);
@@ -91,7 +85,10 @@ export abstract class BeneficialOwnerController extends BaseController {
     @GET
     @Path('beneficialOwners')
     @Preprocessor(BaseController.requireAdminReader)
-    async getBeneficialOwners(@QueryParam('page') page?: number, @QueryParam('limit') limit?: number): Promise<PaginatedBeneficialOwnerResponse> {
+    async getBeneficialOwners(
+        @QueryParam('page') page?: number,
+        @QueryParam('limit') limit?: number,
+    ): Promise<models.PaginatedBeneficialOwnerResponse> {
         try {
             if (!page) {
                 page = 1;
@@ -101,15 +98,15 @@ export abstract class BeneficialOwnerController extends BaseController {
                 limit = 5;
             }
 
-            const logic = new GetBeneficialOwnersLogic(this.getRequestContext());
+            const logic = new logicLayer.GetBeneficialOwnersLogic(this.getRequestContext());
             const beneficialOwners = await logic.execute(this.getRequestContext().getTenantId());
             const pagination = new Pagination(page, limit, beneficialOwners.length);
 
             return this.paginate(
                 pagination,
                 beneficialOwners.map(owner => {
-                    return this.map(BeneficialOwnerResponse, owner);
-                })
+                    return this.map(models.BeneficialOwnerResponse, owner);
+                }),
             );
         } catch (err) {
             throw new Errors.InternalServerError(err.message);
@@ -119,11 +116,11 @@ export abstract class BeneficialOwnerController extends BaseController {
     @GET
     @Path('beneficialOwners/:id')
     @Preprocessor(BaseController.requireAdminReader)
-    async getBeneficialOwner(@PathParam('id') id: string): Promise<BeneficialOwnerResponse> {
+    async getBeneficialOwner(@PathParam('id') id: string): Promise<models.BeneficialOwnerResponse> {
         try {
-            const logic = new GetBeneficialOwnerLogic(this.getRequestContext());
+            const logic = new logicLayer.GetBeneficialOwnerLogic(this.getRequestContext());
             const beneficialOwner = await logic.execute(id);
-            return this.map(BeneficialOwnerResponse, beneficialOwner);
+            return this.map(models.BeneficialOwnerResponse, beneficialOwner);
         } catch (err) {
             throw new Errors.InternalServerError(err.message);
         }
@@ -134,7 +131,7 @@ export abstract class BeneficialOwnerController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async deleteBeneficialOwner(@PathParam('id') id: string) {
         try {
-            const logic = new DeleteBeneficialOwnerLogic(this.getRequestContext());
+            const logic = new logicLayer.DeleteBeneficialOwnerLogic(this.getRequestContext());
             await logic.execute(id);
         } catch (err) {
             throw new Errors.InternalServerError(err.message);

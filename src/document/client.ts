@@ -2,6 +2,7 @@ import {Inject, AutoWired} from 'typescript-ioc';
 import {Storage} from '@google-cloud/storage';
 import {Config} from '../config';
 import {Logger} from '../logger';
+import {Document} from './models';
 
 @AutoWired
 export class GoogleStorage {
@@ -13,24 +14,15 @@ export class GoogleStorage {
     constructor() {
         this.storage = new Storage();
         this.bucket = this.storage.bucket(this.config.get('storage.bucket'));
-        this.logger.info(this.config.get('storage.bucket'));
     }
 
     /* istanbul ignore next */
     private _save(file, data, callback) {
         file.save(data, callback);
     }
-    /* istanbul ignore next */
-    private _get(file, callback) {
-        file.get(callback);
-    }
-    /* istanbul ignore next */
-    private _delete(file, callback) {
-        file.delete(callback);
-    }
 
-    async saveDocument(userId: string, fileName: string, data: any): Promise<boolean> {
-        const location = `users/${userId}/documents/${fileName}`;
+    async saveDocument(document: Document, data: any): Promise<boolean> {
+        const location = `users/${document.userId}/documents/${document.id}_${document.name}`;
         const file = this.bucket.file(location);
 
         try {
@@ -50,39 +42,29 @@ export class GoogleStorage {
         return true;
     }
 
-    async getDocument(userId: string, fileName: string): Promise<any> {
-        const location = `users/${userId}/documents/${fileName}`;
+    async getDocument(document: Document): Promise<string> {
+        const location = `users/${document.userId}/documents/${document.id}_${document.name}`;
         const file = this.bucket.file(location);
 
+        const options = {
+            action: 'read',
+            expires: Date.now() + 1000 * 60 * 60, // one hour
+        };
+
         try {
-            await new Promise((resolve, reject) => {
-                this._get(file, data => {
-                    if (data) {
-                        reject();
-                    }
-                    resolve(data[0]);
-                });
-            });
+            const [url] = await file.getSignedUrl(options);
+            return url;
         } catch (e) {
             throw new GoogleStorageClientError(e);
         }
-
-        return true;
     }
 
-    async deleteDocument(userId: string, fileName: string): Promise<any> {
-        const location = `users/${userId}/documents/${fileName}`;
+    async deleteDocument(document: Document): Promise<any> {
+        const location = `users/${document.userId}/documents/${document.id}_${document.name}`;
         const file = this.bucket.file(location);
 
         try {
-            await new Promise((resolve, reject) => {
-                this._delete(file, (err, apiResponse) => {
-                    if (err) {
-                        reject(err);
-                    }
-                    resolve(apiResponse);
-                });
-            });
+            await file.delete();
         } catch (e) {
             throw new GoogleStorageClientError(e);
         }

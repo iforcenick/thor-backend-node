@@ -64,10 +64,10 @@ export class InvitationController extends BaseController {
         const parsedData = await this.validate(data, models.invitationRequestSchema);
         let user;
         let invitationLogic;
+        // placeholder for the user's table
+        parsedData['firstName'] = parsedData.email;
         if (parsedData.type === models.Types.admin) {
             const logic = new AddAdminUserLogic(this.getRequestContext());
-            // placeholder for the user's table
-            parsedData['firstName'] = parsedData.email;
             user = await logic.execute(parsedData, parsedData.role);
             invitationLogic = new logicLayer.CreateAdminInvitationLogic(this.getRequestContext());
         } else if (parsedData.type === models.Types.contractor) {
@@ -80,7 +80,7 @@ export class InvitationController extends BaseController {
     }
 
     /**
-     * Resend an user's invitation
+     * Resend a user's invitation
      *
      * @requires {role} admin
      * @param {models.UserInvitationRequest} data
@@ -91,7 +91,7 @@ export class InvitationController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async resendUserInvitation(data: models.UserInvitationRequest) {
         const parsedData = await this.validate(data, models.userInvitationRequestSchema);
-        const logic = new logicLayer.ResendUserInvitationLogic(this.getRequestContext());
+        const logic = new logicLayer.ResendInvitationLogic(this.getRequestContext());
         await logic.execute(parsedData.userId);
     }
 
@@ -111,7 +111,7 @@ export class InvitationController extends BaseController {
     }
 
     /**
-     * Delete an user's invitation
+     * Delete a user's invitation
      *
      * @requires {role} admin
      * @param {models.UserInvitationRequest} data

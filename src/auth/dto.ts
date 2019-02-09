@@ -1,6 +1,6 @@
 import Joi = require('joi');
-import {UserResponse} from '../user/dto';
 import {mapper} from '../api';
+import {UserResponse} from '../user/dto';
 import {Mapper} from '../mapper';
 
 export class AuthUserResponse extends UserResponse {

@@ -1,4 +1,4 @@
-import {GET, Path, PathParam, PATCH, Preprocessor} from 'typescript-rest';
+import {GET, Path, PATCH} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {BaseController} from '../api';
 import {UpdateProfileLogic, GetProfileLogic} from './logic';
@@ -9,7 +9,7 @@ import {ProfileResponse, ProfileRequest, profilePatchSchema} from './models';
 @Tags('profiles')
 export class ProfileController extends BaseController {
     /**
-     * Update my profile
+     * Update your profile
      *
      * @param {ProfileRequest} data
      * @returns {Promise<ProfileResponse>}
@@ -26,7 +26,7 @@ export class ProfileController extends BaseController {
     }
 
     /**
-     * Get my profile
+     * Get your profile
      *
      * @returns {Promise<ProfileResponse>}
      * @memberof ProfileController

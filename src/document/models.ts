@@ -52,6 +52,7 @@ export class DocumentBaseModel extends Mapper {}
 
 export class DocumentResponse extends DocumentBaseModel {
     id: string = mapper.FIELD_STR;
+    name: string = mapper.FIELD_STR;
     type: string = mapper.FIELD_STR;
     status: string = mapper.FIELD_STR;
     createdOn: Date = mapper.FIELD_DATE;

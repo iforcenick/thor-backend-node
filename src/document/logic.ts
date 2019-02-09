@@ -41,7 +41,7 @@ export class AddDocumentLogic extends Logic {
         return await transaction(this.documentService.transaction(), async trx => {
             document = await this.documentService.insert(document, trx);
             try {
-                const result = await this.googleStorage.saveDocument(userId, document.id, file.buffer);
+                const result = await this.googleStorage.saveDocument(document, file.buffer);
                 if (!result) throw new Errors.InternalServerError('failed to save document');
                 return document;
             } catch (e) {
@@ -97,7 +97,7 @@ export class AddDwollaDocumentLogic extends Logic {
         return await transaction(this.documentService.transaction(), async trx => {
             document = await this.documentService.insert(document, trx);
             try {
-                const result = await this.googleStorage.saveDocument(userId, document.id, file.buffer);
+                const result = await this.googleStorage.saveDocument(document, file.buffer);
                 if (!result) throw new Errors.InternalServerError('failed to save document');
                 return document;
             } catch (e) {
@@ -132,7 +132,7 @@ export class DeleteDocumentLogic extends Logic {
             throw new Errors.NotFoundError('Document not found');
         }
 
-        await this.googleStorage.deleteDocument(document.userId, document.id);
+        await this.googleStorage.deleteDocument(document);
         await this.documentService.delete(document);
     }
 }
@@ -147,7 +147,6 @@ export class GetDocumentDownloadLinkLogic extends Logic {
         if (!document) {
             throw new Errors.NotFoundError('Document not found');
         }
-        // TODO:
-        return 'https://odin.gothor.com';
+        return await this.googleStorage.getDocument(document);
     }
 }

@@ -1,20 +1,23 @@
-import {Errors, GET, Path, POST, PATCH, DELETE, PathParam, Preprocessor, QueryParam} from 'typescript-rest';
-import {BaseController} from '../api';
-import {Inject} from 'typescript-ioc';
-import * as models from './models';
-import {JobService} from './service';
-import {Security, Tags} from 'typescript-rest-swagger';
-import * as logicLayer from './logic';
-import * as db from '../db';
+import {GET, Path, POST, PATCH, DELETE, PathParam, Preprocessor, QueryParam} from 'typescript-rest';
 import {NotAcceptableError} from 'typescript-rest/dist/server-errors';
+import {Security, Tags} from 'typescript-rest-swagger';
+import {BaseController} from '../api';
+import * as db from '../db';
+import * as models from './models';
+import * as logicLayer from './logic';
 import {JobListLogic} from './logic';
 
 @Security('api_key')
 @Path('/jobs')
 @Tags('jobs')
 export class JobController extends BaseController {
-    @Inject private service: JobService;
-
+    /**
+     * Create a job
+     *
+     * @param {models.JobRequest} data
+     * @returns {Promise<models.JobResponse>}
+     * @memberof JobController
+     */
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
@@ -22,11 +25,12 @@ export class JobController extends BaseController {
         const parsedData: models.JobRequest = await this.validate(data, models.jobRequestSchema);
         const logic = new logicLayer.CreateJobLogic(this.getRequestContext());
         const job = await logic.execute(parsedData);
-
         return this.map(models.JobResponse, job);
     }
 
     /**
+     * Query for a list of jobs
+     *
      * @param page page to be queried, starting from 0
      * @param limit transactions per page
      * @param isActive
@@ -47,7 +51,6 @@ export class JobController extends BaseController {
         @QueryParam('orderBy') orderBy?: string,
         @QueryParam('order') order?: string,
     ): Promise<models.PaginatedJobResponse> {
-
         if (orderBy && !JobListLogic.sortableFields.includes(orderBy)) {
             throw new NotAcceptableError(`Invalid orderBy, allowed order by ${JobListLogic.sortableFields.join(', ')}`);
         }
@@ -74,20 +77,30 @@ export class JobController extends BaseController {
         );
     }
 
+    /**
+     * Get a job
+     *
+     * @param {string} id
+     * @returns {Promise<models.PaginatedJobResponse>}
+     * @memberof JobController
+     */
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdminReader)
     async getJob(@PathParam('id') id: string): Promise<models.PaginatedJobResponse> {
-        this.service.setRequestContext(this.getRequestContext());
-
-        const job = await this.service.get(id);
-        if (!job) {
-            throw new Errors.NotFoundError('Job not found');
-        }
-
+        const logic = new logicLayer.GetJobLogic(this.getRequestContext());
+        const job = await logic.execute(id);
         return this.map(models.JobResponse, job);
     }
 
+    /**
+     * Update a job
+     *
+     * @param {string} id
+     * @param {models.JobPatchRequest} data
+     * @returns {Promise<models.JobResponse>}
+     * @memberof JobController
+     */
     @PATCH
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
@@ -95,10 +108,15 @@ export class JobController extends BaseController {
         const parsedData: models.JobPatchRequest = await this.validate(data, models.jobPatchRequestSchema);
         const logic = new logicLayer.UpdateJobLogic(this.getRequestContext());
         const job = await logic.execute(id, parsedData);
-
         return this.map(models.JobResponse, job);
     }
 
+    /**
+     * Delete a job
+     *
+     * @param {string} id
+     * @memberof JobController
+     */
     @DELETE
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)

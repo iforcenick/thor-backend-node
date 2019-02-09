@@ -47,7 +47,7 @@ describe('InvitationLogic', () => {
 
             const mailerServiceStub = Container.get(MailerService);
             sandbox.stub(mailerServiceStub, 'sendInvitation').returns(Promise.resolve(true));
-            sut.mailer = mailerServiceStub;
+            sut.mailerService = mailerServiceStub;
         });
 
         it('with external id should send emails for all email addresses in file', async () => {

@@ -1,4 +1,5 @@
 import Joi = require('joi');
+import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import {mapper} from '../api';
 import * as db from '../db';
 import * as dwolla from '../dwolla';
@@ -127,7 +128,7 @@ export class TenantOwnerResponse extends Mapper {
     address: TenantOwnerAddressResponse = new TenantOwnerAddressResponse();
 }
 
-export class TenantOwnerAddressRequest extends Mapper {
+export class TenantControllerAddress extends Mapper {
     address1: string = mapper.FIELD_STR;
     address2: string = mapper.FIELD_STR;
     city: string = mapper.FIELD_STR;
@@ -136,36 +137,39 @@ export class TenantOwnerAddressRequest extends Mapper {
     country: string = mapper.FIELD_STR;
 }
 
-export class TenantOwnerRequest extends Mapper {
+export class TenantController extends Mapper {
     firstName: string = mapper.FIELD_STR;
     lastName: string = mapper.FIELD_STR;
     title: string = mapper.FIELD_STR;
     dateOfBirth: string = mapper.FIELD_STR;
     ssn: string = mapper.FIELD_STR;
-    @mapper.object(TenantOwnerAddressRequest)
-    address: TenantOwnerAddressRequest = new TenantOwnerAddressRequest();
+    @mapper.object(TenantControllerAddress)
+    address: TenantControllerAddress = new TenantControllerAddress();
 }
 
-export class TenantCompanyPostRequest extends Mapper {
-    firstName: string = mapper.FIELD_STR;
-    lastName: string = mapper.FIELD_STR;
-    phone: string = mapper.FIELD_STR;
-    email: string = mapper.FIELD_STR;
-    country: string = mapper.FIELD_STR;
-    state: string = mapper.FIELD_STR;
-    city: string = mapper.FIELD_STR;
-    postalCode: string = mapper.FIELD_STR;
-    address1: string = mapper.FIELD_STR;
-    address2: string = mapper.FIELD_STR;
-    dateOfBirth: string = mapper.FIELD_STR;
-    ssn: string = mapper.FIELD_STR;
+export class TenantCompanyRequest extends Mapper {
+    // company details
     businessName: string = mapper.FIELD_STR;
     doingBusinessAs: string = mapper.FIELD_STR;
     businessType: string = mapper.FIELD_STR;
     businessClassification: string = mapper.FIELD_STR;
+    address1: string = mapper.FIELD_STR;
+    address2: string = mapper.FIELD_STR;
+    city: string = mapper.FIELD_STR;
+    state: string = mapper.FIELD_STR;
+    postalCode: string = mapper.FIELD_STR;
+    phone: string = mapper.FIELD_STR;
     ein: string = mapper.FIELD_STR;
     website: string = mapper.FIELD_STR;
-    controller: TenantOwnerRequest = new TenantOwnerRequest();
+    // admin or owner
+    firstName: string = mapper.FIELD_STR;
+    lastName: string = mapper.FIELD_STR;
+    email: string = mapper.FIELD_STR;
+    dateOfBirth: string = mapper.FIELD_STR;
+    ssn: string = mapper.FIELD_STR;
+    // controller
+    @mapper.object(TenantController)
+    controller: TenantController = new TenantController();
 }
 
 export class TenantCompanyPatchRequest extends Mapper {
@@ -181,7 +185,7 @@ export class TenantCompanyPatchRequest extends Mapper {
     website: string = mapper.FIELD_STR;
 }
 
-export class TenantCompanyRetryRequest extends TenantCompanyPostRequest {}
+export class TenantCompanyRetryRequest extends TenantCompanyRequest {}
 
 export class TenantRequest extends TenantBaseInfo {}
 
@@ -222,7 +226,7 @@ export const tenantControllerSchema = Joi.object().keys({
     // passport: tenantControllerPassportSchema,
 });
 
-export const tenantCompanyPostRequestSchema = Joi.object().keys({
+export const tenantCompanyRequestSchema = Joi.object().keys({
     // company profile
     businessName: Joi.string().required(),
     doingBusinessAs: Joi.string().allow('', null), // optional
@@ -239,8 +243,7 @@ export const tenantCompanyPostRequestSchema = Joi.object().keys({
     city: Joi.string().required().regex(/[a-zA-Z]+/),
     state: Joi.string().required().uppercase().length(2),
     postalCode: Joi.string().required(),
-    country: Joi.string().length(2).default('US'), // optional
-    phone: Joi.string(), // optional
+    phone: Joi.string().allow('', null), // optional
     // business owner or admin
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
@@ -252,8 +255,8 @@ export const tenantCompanyPostRequestSchema = Joi.object().keys({
     }),
     ssn: Joi.string().invalid(['0000']).when('businessType', {
         is: Joi.equal(dwolla.customer.BUSINESS_TYPE.Sole),
-        then: Joi.allow('', null), // optional for sole
-        otherwise: Joi.required(),
+        then: Joi.required(), // required for sole
+        otherwise: Joi.allow('', null),
     }),
     // controller
     controller: tenantControllerSchema.when('businessType', {
@@ -276,7 +279,7 @@ export const tenantCompanyPatchRequestSchema = Joi.object().keys({
     website: Joi.string().allow('', null), // optional
 });
 
-export const tenantCompanyRetryRequestSchema = tenantCompanyPostRequestSchema;
+export const tenantCompanyRetryRequestSchema = tenantCompanyRequestSchema;
 
 export class BusinessClassificationItem extends Mapper {
     id: string = mapper.FIELD_STR;

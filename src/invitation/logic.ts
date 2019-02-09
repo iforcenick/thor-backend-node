@@ -17,7 +17,7 @@ import {ProfileService} from '../profile/service';
 
 @AutoWired
 export class BatchInvitationsLogic extends Logic {
-    @Inject mailer: MailerService;
+    @Inject mailerService: MailerService;
     @Inject invitations: InvitationService;
     @Inject tenants: TenantService;
     @Inject profiles: ProfileService;
@@ -88,7 +88,7 @@ export class BatchInvitationsLogic extends Logic {
             invitation = await this.invitations.insert(invitation);
 
             try {
-                this.mailer.sendInvitation(invitation.email, {
+                this.mailerService.sendInvitation(invitation.email, {
                     link: `${this.config.get('application.frontUri')}/register/${invitation.id}`,
                     companyName: tenant.businessName,
                 });
@@ -166,7 +166,7 @@ export class BatchInvitationsLogic extends Logic {
 
 @AutoWired
 export class CreateAdminInvitationLogic extends Logic {
-    @Inject private mailer: MailerService;
+    @Inject private mailerService: MailerService;
     @Inject private invitationService: InvitationService;
     @Inject private tenantService: TenantService;
     @Inject private config: Config;
@@ -183,7 +183,7 @@ export class CreateAdminInvitationLogic extends Logic {
 
         try {
             const tenant = await this.tenantService.get(tenantId);
-            await this.mailer.sendInvitation(invitation.email, {
+            await this.mailerService.sendAdminConfirmAccount(invitation.email, {
                 link: `${this.config.get('application.frontUri')}/register/${invitation.id}`,
                 companyName: tenant.businessName,
             });
@@ -259,40 +259,6 @@ export class GetInvitationsLogic extends Logic {
 }
 
 @AutoWired
-export class ResendUserInvitationLogic extends Logic {
-    @Inject private invitationService: InvitationService;
-    @Inject private mailerService: MailerService;
-    @Inject private tenantService: TenantService;
-    @Inject private logger: Logger;
-    @Inject private config: Config;
-
-    async execute(userId: string) {
-        const invitation = await this.invitationService.getByUserId(userId);
-        if (!invitation) {
-            throw new Errors.NotFoundError('Invitation not found');
-        }
-
-        if (!invitation.isPending()) {
-            throw new Errors.ConflictError('Invitation already used');
-        }
-
-        const tenant = await this.tenantService.get(this.context.getTenantId());
-        if (!tenant) {
-            throw new Errors.NotFoundError('Tenant not found');
-        }
-
-        try {
-            await this.mailerService.sendInvitation(invitation.email, {
-                link: `${this.config.get('application.frontUri')}/register/${invitation.id}`,
-                companyName: tenant.businessName,
-            });
-        } catch (e) {
-            this.logger.error(e);
-        }
-    }
-}
-
-@AutoWired
 export class ResendInvitationLogic extends Logic {
     @Inject private invitationService: InvitationService;
     @Inject private mailerService: MailerService;
@@ -316,10 +282,17 @@ export class ResendInvitationLogic extends Logic {
         }
 
         try {
-            await this.mailerService.sendInvitation(invitation.email, {
-                link: `${this.config.get('application.frontUri')}/register/${invitation.id}`,
-                companyName: tenant.businessName,
-            });
+            if (invitation.type === models.Types.admin) {
+                await this.mailerService.sendAdminConfirmAccount(invitation.email, {
+                    link: `${this.config.get('application.frontUri')}/register/${invitation.id}`,
+                    companyName: tenant.businessName,
+                });
+            } else {
+                await this.mailerService.sendInvitation(invitation.email, {
+                    link: `${this.config.get('application.frontUri')}/register/${invitation.id}`,
+                    companyName: tenant.businessName,
+                });
+            }
         } catch (e) {
             this.logger.error(e);
         }
