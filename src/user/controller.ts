@@ -1,70 +1,59 @@
 import * as _ from 'lodash';
-import {Inject} from 'typescript-ioc';
-import {
-    DELETE,
-    Errors,
-    FileParam,
-    GET,
-    HttpError,
-    PATCH,
-    Path,
-    PathParam,
-    POST,
-    Preprocessor,
-    PUT,
-    QueryParam,
-} from 'typescript-rest';
+import {DELETE, GET, Path, PathParam, POST, Preprocessor, PUT, QueryParam} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {BaseController} from '../api';
 import * as dto from './dto';
 import * as dwolla from '../dwolla';
 import {AddContractorOnRetryStatusLogic} from '../contractor/logic';
 import * as usersLogic from './logic';
-import * as documentsLogic from '../document/logic';
 import * as invitationsLogic from '../invitation/logic';
-import * as transactions from '../transaction/models';
-import {ProfileResponse} from '../profile/models';
 import {SearchCriteria} from './models';
-import * as documents from '../document/models';
-import {UserService} from './service';
-import {ProfileService} from '../profile/service';
-import {TransactionService} from '../transaction/service';
 
 @Security('api_key')
 @Path('/users')
 @Tags('users')
 export class UserController extends BaseController {
-    @Inject private userService: UserService;
-    @Inject private profileService: ProfileService;
-    @Inject private transactionService: TransactionService;
-
+    /**
+     * Get your user data
+     *
+     * @returns {Promise<dto.UserResponse>}
+     * @memberof UserController
+     */
     @GET
-    @Path('myself')
-    async getContractor(): Promise<dto.UserResponse> {
+    @Path('self')
+    async getSelf(): Promise<dto.UserResponse> {
         const logic = new usersLogic.GetUserLogic(this.getRequestContext());
         const user = await logic.execute(this.getRequestContext().getUserId());
         return this.map(dto.UserResponse, user);
     }
 
+    /**
+     * Get a user's data
+     *
+     * @param {string} id
+     * @returns {Promise<dto.UserResponse>}
+     * @memberof UserController
+     */
     @GET
     @Path(':id')
     @Preprocessor(BaseController.requireAdminReader)
     async getUser(@PathParam('id') id: string): Promise<dto.UserResponse> {
         const logic = new usersLogic.GetUserLogic(this.getRequestContext());
         const user = await logic.execute(id);
-
         return this.map(dto.UserResponse, user);
     }
 
     /**
-     * @param page page to be queried, starting from 0
-     * @param limit transactions per page
-     * @param startDate startDate
-     * @param endDate endDate
-     * @param status status
-     * @param orderBy - field name
+     * Query for a list of contractor's user data and transactions
+     *
+     * @param page - page to be queried, starting from 0
+     * @param limit - transactions per page
+     * @param startDate - startDate
+     * @param endDate - endDate
+     * @param status - status
+     * @param orderBy - field|name
      * @param order - asc|desc
-     * @param contractor - contractor firstName, lastName or "firstName lastName"
+     * @param name - firstName, lastName or "firstName lastName"
      */
     @GET
     @Path('rating/jobs')
@@ -77,22 +66,11 @@ export class UserController extends BaseController {
         @QueryParam('status') status?: string,
         @QueryParam('orderBy') orderBy?: string,
         @QueryParam('order') order?: string,
-        @QueryParam('contractor') contractor?: string,
+        @QueryParam('name') name?: string,
     ): Promise<dto.PaginatedRankingJobsResponse> {
         const dates: any = await this.validate({startDate, endDate}, dto.rankingRequestSchema);
         const logic = new usersLogic.RatingJobsListLogic(this.getRequestContext());
-
-        const rankings = await logic.execute(
-            dates.startDate,
-            dates.endDate,
-            page,
-            limit,
-            status,
-            orderBy,
-            order,
-            contractor,
-        );
-
+        const rankings = await logic.execute(dates.startDate, dates.endDate, page, limit, status, orderBy, order, name);
         return this.paginate(
             rankings.pagination,
             rankings.rows.map(ranking => {
@@ -102,11 +80,13 @@ export class UserController extends BaseController {
     }
 
     /**
+     * Query for a list of contractor's user data
+     *
      * @param page page to be queried, starting from 0
      * @param limit users per page
      * @param orderBy - field name
      * @param order - asc|desc
-     * @param contractor - contractor firstName, lastName or "firstName lastName"
+     * @param name - firstName, lastName or "firstName lastName"
      * @param city
      * @param state
      */
@@ -118,7 +98,7 @@ export class UserController extends BaseController {
         @QueryParam('limit') limit?: number,
         @QueryParam('orderBy') orderBy?: string,
         @QueryParam('order') order?: string,
-        @QueryParam('contractor') contractor?: string,
+        @QueryParam('name') name?: string,
         @QueryParam('city') city?: string,
         @QueryParam('state') state?: string,
     ): Promise<dto.PaginatedUserResponse> {
@@ -128,12 +108,11 @@ export class UserController extends BaseController {
         searchCriteria.limit = limit;
         searchCriteria.orderBy = orderBy;
         searchCriteria.order = order;
-        searchCriteria.contractor = contractor;
+        searchCriteria.name = name;
         searchCriteria.city = city;
         searchCriteria.state = state;
 
         const users = await logic.execute(searchCriteria);
-
         return this.paginate(
             users.pagination,
             users.rows.map(user => {
@@ -142,90 +121,97 @@ export class UserController extends BaseController {
         );
     }
 
-    @PATCH
-    @Path(':id/profile')
-    @Preprocessor(BaseController.requireAdmin)
-    async patchAnyUser(@PathParam('id') id: string, data: dto.UserPatchRequest): Promise<ProfileResponse> {
-        this.userService.setRequestContext(this.getRequestContext());
-        this.profileService.setRequestContext(this.getRequestContext());
-
-        const parsedData = await this.validate(data, dto.userPatchSchema);
-
-        try {
-            const user = await this.userService.get(id);
-            if (!user) {
-                throw new Errors.NotFoundError();
-            }
-            const profileData = parsedData['profile'];
-            user.tenantProfile.merge(profileData);
-            const updatedProfile = await this.profileService.update(user.tenantProfile);
-            updatedProfile.roles = user.tenantProfile.roles;
-            return this.map(ProfileResponse, updatedProfile);
-        } catch (e) {
-            if (e instanceof HttpError) {
-                throw e;
-            }
-
-            if (e instanceof dwolla.DwollaRequestError) {
-                throw e.toValidationError('profile');
-            }
-
-            throw new Errors.InternalServerError(e);
-        }
-    }
-
     @DELETE
     @Path('')
     async deleteSelf() {
-        this.userService.setRequestContext(this.getRequestContext());
-
-        try {
-            await this.userService.deleteFull(this.getRequestContext().getUserId());
-        } catch (e) {
-            throw new Errors.InternalServerError(e);
-        }
+        const logic = new usersLogic.DeleteSelfLogic(this.getRequestContext());
+        await logic.execute(this.getRequestContext().getUserId());
     }
 
     @DELETE
     @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
-    async delete(@PathParam('id') id: string) {
+    async deleteUser(@PathParam('id') id: string) {
         const logic = new usersLogic.DeleteUserLogic(this.getRequestContext());
         await logic.execute(id);
     }
 
-    @GET
-    @Path(':userId/transactions')
-    @Preprocessor(BaseController.requireAdminReader)
-    @Tags('transactions')
-    async getUserTransactions(
-        @PathParam('userId') userId: string,
-        @QueryParam('page') page?: number,
-        @QueryParam('limit') limit?: number,
-        @QueryParam('startDate') startDate?: Date,
-        @QueryParam('endDate') endDate?: Date,
-        @QueryParam('status') status?: string,
-    ): Promise<transactions.PaginatedTransactionResponse> {
-        this.transactionService.setRequestContext(this.getRequestContext());
+    /**
+     * Create a contractor user
+     *
+     * @param {dto.AddContractorUserRequest} data
+     * @returns {Promise<dto.AddContractorUserResponse>}
+     * @memberof UserController
+     */
+    @POST
+    @Path('contractors')
+    @Preprocessor(BaseController.requireAdmin)
+    async addContractorUser(data: dto.AddContractorUserRequest): Promise<dto.AddContractorUserResponse> {
+        const parsedData: dto.AddContractorUserRequest = await this.validate(data, dto.addContractorUserRequestSchema);
+        const logic = new usersLogic.AddContractorUserLogic(this.getRequestContext());
+        const user = await logic.execute(parsedData.profile);
 
-        const filter = builder => {
-            transactions.Transaction.filter(builder, startDate, endDate, status, userId);
-        };
+        const invitationLogic = new invitationsLogic.CreateContractorInvitationLogic(this.getRequestContext());
+        await invitationLogic.execute(user.tenantProfile);
 
-        const transactionsList = await this.transactionService.listPaginated(page, limit, filter);
-
-        return this.paginate(
-            transactionsList.pagination,
-            transactionsList.rows.map(transaction => {
-                return this.map(transactions.TransactionResponse, transaction);
-            }),
-        );
+        return this.map(dto.AddContractorUserResponse, user);
     }
 
+    /**
+     * Create an admin user
+     *
+     * @param {dto.AdminUserRequest} data
+     * @returns {Promise<dto.UserResponse>}
+     * @memberof UserController
+     */
+    @POST
+    @Path('admins')
+    @Preprocessor(BaseController.requireAdmin)
+    async createAdminUser(data: dto.AdminUserRequest): Promise<dto.UserResponse> {
+        const parsedData: dto.AdminUserRequest = await this.validate(data, dto.adminUserRequestSchema);
+        const logic = new usersLogic.AddAdminUserLogic(this.getRequestContext());
+        const user = await logic.execute(parsedData.profile, parsedData.profile.role);
+
+        const invitationLogic = new invitationsLogic.CreateAdminInvitationLogic(this.getRequestContext());
+        await invitationLogic.execute(user.tenantProfile);
+
+        return this.map(dto.UserResponse, user);
+    }
+
+    /**
+     * Initiate a password reset for a user
+     *
+     * @param {string} userId
+     * @returns {Promise<any>}
+     * @memberof UserController
+     */
+    @POST
+    @Path(':userId/passwordReset')
+    @Preprocessor(BaseController.requireAdmin)
+    async createUserPasswordReset(@PathParam('userId') userId: string): Promise<any> {
+        const logic = new usersLogic.CreatePasswordResetLogic(this.getRequestContext());
+        await logic.execute(userId);
+    }
+}
+
+@Security('api_key')
+@Path('/users/:userId/contractors')
+@Tags('users', 'contractors')
+export class ContractorUserController extends BaseController {
+    /**
+     * Query for a list of contractor's user data
+     *
+     * @param {string} userId
+     * @param {string} currentStartDate
+     * @param {string} currentEndDate
+     * @param {string} previousStartDate
+     * @param {string} previousEndDate
+     * @returns {Promise<dto.UserStatisticsResponse>}
+     * @memberof ContractorUserController
+     */
     @GET
-    @Path(':userId/statistics')
+    @Path('statistics')
     @Preprocessor(BaseController.requireAdminReader)
-    @Tags('statistics')
     async getJobs(
         @PathParam('userId') userId: string,
         @QueryParam('currentStartDate') currentStartDate: string,
@@ -255,55 +241,20 @@ export class UserController extends BaseController {
     }
 
     /**
-     * Endpoint to create a new admin user account
+     * Update a contractor's user data to resubmit their payments account
      *
-     * @param {dto.AdminUserRequest} data
-     * @returns {Promise<dto.UserResponse>}
-     * @memberof UserController
+     * @param {string} userId
+     * @param {dto.ContractorOnRetryRequest} data
+     * @returns {Promise<dto.ContractorOnRetryResponse>}
+     * @memberof ContractorUserController
      */
-    @POST
-    @Path('admins')
-    @Preprocessor(BaseController.requireAdmin)
-    async createAdminUser(data: dto.AdminUserRequest): Promise<dto.UserResponse> {
-        const parsedData: dto.AdminUserRequest = await this.validate(data, dto.adminUserRequestSchema);
-        const logic = new usersLogic.AddAdminUserLogic(this.getRequestContext());
-        const user = await logic.execute(parsedData.profile, parsedData.profile.role);
-
-        const invitationLogic = new invitationsLogic.CreateAdminInvitationLogic(this.getRequestContext());
-        await invitationLogic.execute(user.tenantProfile);
-
-        return this.map(dto.UserResponse, user);
-    }
-
-    /**
-     * Endpoint to create a new contractor user
-     *
-     * @param {dto.AddContractorUserRequest} data
-     * @returns {Promise<dto.AddContractorUserResponse>}
-     * @memberof UserController
-     */
-    @POST
-    @Path('contractors')
-    @Preprocessor(BaseController.requireAdmin)
-    async addContractorUser(data: dto.AddContractorUserRequest): Promise<dto.AddContractorUserResponse> {
-        const parsedData: dto.AddContractorUserRequest = await this.validate(data, dto.addContractorUserRequestSchema);
-        const logic = new usersLogic.AddContractorUserLogic(this.getRequestContext());
-        const user = await logic.execute(parsedData.profile);
-
-        const invitationLogic = new invitationsLogic.CreateContractorInvitationLogic(this.getRequestContext());
-        await invitationLogic.execute(user.tenantProfile);
-
-        return this.map(dto.AddContractorUserResponse, user);
-    }
-
     @PUT
-    @Path(':userId')
+    @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async addContractorOnRetry(
         @PathParam('userId') userId: string,
         data: dto.ContractorOnRetryRequest,
     ): Promise<dto.ContractorOnRetryResponse> {
-        this.userService.setRequestContext(this.getRequestContext());
         const parsedData = await this.validate(data, dto.contractorOnRetryRequestSchema);
         const profile = parsedData['profile'];
 
@@ -319,158 +270,5 @@ export class UserController extends BaseController {
             }
             throw err;
         }
-    }
-
-    /**
-     * Endpoint to resend a user's invitation
-     *
-     * @requires {role} admin
-     * @param {string} userId
-     * @memberof InvitationController
-     */
-    @PUT
-    @Path(':userId/invitations/resend')
-    @Preprocessor(BaseController.requireAdmin)
-    async resendInvitation(@PathParam('userId') userId: string) {
-        const logic = new invitationsLogic.ResendInvitationLogic(this.getRequestContext());
-        await logic.execute(userId);
-    }
-
-    /**
-     * Endpoint to delete a user's invitation
-     *
-     * @requires {role} admin
-     * @param {string} userId
-     * @memberof InvitationController
-     */
-    @DELETE
-    @Path(':userId/invitations')
-    @Preprocessor(BaseController.requireAdmin)
-    async deleteInvitation(@PathParam('userId') userId: string) {
-        const logic = new invitationsLogic.DeleteInvitationLogic(this.getRequestContext());
-        await logic.execute(userId);
-    }
-
-    /**
-     * Endpoint to initiate a password reset for a user
-     *
-     * creates a temporary password reset token and
-     * sends and email to the user the reset link
-     *
-     * @param {string} userId
-     * @returns {Promise<any>}
-     * @memberof UserController
-     */
-    @POST
-    @Path(':userId/passwordReset')
-    @Preprocessor(BaseController.requireAdmin)
-    async createUserPasswordReset(@PathParam('userId') userId: string): Promise<any> {
-        const logic = new usersLogic.CreatePasswordResetLogic(this.getRequestContext());
-        await logic.execute(userId);
-    }
-
-    /**
-     * Upload a user's document to dwolla for validation
-     *
-     * @param {string} userId
-     * @param {string} type
-     * @param {*} file
-     * @returns {Promise<dto.UserDocument>}
-     * @memberof UserController
-     */
-    @POST
-    @Path(':userId/documents/dwolla')
-    @Preprocessor(BaseController.requireAdmin)
-    async addUserDwollaDocument(
-        @PathParam('userId') userId: string,
-        @QueryParam('type') type: string,
-        @FileParam('filepond') file,
-    ): Promise<documents.DocumentResponse> {
-        const logic = new documentsLogic.AddDwollaDocumentLogic(this.getRequestContext());
-        const document = await logic.execute(userId, type, file);
-
-        return this.map(documents.DocumentResponse, document);
-    }
-
-    /**
-     * Upload a user's document
-     *
-     * @param {string} userId
-     * @param {string} type
-     * @param {*} file
-     * @returns {Promise<dto.UserDocument>}
-     * @memberof UserController
-     */
-    @POST
-    @Path(':userId/documents')
-    @Preprocessor(BaseController.requireAdminReader)
-    async addUserDocument(
-        @PathParam('userId') userId: string,
-        @QueryParam('type') type: string,
-        @FileParam('filepond') file,
-    ): Promise<documents.DocumentResponse> {
-        const logic = new documentsLogic.AddDocumentLogic(this.getRequestContext());
-        const document = await logic.execute(userId, type, file);
-
-        return this.map(documents.DocumentResponse, document);
-    }
-
-    /**
-     * Get a list of a user's documents
-     *
-     * @param {string} userId
-     * @param {string} [type]
-     * @param {number} [page]
-     * @param {number} [limit]
-     * @returns {Promise<documents.PaginatedUserDocumentResponse>}
-     * @memberof UserController
-     */
-    @GET
-    @Path(':userId/documents')
-    @Preprocessor(BaseController.requireAdminReader)
-    async getUserDocuments(
-        @PathParam('userId') userId: string,
-        @QueryParam('type') type?: string,
-        @QueryParam('page') page?: number,
-        @QueryParam('limit') limit?: number,
-    ): Promise<documents.PaginatedDocumentResponse> {
-        const logic = new documentsLogic.GetDocumentsLogic(this.getRequestContext());
-        const documentsList = await logic.execute(userId, type, page, limit);
-
-        return this.paginate(
-            documentsList.pagination,
-            documentsList.rows.map(document => {
-                return this.map(documents.DocumentResponse, document);
-            }),
-        );
-    }
-
-    /**
-     * Delete a user's document
-     *
-     * @param {string} id
-     * @memberof UserController
-     */
-    @DELETE
-    @Path('documents/:id')
-    @Preprocessor(BaseController.requireAdmin)
-    async deleteUserDocument(@PathParam('id') id: string) {
-        const logic = new documentsLogic.DeleteDocumentLogic(this.getRequestContext());
-        await logic.execute(id);
-    }
-
-    /**
-     * Get a download link for a user's document
-     *
-     * @param {string} id
-     * @returns {Promise<string>}
-     * @memberof UserController
-     */
-    @GET
-    @Path('documents/:id')
-    @Preprocessor(BaseController.requireAdmin)
-    async getDocumentDownloadLink(@PathParam('id') id: string): Promise<string> {
-        const logic = new documentsLogic.GetDocumentDownloadLinkLogic(this.getRequestContext());
-        return await logic.execute(id);
     }
 }

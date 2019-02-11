@@ -10,8 +10,8 @@ import {ProfileService} from '../profile/service';
 export class GetProfileLogic extends Logic {
     @Inject private userService: UserService;
 
-    async execute() {
-        const user = await this.userService.get(this.context.getUserId());
+    async execute(userId: string) {
+        const user = await this.userService.get(userId);
         if (!user) {
             throw new Errors.NotFoundError('User not found');
         }
@@ -28,8 +28,8 @@ export class UpdateProfileLogic extends Logic {
     @Inject private userService: UserService;
     @Inject private profileService: ProfileService;
 
-    async execute(profileData: any) {
-        const user = await this.userService.get(this.context.getUserId());
+    async execute(userId: string, profileData: any) {
+        const user = await this.userService.get(userId);
         if (!user) {
             throw new Errors.NotFoundError('User not found');
         }

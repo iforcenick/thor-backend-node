@@ -456,4 +456,30 @@ export class DeleteTransactionLogic extends Logic {
     }
 }
 
+@AutoWired
+export class GetTransactionLogic extends Logic {
+    @Inject private transactionService: TransactionService;
+
+    async execute(id): Promise<any> {
+        const transaction = await this.transactionService.get(id);
+        if (!transaction) {
+            throw new Errors.NotFoundError();
+        }
+        return transaction;
+    }
+}
+
+@AutoWired
+export class GetUserTransactionsLogic extends Logic {
+    @Inject private transactionService: TransactionService;
+
+    async execute(userId, page, limit, startDate, endDate, status): Promise<any> {
+        const filter = builder => {
+            Transaction.filter(builder, startDate, endDate, status, userId);
+        };
+
+        return await this.transactionService.listPaginated(page, limit, filter);
+    }
+}
+
 export class ChargeTenantError extends BaseError {}

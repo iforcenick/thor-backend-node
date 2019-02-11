@@ -80,10 +80,6 @@ export class InvitationRequest extends InvitationBase {
     role: string = mapper.FIELD_STR;
 }
 
-export class UserInvitationRequest extends Mapper {
-    userId: string = mapper.FIELD_STR;
-}
-
 export class InvitationResponse extends InvitationBase {
     id: string = mapper.FIELD_STR;
     status: string = mapper.FIELD_STR;

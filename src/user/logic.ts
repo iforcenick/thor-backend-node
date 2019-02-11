@@ -21,8 +21,8 @@ import * as models from './models';
 import * as profiles from '../profile/models';
 import * as roles from './role/models';
 
-const filterByContractor = (query, contractor) => {
-    const likeContractor = `%${contractor}%`;
+const filterByContractor = (query, name) => {
+    const likeContractor = `%${name}%`;
     query.where(builder => {
         builder.where(`${models.Relations.tenantProfile}.firstName`, 'ilike', likeContractor);
         builder.orWhere(`${models.Relations.tenantProfile}.lastName`, 'ilike', likeContractor);
@@ -57,25 +57,12 @@ export class RatingJobsListLogic extends Logic {
     @Inject private userService: UserService;
     static sortableFields = ['rank', 'firstName', 'lastName', 'total', 'jobsCount'];
 
-    async execute(
-        start,
-        end: Date,
-        page,
-        limit,
-        status?,
-        orderBy?,
-        order?,
-        contractor?: string,
-    ): Promise<db.Paginated<any>> {
-        if (!orderBy) {
-            orderBy = 'total';
-        }
-
-        if (!order) {
-            order = db.Ordering.desc;
-        }
-
+    async execute(start, end, page, limit, status?, orderBy?, order?, name?: string): Promise<db.Paginated<any>> {
+        // set default query options
+        orderBy = orderBy || 'total';
+        order = order || db.Ordering.desc;
         order = db.parseOrdering(order);
+        // status - get all if none specified
 
         // rank is an alias for reverted total set programatically
         if (orderBy == 'rank') {
@@ -99,7 +86,7 @@ export class RatingJobsListLogic extends Logic {
             throw new Errors.ConflictError(e.message);
         }
 
-        const query = this.rankingQuery(start, end, status, orderBy, order, contractor);
+        const query = this.rankingQuery(start, end, status, orderBy, order, name);
         const pag = this.userService.addPagination(query, page, limit);
         const results = await query;
 
@@ -108,15 +95,15 @@ export class RatingJobsListLogic extends Logic {
             results.results.map((row, index) => {
                 row.ids ? (row.transactionsIds = row.ids.split(',')) : null;
                 row.jobsCount = row.transactions ? row.transactions.length : 0;
-                row.rank = this.calcRating(index, pag.page, pag.limit, results.total, orderBy, order, contractor);
+                row.rank = this.calcRating(index, pag.page, pag.limit, results.total, orderBy, order, name);
                 row.total = row.total ? row.total : 0;
                 return row;
             }),
         );
     }
 
-    protected calcRating(index, page, limit, total, orderBy, order, contractor) {
-        if (!['rank', 'total'].includes(orderBy) || contractor) {
+    protected calcRating(index, page, limit, total, orderBy, order, name) {
+        if (!['rank', 'total'].includes(orderBy) || name) {
             return '-';
         }
 
@@ -127,15 +114,15 @@ export class RatingJobsListLogic extends Logic {
         }
     }
 
-    protected rankingQuery(start, end: Date, status?, orderBy?, order?, contractor?: string) {
+    protected rankingQuery(start, end: Date, status?, orderBy?, order?, name?: string) {
         const query = this.allContractorsAndTheirTransactions(start, end, status);
         this.selectJobs(query, start, end, status);
         this.selectTransactionsIds(query, start, end, status);
         this.selectTransactionsValue(query, start, end, status);
         this.setOrdering(query, orderBy, order);
 
-        if (contractor) {
-            filterByContractor(query, contractor);
+        if (name) {
+            filterByContractor(query, name);
         }
 
         return query;
@@ -256,8 +243,8 @@ export class UsersListLogic extends Logic {
         };
 
         const query = this.userService.listQuery(null, options);
-        if (searchCriteria.contractor) {
-            filterByContractor(query, searchCriteria.contractor);
+        if (searchCriteria.name) {
+            filterByContractor(query, searchCriteria.name);
         }
         if (searchCriteria.state) {
             query.where(`${models.Relations.tenantProfile}.state`, 'ilike', `%${searchCriteria.state}%`);
@@ -441,8 +428,7 @@ export class AddAdminUserLogic extends Logic {
             existingTenantProfileQuery,
             existingProfileQuery,
         ]);
-        if (existingTenantProfileResult)
-            throw new Errors.ConflictError('An admin with that email already exists');
+        if (existingTenantProfileResult) throw new Errors.ConflictError('An admin with that email already exists');
 
         let user: models.User;
         let tenantProfile: profiles.Profile;
@@ -563,6 +549,19 @@ export class DeleteUserLogic extends Logic {
 
         try {
             await this.userService.delete(user);
+        } catch (e) {
+            throw new Errors.InternalServerError(e);
+        }
+    }
+}
+
+@AutoWired
+export class DeleteSelfLogic extends Logic {
+    @Inject userService: UserService;
+
+    async execute(id: string): Promise<any> {
+        try {
+            await this.userService.deleteFull(id);
         } catch (e) {
             throw new Errors.InternalServerError(e);
         }

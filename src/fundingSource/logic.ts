@@ -58,7 +58,7 @@ export class GetFundingSourcesLogic extends Logic {
             .orWhere(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id);
         const pag = this.userService.addPagination(query, page, limit);
         const fundingSources = await query;
-        return new db.Paginated(new db.Pagination(pag.page, pag.limit, fundingSources.total), fundingSources);
+        return new db.Paginated(new db.Pagination(pag.page, pag.limit, fundingSources.total), fundingSources.results);
     }
 }
 

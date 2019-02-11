@@ -1,19 +1,11 @@
 import * as _ from 'lodash';
-import {GET, Path, PathParam, POST, DELETE, Preprocessor, QueryParam, PUT, PATCH} from 'typescript-rest';
+import {GET, Path, PathParam, POST, DELETE, Preprocessor, QueryParam, PUT} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {BaseController} from '../api';
 import * as logicLayer from './logic';
 import {AddContractorUserLogic, AddAdminUserLogic} from '../user/logic';
 import * as models from './models';
 
-/**
- * Manage contractor and administator invitations
- *
- * @requires api_key
- * @export
- * @class InvitationController
- * @extends {BaseController}
- */
 @Security('api_key')
 @Path('invitations')
 @Tags('invitations')
@@ -40,7 +32,6 @@ export class InvitationController extends BaseController {
     ): Promise<models.InvitationPaginatedResponse> {
         const logic = new logicLayer.GetInvitationsLogic(this.getRequestContext());
         const invitations = await logic.execute(page, limit, status, type);
-
         return this.paginate(
             invitations.pagination,
             invitations.rows.map(invitation => {
@@ -80,50 +71,18 @@ export class InvitationController extends BaseController {
     }
 
     /**
-     * Resend a user's invitation
-     *
-     * @requires {role} admin
-     * @param {models.UserInvitationRequest} data
-     * @memberof InvitationController
-     */
-    @PATCH
-    @Path('resend')
-    @Preprocessor(BaseController.requireAdmin)
-    async resendUserInvitation(data: models.UserInvitationRequest) {
-        const parsedData = await this.validate(data, models.userInvitationRequestSchema);
-        const logic = new logicLayer.ResendInvitationLogic(this.getRequestContext());
-        await logic.execute(parsedData.userId);
-    }
-
-    /**
      * Resend an invitation
      *
      * @requires {role} admin
      * @param {string} id
      * @memberof InvitationController
      */
-    @PATCH
+    @POST
     @Path(':id/resend')
     @Preprocessor(BaseController.requireAdmin)
     async resendInvitation(@PathParam('id') id: string) {
         const logic = new logicLayer.ResendInvitationLogic(this.getRequestContext());
         await logic.execute(id);
-    }
-
-    /**
-     * Delete a user's invitation
-     *
-     * @requires {role} admin
-     * @param {models.UserInvitationRequest} data
-     * @memberof InvitationController
-     */
-    @DELETE
-    @Path('')
-    @Preprocessor(BaseController.requireAdmin)
-    async deleteUserInvitation(data: models.UserInvitationRequest) {
-        const parsedData = await this.validate(data, models.userInvitationRequestSchema);
-        const logic = new logicLayer.DeleteUserInvitationLogic(this.getRequestContext());
-        await logic.execute(parsedData.userId);
     }
 
     /**
@@ -142,22 +101,49 @@ export class InvitationController extends BaseController {
     }
 }
 
-/**
- * Public endpoints for retrieving and using invitation tokens
- *
- * @export
- * @class InvitationCheckController
- * @extends {BaseController}
- */
+@Security('api_key')
+@Path('/users/:userId/invitations')
+@Tags('users, invitations')
+export class UserInvitationController extends BaseController {
+    /**
+     * Resend a user's invitation
+     *
+     * @requires {role} admin
+     * @param {string} userId
+     * @memberof InvitationController
+     */
+    @POST
+    @Path('resend')
+    @Preprocessor(BaseController.requireAdmin)
+    async resendInvitation(@PathParam('userId') userId: string) {
+        const logic = new logicLayer.ResendInvitationLogic(this.getRequestContext());
+        await logic.execute(userId);
+    }
+
+    /**
+     * Delete a user's invitation
+     *
+     * @requires {role} admin
+     * @param {string} userId
+     * @memberof InvitationController
+     */
+    @DELETE
+    @Path('')
+    @Preprocessor(BaseController.requireAdmin)
+    async deleteInvitation(@PathParam('userId') userId: string) {
+        const logic = new logicLayer.DeleteInvitationLogic(this.getRequestContext());
+        await logic.execute(userId);
+    }
+}
+
 @Path('public/invitations')
-@Tags('invitations')
+@Tags('public, invitations')
 export class InvitationCheckController extends BaseController {
     @GET
     @Path(':id')
     async getInvitation(@PathParam('id') id: string): Promise<models.InvitationResponse> {
         const logic = new logicLayer.GetInvitationLogic(this.getRequestContext());
         const invitation = await logic.execute(id);
-
         return this.map(models.InvitationResponse, invitation);
     }
 
@@ -166,7 +152,6 @@ export class InvitationCheckController extends BaseController {
     async useInvitationToken(@PathParam('id') id: string) {
         const logic = new logicLayer.UseInvitationLogic(this.getRequestContext());
         const invitation = await logic.execute(id);
-
         return this.map(models.InvitationResponse, invitation);
     }
 }

@@ -39,12 +39,6 @@ export class UserResponse extends UserBaseInfo {
     tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
 }
 
-export class UserRequest extends UserBaseInfo {
-    password: string = mapper.FIELD_STR;
-    @mapper.object(profile.ProfileRequest)
-    profile: profile.ProfileRequest = new profile.ProfileRequest();
-}
-
 export class UserPatchRequest extends UserBaseInfo {
     @mapper.object(profile.ProfilePatchRequest)
     profile: profile.ProfilePatchRequest = new profile.ProfilePatchRequest();

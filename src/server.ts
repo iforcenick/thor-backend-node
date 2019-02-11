@@ -3,24 +3,24 @@ import {Config} from './config';
 import {Logger, ExpressLogger} from './logger';
 import {Inject} from 'typescript-ioc';
 import {AuthController} from './auth/controller';
-import {UserController} from './user/controller';
+import {UserController, ContractorUserController} from './user/controller';
 import {MonitoringController} from './monitoring/controller';
 import {Model} from 'objection';
 import {TenantController} from './tenant/controller';
-import {ProfileController} from './profile/controller';
+import {ProfileController, UserProfileController} from './profile/controller';
 import express = require('express');
-import {TransactionController} from './transaction/controller';
+import {TransactionController, UserTransactionController} from './transaction/controller';
 import {JobController} from './job/controller';
 import * as dwolla from './dwolla';
 import * as middleware from './middleware';
 import {DwollaController} from './dwolla/controller';
-import {InvitationController, InvitationCheckController} from './invitation/controller';
+import {InvitationController, UserInvitationController, InvitationCheckController} from './invitation/controller';
 import {ContractorController} from './contractor/controller';
-import {DocumentsController} from './document/controller';
+import {DocumentController, UserDocumentController, ContractorDocumentController} from './document/controller';
 import {
-    ContractorFundingSourceController,
     FundingSourceController,
     UserFundingSourceController,
+    ContractorFundingSourceController,
 } from './fundingSource/controller';
 import {BeneficialOwnerController} from './tenant/beneficialOwner/controller';
 import {TenantFundingSourcesController} from './tenant/fundingSource/controller';
@@ -147,30 +147,58 @@ export class ApiServer {
         this.app.use('/contractors', passport.authenticate('jwt', {session: false}));
         this.app.use('/fundingSources', passport.authenticate('jwt', {session: false}));
         this.app.use('/profiles', passport.authenticate('jwt', {session: false}));
-        this.app.use('/documents', passport.authenticate('jwt', {session: false}));
         this.app.use('/invitations', passport.authenticate('jwt', {session: false}));
     }
 
     private addControllers() {
         Server.buildServices(
             this.app,
+            // /auth
             AuthController,
+            // /users
             UserController,
+            // /users/:userId/contractors
+            ContractorUserController,
+            // /tenants
             TenantController,
+            // /profiles
             ProfileController,
+            // /users/:userId/profiles
+            UserProfileController,
+            // /jobs
             JobController,
-            TransactionController,
+            // /dwolla
             DwollaController,
+            // /
             MonitoringController,
-            InvitationController,
-            InvitationCheckController,
+            // /contractors
             ContractorController,
-            ContractorFundingSourceController,
-            UserFundingSourceController,
+            // /tenants/company/beneficialOwners
             BeneficialOwnerController,
-            TenantFundingSourcesController,
+            // /transactions
+            TransactionController,
+            // /users/:userId/transactions
+            UserTransactionController,
+            // /invitations
+            InvitationController,
+            // /users/:userId/invitations
+            UserInvitationController,
+            // //public/invitations
+            InvitationCheckController,
+            // /fundingSources
             FundingSourceController,
-            DocumentsController,
+            // /contractors/fundingSources
+            ContractorFundingSourceController,
+            // /users/:userId/fundingSources
+            UserFundingSourceController,
+            // /tenant/fundingSources
+            TenantFundingSourcesController,
+            // /documents
+            DocumentController,
+            // /contractors/documents
+            ContractorDocumentController,
+            // /users/:userId/fundingSources
+            UserDocumentController,
         );
     }
 

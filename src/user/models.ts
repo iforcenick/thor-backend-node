@@ -111,7 +111,7 @@ export class SearchCriteria {
     public limit: number;
     public orderBy?: string;
     public order?: string;
-    public contractor?: string;
+    public name?: string;
     public city?: string;
     public state?: string;
 }
