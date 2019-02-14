@@ -1,6 +1,7 @@
 import Joi = require('joi');
 import * as db from '../db';
 import * as mapper from '../mapper';
+import {Mapper} from '../mapper';
 import {Profile} from '../profile/models';
 
 export const enum Statuses {
@@ -35,7 +36,7 @@ export class FundingSource extends db.Model {
     }
 }
 
-export class FundingSourceBaseInfo extends mapper.Mapper {
+export class FundingSourceBaseInfo extends Mapper {
     name: string = mapper.FIELD_STR;
 }
 
@@ -51,16 +52,16 @@ export class FundingSourceResponse extends FundingSourceBaseInfo {
     status: string = mapper.FIELD_STR;
 }
 
-export class FundingSourceVerificationRequest extends mapper.Mapper {
+export class FundingSourceVerificationRequest extends Mapper {
     amount1: number = mapper.FIELD_NUM;
     amount2: number = mapper.FIELD_NUM;
 }
 
-export class FundingSourceIavToken extends mapper.Mapper {
+export class FundingSourceIavToken extends Mapper {
     token: string = mapper.FIELD_STR;
 }
 
-export class FundingSourceIavRequest extends mapper.Mapper {
+export class FundingSourceIavRequest extends Mapper {
     uri: string = mapper.FIELD_STR;
 }
 
