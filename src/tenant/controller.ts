@@ -1,29 +1,18 @@
 import {Inject} from 'typescript-ioc';
 import {Errors, FileParam, GET, PATCH, Path, POST, Preprocessor, PUT, QueryParam} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
-
 import {BaseController} from '../api';
 import * as dwolla from '../dwolla';
 import * as _ from 'lodash';
-import {
-    AddTenantCompanyDocumentsLogic,
-    AddTenantCompanyLogic,
-    GetTenantCompanyLogic,
-    GetTenantCompanyOwnerLogic,
-    GetTenantLogic,
-    ListTenantCompanyDocumentsLogic,
-    RetryTenantCompanyLogic,
-    UpdateTenantCompanyLogic,
-} from './logic';
+import * as logicLayer from './logic';
 import * as models from './models';
 import {BusinessClassificationsResponse} from './models';
 import {TenantCompanyDocument} from './models';
 
 @Security('api_key')
 @Path('/tenants')
+@Tags('tenants')
 export class TenantController extends BaseController {
-    @Inject private dwollaClient: dwolla.Client;
-
     /**
      * Create a new tenant
      * TODO: require thor
@@ -34,7 +23,6 @@ export class TenantController extends BaseController {
      */
     @POST
     @Path('')
-    @Tags('tenants')
     @Preprocessor(BaseController.requireAdmin)
     async createTenant(data: models.TenantRequest): Promise<models.TenantResponse> {
         throw new Errors.NotImplementedError();
@@ -61,12 +49,10 @@ export class TenantController extends BaseController {
      */
     @GET
     @Path('')
-    @Tags('tenants')
     @Preprocessor(BaseController.requireAdminReader)
     async getTenant(): Promise<models.TenantResponse> {
-        const logic = new GetTenantLogic(this.getRequestContext());
+        const logic = new logicLayer.GetTenantLogic(this.getRequestContext());
         const tenant = await logic.execute(this.getRequestContext().getTenantId());
-
         return this.map(models.TenantResponse, tenant);
     }
 
@@ -80,11 +66,17 @@ export class TenantController extends BaseController {
     @Path('/settings')
     @Preprocessor(BaseController.requireAdminReader)
     async getTenantSettings(): Promise<any> {
-        const logic = new GetTenantLogic(this.getRequestContext());
+        const logic = new logicLayer.GetTenantLogic(this.getRequestContext());
         const tenant = await logic.execute(this.getRequestContext().getTenantId());
-
         return tenant.settings;
     }
+}
+
+@Security('api_key')
+@Path('/tenants/company')
+@Tags('tenants', 'company')
+export class TenantCompanyController extends BaseController {
+    @Inject private dwollaClient: dwolla.Client;
 
     /**
      * Create the current tenant company profile
@@ -94,15 +86,11 @@ export class TenantController extends BaseController {
      * @memberof TenantController
      */
     @POST
-    @Path('/company')
-    @Tags('tenantCompany')
+    @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async createTenantCompany(data: models.TenantCompanyRequest): Promise<models.TenantCompanyResponse> {
-        const parsedData: models.TenantCompanyRequest = await this.validate(
-            data,
-            models.tenantCompanyRequestSchema,
-        );
-        const logic = new AddTenantCompanyLogic(this.getRequestContext());
+        const parsedData: models.TenantCompanyRequest = await this.validate(data, models.tenantCompanyRequestSchema);
+        const logic = new logicLayer.AddTenantCompanyLogic(this.getRequestContext());
         const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());
 
         return this.map(models.TenantCompanyResponse, company);
@@ -115,11 +103,10 @@ export class TenantController extends BaseController {
      * @memberof TenantController
      */
     @GET
-    @Path('/company')
-    @Tags('tenantCompany')
+    @Path('')
     @Preprocessor(BaseController.requireAdminReader)
     async getTenantCompany(): Promise<models.TenantCompanyResponse> {
-        const logic = new GetTenantCompanyLogic(this.getRequestContext());
+        const logic = new logicLayer.GetTenantCompanyLogic(this.getRequestContext());
         const company = await logic.execute(this.getRequestContext().getTenantId());
 
         return this.map(models.TenantCompanyResponse, company);
@@ -133,15 +120,14 @@ export class TenantController extends BaseController {
      * @memberof TenantController
      */
     @PATCH
-    @Path('/company')
-    @Tags('tenantCompany')
+    @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async updateTenantCompany(data: models.TenantCompanyPatchRequest): Promise<models.TenantCompanyResponse> {
         const parsedData: models.TenantCompanyPatchRequest = await this.validate(
             data,
             models.tenantCompanyPatchRequestSchema,
         );
-        const logic = new UpdateTenantCompanyLogic(this.getRequestContext());
+        const logic = new logicLayer.UpdateTenantCompanyLogic(this.getRequestContext());
         const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());
 
         return this.map(models.TenantCompanyResponse, company);
@@ -155,15 +141,14 @@ export class TenantController extends BaseController {
      * @memberof TenantController
      */
     @PUT
-    @Path('/company')
-    @Tags('tenantCompany')
+    @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async retryTenantCompany(data: models.TenantCompanyRetryRequest): Promise<models.TenantCompanyResponse> {
         const parsedData: models.TenantCompanyRetryRequest = await this.validate(
             data,
             models.tenantCompanyRetryRequestSchema,
         );
-        const logic = new RetryTenantCompanyLogic(this.getRequestContext());
+        const logic = new logicLayer.RetryTenantCompanyLogic(this.getRequestContext());
         const company = await logic.execute(parsedData, this.getRequestContext().getTenantId());
 
         return this.map(models.TenantCompanyResponse, company);
@@ -176,11 +161,10 @@ export class TenantController extends BaseController {
      * @memberof TenantController
      */
     @GET
-    @Path('/company/owner')
-    @Tags('tenantCompany')
+    @Path('/owner')
     @Preprocessor(BaseController.requireAdminReader)
     async getTenantCompanyOwner(): Promise<models.TenantOwnerResponse> {
-        const logic = new GetTenantCompanyOwnerLogic(this.getRequestContext());
+        const logic = new logicLayer.GetTenantCompanyOwnerLogic(this.getRequestContext());
         const owner = await logic.execute(this.getRequestContext().getTenantId());
 
         return this.map(models.TenantOwnerResponse, owner);
@@ -193,8 +177,7 @@ export class TenantController extends BaseController {
      * @memberof TenantController
      */
     @GET
-    @Path('/company/businessCategories')
-    @Tags('tenantCompany')
+    @Path('/businessCategories')
     @Preprocessor(BaseController.requireAdminReader)
     async getBusinessCategories() {
         let businessCategories;
@@ -210,10 +193,10 @@ export class TenantController extends BaseController {
      * @memberof TenantController
      */
     @GET
-    @Path('/company/documents')
+    @Path('/documents')
     @Preprocessor(BaseController.requireAdminReader)
     async getTenantCompanyDocuments(): Promise<Array<TenantCompanyDocument>> {
-        const logic = new ListTenantCompanyDocumentsLogic(this.getRequestContext());
+        const logic = new logicLayer.ListTenantCompanyDocumentsLogic(this.getRequestContext());
         const docs = await logic.execute(this.getRequestContext().getTenantId());
 
         return docs.map(doc => {
@@ -230,7 +213,7 @@ export class TenantController extends BaseController {
      * @memberof TenantController
      */
     @POST
-    @Path('/company/documents')
+    @Path('/documents')
     @Preprocessor(BaseController.requireAdmin)
     async createTenantCompanyDocuments(
         @QueryParam('type') type: string,
@@ -244,7 +227,7 @@ export class TenantController extends BaseController {
             throw new Errors.ConflictError('Invalid type');
         }
 
-        const logic = new AddTenantCompanyDocumentsLogic(this.getRequestContext());
+        const logic = new logicLayer.AddTenantCompanyDocumentsLogic(this.getRequestContext());
         const doc = await logic.execute(this.getRequestContext().getTenantId(), file, type);
 
         return this.map(TenantCompanyDocument, doc);

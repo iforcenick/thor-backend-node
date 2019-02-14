@@ -10,11 +10,11 @@ import * as models from './models';
 
 @AutoWired
 @Security('api_key')
-@Path('/tenants/company')
-@Tags('tenantCompany')
+@Path('/tenants/company/beneficialOwners')
+@Tags('tenant', 'company', 'beneficialOwners')
 export abstract class BeneficialOwnerController extends BaseController {
     @POST
-    @Path('beneficialOwners')
+    @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async addBeneficialOwner(request: models.AddBeneficialOwnerRequest): Promise<models.BeneficialOwnerResponse> {
         const validateResult: models.AddBeneficialOwnerRequest = await this.validate(
@@ -39,7 +39,7 @@ export abstract class BeneficialOwnerController extends BaseController {
     }
 
     @PUT
-    @Path('beneficialOwners')
+    @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async retryBeneficialOwner(request: models.RetryBeneficialOwnerRequest): Promise<any> {
         const validateResult: models.RetryBeneficialOwnerRequest = await this.validate(
@@ -63,7 +63,7 @@ export abstract class BeneficialOwnerController extends BaseController {
     }
 
     @PATCH
-    @Path('beneficialOwners')
+    @Path('')
     @Preprocessor(BaseController.requireAdmin)
     async editBeneficialOwner(request: models.EditBeneficialOwnerRequest): Promise<models.EditBeneficialOwnerResponse> {
         const validateResult: models.EditBeneficialOwnerRequest = await this.validate(
@@ -83,7 +83,7 @@ export abstract class BeneficialOwnerController extends BaseController {
     }
 
     @GET
-    @Path('beneficialOwners')
+    @Path('')
     @Preprocessor(BaseController.requireAdminReader)
     async getBeneficialOwners(
         @QueryParam('page') page?: number,
@@ -114,7 +114,7 @@ export abstract class BeneficialOwnerController extends BaseController {
     }
 
     @GET
-    @Path('beneficialOwners/:id')
+    @Path(':id')
     @Preprocessor(BaseController.requireAdminReader)
     async getBeneficialOwner(@PathParam('id') id: string): Promise<models.BeneficialOwnerResponse> {
         try {
@@ -127,7 +127,7 @@ export abstract class BeneficialOwnerController extends BaseController {
     }
 
     @DELETE
-    @Path('beneficialOwners/:id')
+    @Path(':id')
     @Preprocessor(BaseController.requireAdmin)
     async deleteBeneficialOwner(@PathParam('id') id: string) {
         try {

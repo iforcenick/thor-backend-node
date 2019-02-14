@@ -11,9 +11,9 @@ import {UserService} from '../../user/service';
 import {TenantService} from '../service';
 
 @AutoWired
-@Path('/tenants/company/fundingSources')
 @Security('api_key')
-@Tags('tenantCompany', 'fundingSources')
+@Path('/tenants/company/fundingSources')
+@Tags('tenant', 'company', 'fundingSources')
 export class TenantFundingSourcesController extends BaseController {
     @Inject protected userService: UserService;
     @Inject protected tenantService: TenantService;

@@ -6,7 +6,7 @@ import {AuthController} from './auth/controller';
 import {UserController, ContractorUserController} from './user/controller';
 import {MonitoringController} from './monitoring/controller';
 import {Model} from 'objection';
-import {TenantController} from './tenant/controller';
+import {TenantController, TenantCompanyController} from './tenant/controller';
 import {ProfileController, UserProfileController} from './profile/controller';
 import express = require('express');
 import {TransactionController, UserTransactionController} from './transaction/controller';
@@ -148,6 +148,7 @@ export class ApiServer {
         this.app.use('/fundingSources', passport.authenticate('jwt', {session: false}));
         this.app.use('/profiles', passport.authenticate('jwt', {session: false}));
         this.app.use('/invitations', passport.authenticate('jwt', {session: false}));
+        this.app.use('/documents', passport.authenticate('jwt', {session: false}));
     }
 
     private addControllers() {
@@ -161,6 +162,8 @@ export class ApiServer {
             ContractorUserController,
             // /tenants
             TenantController,
+            // /tenants/company
+            TenantCompanyController,
             // /profiles
             ProfileController,
             // /users/:userId/profiles

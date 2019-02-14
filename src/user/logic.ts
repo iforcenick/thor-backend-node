@@ -4,7 +4,6 @@ import * as _ from 'lodash';
 import * as objection from 'objection';
 import {Errors} from 'typescript-rest';
 import {raw} from 'objection';
-
 import {Logic} from '../logic';
 import * as db from '../db';
 import {ApiServer} from '../server';

@@ -1,13 +1,12 @@
-import {PaginatedResponse, mapper} from '../api';
-import {Mapper} from '../mapper';
-import * as db from '../db';
 import Joi = require('joi');
-import * as tenant from '../tenant/models';
-import * as user from '../user/models';
-import * as job from '../job/models';
-import * as transfer from './transfer/models';
+import {PaginatedResponse, mapper} from '../api';
 import {MAX_VALUE} from '../validation/constants';
-import {JobRequest, jobRequestSchema} from '../job/models';
+import * as db from '../db';
+import {Mapper} from '../mapper';
+import {Tenant} from '../tenant/models';
+import {User} from '../user/models';
+import {Transfer}from './transfer/models';
+import {Job, JobRequest, JobResponse, jobRequestSchema} from '../job/models';
 
 export const enum Relations {
     user = 'user',
@@ -35,16 +34,16 @@ export class Transaction extends db.Model {
     transferId?: string = null;
     jobId?: string = null;
     status?: string = null;
-    user?: user.User;
-    job?: job.Job;
-    transfer?: transfer.Transfer;
+    user?: User;
+    job?: Job;
+    transfer?: Transfer;
     value?: number = null;
 
     static get relationMappings() {
         return {
             [Relations.user]: {
                 relation: db.Model.BelongsToOneRelation,
-                modelClass: user.User,
+                modelClass: User,
                 join: {
                     from: `${db.Tables.transactions}.userId`,
                     to: `${db.Tables.users}.id`,
@@ -52,7 +51,7 @@ export class Transaction extends db.Model {
             },
             [Relations.tenant]: {
                 relation: db.Model.BelongsToOneRelation,
-                modelClass: tenant.Tenant,
+                modelClass: Tenant,
                 join: {
                     from: `${db.Tables.transactions}.tenantId`,
                     to: `${db.Tables.tenants}.id`,
@@ -60,7 +59,7 @@ export class Transaction extends db.Model {
             },
             [Relations.admin]: {
                 relation: db.Model.BelongsToOneRelation,
-                modelClass: user.User,
+                modelClass: User,
                 join: {
                     from: `${db.Tables.transactions}.adminId`,
                     to: `${db.Tables.users}.id`,
@@ -68,7 +67,7 @@ export class Transaction extends db.Model {
             },
             [Relations.job]: {
                 relation: db.Model.BelongsToOneRelation,
-                modelClass: job.Job,
+                modelClass: Job,
                 join: {
                     from: `${db.Tables.transactions}.jobId`,
                     to: `${db.Tables.jobs}.id`,
@@ -76,7 +75,7 @@ export class Transaction extends db.Model {
             },
             [Relations.transfer]: {
                 relation: db.Model.BelongsToOneRelation,
-                modelClass: transfer.Transfer,
+                modelClass: Transfer,
                 join: {
                     from: `${db.Tables.transactions}.transferId`,
                     to: `${db.Tables.transfers}.id`,
@@ -118,8 +117,8 @@ export class TransactionResponse extends TransactionBaseInfo {
     status: string = mapper.FIELD_STR;
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
-    @mapper.object(job.JobResponse)
-    job: job.JobResponse = new job.JobResponse();
+    @mapper.object(JobResponse)
+    job: JobResponse = new JobResponse();
     value: number = mapper.FIELD_NUM;
 }
 

@@ -1,14 +1,14 @@
-import {Model as OModel, transaction} from 'objection';
-import {Config} from './config';
-import {Logger} from './logger';
-import {Errors} from '../node_modules/typescript-rest';
 import * as _ from 'lodash';
-import {ContextAwareInterface, RequestContext, RequestContextMissingError} from './context';
-import {Inject} from 'typescript-ioc';
+import {Model as OModel, transaction} from 'objection';
 import * as objection from 'objection';
+import {Inject} from 'typescript-ioc';
+import {Errors} from 'typescript-rest';
+import uuidv4 from 'uuid/v4';
+import {Config} from './config';
+import {ContextAwareInterface, RequestContext} from './context';
+import {Logger} from './logger';
 
 const validate = require('uuid-validate');
-const uuid = require('uuid');
 
 export const SYSTEM_TENANT_SKIP = 'SYSTEM_TENANT_SKIP';
 
@@ -22,7 +22,7 @@ export class Model extends OModel {
     $beforeInsert() {
         this.createdAt = new Date();
         this.updatedAt = new Date();
-        this.id = uuid.v4();
+        this.id = uuidv4();
     }
 
     $beforeUpdate() {
@@ -70,7 +70,8 @@ export const enum Tables {
     fundingSources = 'fundingSources',
     profilesFundingSources = 'profilesFundingSources',
     passwordReset = 'passwordReset',
-    documents = 'documents'
+    documents = 'documents',
+    usersDocuments = 'usersDocuments',
 }
 
 export class Pagination {

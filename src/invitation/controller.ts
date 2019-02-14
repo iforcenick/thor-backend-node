@@ -103,7 +103,7 @@ export class InvitationController extends BaseController {
 
 @Security('api_key')
 @Path('/users/:userId/invitations')
-@Tags('users, invitations')
+@Tags('users', 'invitations')
 export class UserInvitationController extends BaseController {
     /**
      * Resend a user's invitation
@@ -137,7 +137,7 @@ export class UserInvitationController extends BaseController {
 }
 
 @Path('public/invitations')
-@Tags('public, invitations')
+@Tags('public', 'invitations')
 export class InvitationCheckController extends BaseController {
     @GET
     @Path(':id')

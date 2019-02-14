@@ -1,12 +1,11 @@
+import {transaction, Transaction} from 'objection';
+import {AutoWired} from 'typescript-ioc';
 import * as db from '../db';
 import {FundingSource} from './models';
-import * as objection from 'objection';
-import {transaction} from 'objection';
-import {AutoWired} from 'typescript-ioc';
 
 @AutoWired
 export class FundingSourceService extends db.ModelService<FundingSource> {
-    async insert(entity: FundingSource, trx?: objection.Transaction): Promise<FundingSource> {
+    async insert(entity: FundingSource, trx?: Transaction): Promise<FundingSource> {
         return super.insert(entity, trx);
     }
 

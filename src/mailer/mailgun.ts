@@ -1,5 +1,5 @@
-import * as client from './client';
 import {AutoWired, Provides} from 'typescript-ioc';
+import * as client from './client';
 
 const MailgunClient = require('mailgun-js');
 
@@ -14,10 +14,6 @@ export class Mailgun extends client.Client {
             apiKey: this.config.get('mailer.mailgun.key'),
             domain: this.config.get('mailer.mailgun.domain')
         });
-        // this.client = new MailgunClient({
-        //     apiKey: '7a6bfca3ea51a176c6915860175de72b-c1fe131e-16d8cc08',
-        //     domain: 'sandboxe0ca2f8eaed14f5a938c9738a3858206.mailgun.org'
-        // });
     }
 
     /* istanbul ignore next */

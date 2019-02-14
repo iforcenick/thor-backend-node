@@ -1,8 +1,7 @@
-import * as db from '../db';
-import {Profile} from '../profile/models';
-import * as mapper from '../mapper';
-import {Mapper} from '../mapper';
 import Joi = require('joi');
+import * as db from '../db';
+import * as mapper from '../mapper';
+import {Profile} from '../profile/models';
 
 export const enum Statuses {
     initiated = 'initiated',
@@ -36,7 +35,7 @@ export class FundingSource extends db.Model {
     }
 }
 
-export class FundingSourceBaseInfo extends Mapper {
+export class FundingSourceBaseInfo extends mapper.Mapper {
     name: string = mapper.FIELD_STR;
 }
 
@@ -52,16 +51,16 @@ export class FundingSourceResponse extends FundingSourceBaseInfo {
     status: string = mapper.FIELD_STR;
 }
 
-export class FundingSourceVerificationRequest extends Mapper {
+export class FundingSourceVerificationRequest extends mapper.Mapper {
     amount1: number = mapper.FIELD_NUM;
     amount2: number = mapper.FIELD_NUM;
 }
 
-export class FundingSourceIavToken extends Mapper {
+export class FundingSourceIavToken extends mapper.Mapper {
     token: string = mapper.FIELD_STR;
 }
 
-export class FundingSourceIavRequest extends Mapper {
+export class FundingSourceIavRequest extends mapper.Mapper {
     uri: string = mapper.FIELD_STR;
 }
 

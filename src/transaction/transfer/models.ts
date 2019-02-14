@@ -1,4 +1,4 @@
-import { uuidv1 } from 'uuid/v1';
+import uuidv4 from 'uuid/v4';
 import * as db from '../../db';
 import * as transaction from '../models';
 import {Statuses} from '../models';
@@ -31,21 +31,21 @@ export class Transfer extends db.Model {
                 modelClass: transaction.Transaction,
                 join: {
                     from: `${db.Tables.transfers}.id`,
-                    to: `${db.Tables.transactions}.transferId`
-                }
+                    to: `${db.Tables.transactions}.transferId`,
+                },
             },
             [Relations.admin]: {
                 relation: db.Model.BelongsToOneRelation,
                 modelClass: user.User,
                 join: {
                     from: `${db.Tables.transfers}.adminId`,
-                    to: `${db.Tables.users}.id`
-                }
+                    to: `${db.Tables.users}.id`,
+                },
             },
         };
     }
 
     createPaymentsId = () => {
-        this.paymentsId = uuidv1();
-    }
+        this.paymentsId = uuidv4();
+    };
 }

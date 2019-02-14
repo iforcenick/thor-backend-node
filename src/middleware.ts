@@ -1,6 +1,5 @@
 import {Auth, AuthType} from './auth/models';
-
-const uuidv4 = require('uuid/v4');
+import uuidv4 from 'uuid/v4';
 
 export const tokenExtractor = (req, res, next): void => {
     const header = req.header('Authorization');
