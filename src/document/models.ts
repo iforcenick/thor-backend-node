@@ -1,5 +1,6 @@
-import * as db from '../db';
+import Joi = require('joi');
 import {PaginatedResponse, mapper} from '../api';
+import * as db from '../db';
 import {Mapper} from '../mapper';
 import {Tenant} from '../tenant/models';
 import {UserDocument} from './userDocument/models';
@@ -40,16 +41,27 @@ export class Document extends db.Model {
     }
 }
 
-export class DocumentBaseModel extends Mapper {}
-
-export class DocumentResponse extends DocumentBaseModel {
-    id: string = mapper.FIELD_STR;
+export class DocumentBaseModel extends Mapper {
     name: string = mapper.FIELD_STR;
     description: string = mapper.FIELD_STR;
     isRequired: boolean = mapper.FIELD_BOOLEAN;
+}
+
+export class DocumentResponse extends DocumentBaseModel {
+    id: string = mapper.FIELD_STR;
     createdAt: Date = mapper.FIELD_DATE;
+    updatedAt: Date = mapper.FIELD_DATE;
+}
+
+export class DocumentPatchRequest extends DocumentBaseModel {
 }
 
 export interface PaginatedDocumentResponse extends PaginatedResponse {
     items: Array<DocumentResponse>;
 }
+
+export const documentPatchRequestSchema = Joi.object().keys({
+    name: Joi.string().allow('', null),
+    description: Joi.string().allow('', null),
+    isRequired: Joi.boolean(),
+});

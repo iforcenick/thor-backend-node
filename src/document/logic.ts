@@ -6,7 +6,7 @@ import uuidv4 from 'uuid/v4';
 import {Paginated, Pagination} from '../db';
 import * as dwolla from '../dwolla';
 import {Logic} from '../logic';
-import {Document} from './models';
+import {Document, DocumentPatchRequest} from './models';
 import {UserDocument, Statuses} from './userDocument/models';
 import {ApiServer} from '../server';
 import {UserService} from '../user/service';
@@ -15,8 +15,12 @@ import {StorageClient} from '../storage';
 import {UserDocumentService} from './userDocument/service';
 
 // create a unique file name with the original extention
-const createFileName = originalName => {
-    return `${uuidv4()}.${originalName.split('.').pop()}`;
+const getDocumentNames = (originalName: string): {fileName: string; name: string} => {
+    const strings = originalName.split('.');
+    return {
+        fileName: `${uuidv4()}.${strings[1]}`,
+        name: strings[0],
+    };
 };
 
 @AutoWired
@@ -32,8 +36,7 @@ export class AddDocumentLogic extends Logic {
         let document: Document = Document.factory({
             tenantId: this.context.getTenantId(),
             isRequired,
-            name: file.originalname,
-            fileName: createFileName(file.originalname),
+            ...getDocumentNames(file.originalname),
         });
 
         return await transaction(this.documentService.transaction(), async trx => {
@@ -41,6 +44,23 @@ export class AddDocumentLogic extends Logic {
             await this.storageClient.saveDocument(document.fileName, file.buffer);
             return document;
         });
+    }
+}
+
+@AutoWired
+export class UpdateDocumentLogic extends Logic {
+    @Inject private documentService: DocumentService;
+
+    async execute(id: string, data: DocumentPatchRequest): Promise<any> {
+        const document = await this.documentService.get(id);
+        if (!document) {
+            throw new Errors.NotFoundError('Document not found');
+        }
+
+        document.merge(data);
+        await this.documentService.update(document);
+
+        return document;
     }
 }
 
@@ -62,6 +82,11 @@ export class DeleteDocumentLogic extends Logic {
         const document = await this.documentService.get(id);
         if (!document) {
             throw new Errors.NotFoundError('Document not found');
+        }
+
+        const hasUserDocuments = await this.documentService.hasUserDocuments(id);
+        if (hasUserDocuments) {
+            throw new Errors.BadRequestError('Document is in user');
         }
 
         await this.storageClient.deleteDocument(document.fileName);
@@ -103,9 +128,9 @@ export class AddUserDocumentLogic extends Logic {
         let userDocument: UserDocument = UserDocument.factory({
             userId,
             tenantId: document.tenantId,
-            fileName: createFileName(file.originalname),
             documentId,
             status: Statuses.approved,
+            ...getDocumentNames(file.originalname),
         });
 
         return await transaction(this.userDocumentService.transaction(), async trx => {
@@ -171,6 +196,7 @@ export class GetUserDocumentsLogic extends Logic {
 
     async execute(userId: string, page, limit: number): Promise<any> {
         const knex = ApiServer.db;
+        // TODO: get only required documents?
         const query = this.documentService
             .query()
             .column(
@@ -179,7 +205,7 @@ export class GetUserDocumentsLogic extends Logic {
                 'name',
                 'status',
                 'isRequired',
-                'documents.createdAt',
+                'usersDocuments.createdAt',
             )
             .select()
             .from('documents')

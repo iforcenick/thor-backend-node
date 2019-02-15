@@ -1,9 +1,9 @@
 import * as _ from 'lodash';
-import {DELETE, FileParam, GET, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
+import {DELETE, FileParam, GET, Path, PathParam, POST, Preprocessor, QueryParam, PATCH} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {BaseController} from '../api';
 import * as logicLayer from './logic';
-import {DocumentResponse, PaginatedDocumentResponse} from './models';
+import * as models from './models';
 import {UserDocumentResponse, PaginatedUserDocumentResponse} from './userDocument/models';
 
 @Security('api_key')
@@ -38,13 +38,13 @@ export class DocumentController extends BaseController {
     async getDocuments(
         @QueryParam('page') page?: number,
         @QueryParam('limit') limit?: number,
-    ): Promise<PaginatedDocumentResponse> {
+    ): Promise<models.PaginatedDocumentResponse> {
         const logic = new logicLayer.GetDocumentsLogic(this.getRequestContext());
         const documentList = await logic.execute(page, limit);
         return this.paginate(
             documentList.pagination,
             documentList.rows.map(document => {
-                return this.map(DocumentResponse, document);
+                return this.map(models.DocumentResponse, document);
             }),
         );
     }
@@ -59,10 +59,10 @@ export class DocumentController extends BaseController {
     @POST
     @Path('')
     @Preprocessor(BaseController.requireAdmin)
-    async addDocument(@FileParam('filepond') file): Promise<DocumentResponse> {
+    async addDocument(@FileParam('filepond') file): Promise<models.DocumentResponse> {
         const logic = new logicLayer.AddDocumentLogic(this.getRequestContext());
         const document = await logic.execute(file);
-        return this.map(DocumentResponse, document);
+        return this.map(models.DocumentResponse, document);
     }
 
     /**
@@ -77,6 +77,27 @@ export class DocumentController extends BaseController {
     async deleteDocument(@PathParam('id') id: string) {
         const logic = new logicLayer.DeleteDocumentLogic(this.getRequestContext());
         await logic.execute(id);
+    }
+
+    /**
+     * Update a document
+     *
+     * @param {string} id
+     * @param {models.DocumentPatchRequest} data
+     * @returns {Promise<models.DocumentResponse>}
+     * @memberof DocumentController
+     */
+    @PATCH
+    @Path(':id')
+    @Preprocessor(BaseController.requireAdmin)
+    async updateDocument(
+        @PathParam('id') id: string,
+        data: models.DocumentPatchRequest,
+    ): Promise<models.DocumentResponse> {
+        const parsedData: models.DocumentPatchRequest = await this.validate(data, models.documentPatchRequestSchema);
+        const logic = new logicLayer.UpdateDocumentLogic(this.getRequestContext());
+        const job = await logic.execute(id, parsedData);
+        return this.map(models.DocumentResponse, job);
     }
 }
 
@@ -95,10 +116,13 @@ export class ContractorDocumentController extends BaseController {
     @POST
     @Path('dwolla')
     @Preprocessor(BaseController.requireContractor)
-    async addDwollaDocument(@QueryParam('type') type: string, @FileParam('filepond') file): Promise<DocumentResponse> {
+    async addDwollaDocument(
+        @QueryParam('type') type: string,
+        @FileParam('filepond') file,
+    ): Promise<models.DocumentResponse> {
         const logic = new logicLayer.AddDwollaDocumentLogic(this.getRequestContext());
         const document = await logic.execute(this.getRequestContext().getUserId(), type, file);
-        return this.map(DocumentResponse, document);
+        return this.map(models.DocumentResponse, document);
     }
 
     /**
@@ -112,10 +136,10 @@ export class ContractorDocumentController extends BaseController {
     @POST
     @Path(':id')
     @Preprocessor(BaseController.requireContractor)
-    async addUserDocument(@PathParam('id') id: string, @FileParam('filepond') file): Promise<DocumentResponse> {
+    async addUserDocument(@PathParam('id') id: string, @FileParam('filepond') file): Promise<models.DocumentResponse> {
         const logic = new logicLayer.AddUserDocumentLogic(this.getRequestContext());
         const document = await logic.execute(this.getRequestContext().getUserId(), id, file);
-        return this.map(DocumentResponse, document);
+        return this.map(models.DocumentResponse, document);
     }
 
     /**
@@ -193,10 +217,10 @@ export class UserDocumentController extends BaseController {
         @PathParam('userId') userId: string,
         @QueryParam('type') type: string,
         @FileParam('filepond') file,
-    ): Promise<DocumentResponse> {
+    ): Promise<UserDocumentResponse> {
         const logic = new logicLayer.AddDwollaDocumentLogic(this.getRequestContext());
         const document = await logic.execute(userId, type, file);
-        return this.map(DocumentResponse, document);
+        return this.map(UserDocumentResponse, document);
     }
 
     /**
@@ -215,10 +239,10 @@ export class UserDocumentController extends BaseController {
         @PathParam('userId') userId: string,
         @PathParam('id') id: string,
         @FileParam('filepond') file,
-    ): Promise<DocumentResponse> {
+    ): Promise<UserDocumentResponse> {
         const logic = new logicLayer.AddUserDocumentLogic(this.getRequestContext());
         const document = await logic.execute(userId, id, file);
-        return this.map(DocumentResponse, document);
+        return this.map(UserDocumentResponse, document);
     }
 
     /**
