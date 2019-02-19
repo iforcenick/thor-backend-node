@@ -1,5 +1,5 @@
 import {AutoWired} from 'typescript-ioc';
-import {Document} from './models';
+import {Document, Relations} from './models';
 import * as db from '../db';
 import * as objection from 'objection';
 
@@ -21,7 +21,18 @@ export class DocumentService extends db.ModelService<Document> {
         this.setConditions(query);
     }
 
-    async insert(transaction: Document, trx?: objection.Transaction): Promise<Document> {
-        return await super.insert(transaction, trx);
+    async insert(document: Document, trx?: objection.Transaction): Promise<Document> {
+        return await super.insert(document, trx);
+    }
+
+    async hasUserDocuments(id: string) {
+        const query = this.modelType
+            .query()
+            .where({[`${db.Tables.usersDocuments}.documentId`]: id})
+            .joinRelation(`${Relations.usersDocuments}`)
+            .count()
+            .first();
+        const {count} = await query;
+        return parseInt(count) > 0;
     }
 }

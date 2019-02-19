@@ -1,6 +1,6 @@
 ---
 application:
-  frontUri: https://odin-sandbox.gothor.com
+  frontUri: https://odin-stage.firebaseapp.com
 db:
   autoMigrate: true
   connection:

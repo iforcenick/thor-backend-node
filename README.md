@@ -68,7 +68,6 @@ node /dist/dev/console create-tenant.js thor godOfThunder@thor.com
    ```
    gcloud container clusters create ${CLUSTER_NAME} \
     --preemptible \
-    --region us-west1 \
     --zone us-west1-a \
     --scopes cloud-platform \
     --enable-autorepair \

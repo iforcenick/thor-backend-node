@@ -23,4 +23,8 @@ export class UserDocumentService extends db.ModelService<UserDocument> {
     setListConditions(query) {
         this.setConditions(query);
     }
+
+    async insert(userDocument: UserDocument, trx?: objection.Transaction): Promise<UserDocument> {
+        return await super.insert(userDocument, trx);
+    }
 }

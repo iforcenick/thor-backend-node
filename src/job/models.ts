@@ -1,9 +1,8 @@
-import {Relation} from 'objection'; // for ManyToManyRelation compilation
-import {PaginatedResponse, mapper} from '../api';
-import {Mapper} from '../mapper';
-import * as db from '../db';
 import Joi = require('joi');
-import * as tenant from '../tenant/models';
+import {PaginatedResponse, mapper} from '../api';
+import * as db from '../db';
+import {Mapper} from '../mapper';
+import {Tenant} from '../tenant/models';
 
 export const enum Relations {
     tenant = 'tenant',
@@ -22,7 +21,7 @@ export class Job extends db.Model {
         return {
             [Relations.tenant]: {
                 relation: db.Model.BelongsToOneRelation,
-                modelClass: tenant.Tenant,
+                modelClass: Tenant,
                 join: {
                     from: `${db.Tables.jobs}.tenantId`,
                     to: `${db.Tables.tenants}.id`,
@@ -81,11 +80,7 @@ export interface PaginatedJobResponse extends PaginatedResponse {
 }
 
 export const jobRequestSchema = Joi.object().keys({
-    value: Joi.number()
-        .greater(0)
-        .precision(2)
-        .strict()
-        .required(),
+    value: Joi.number().greater(0).precision(2).strict().required(),
     name: Joi.string().required(),
     description: Joi.string().required(),
     isActive: Joi.boolean(),
@@ -93,10 +88,7 @@ export const jobRequestSchema = Joi.object().keys({
 });
 
 export const jobPatchRequestSchema = Joi.object().keys({
-    value: Joi.number()
-        .greater(0)
-        .precision(2)
-        .strict(),
+    value: Joi.number().greater(0).precision(2).strict(),
     name: Joi.string(),
     description: Joi.string(),
     isActive: Joi.boolean(),
