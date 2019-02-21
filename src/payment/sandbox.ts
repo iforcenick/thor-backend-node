@@ -28,6 +28,19 @@ export class SandboxPaymentClient extends PaymentClient {
         const customer = {
             status: customers.CUSTOMER_STATUS.Verified,
             type: customers.TYPE.Personal,
+            // controller: {
+            //     firstName: 'firstName',
+            //     lastName: 'lastName',
+            //     title: 'title',
+            //     address: {
+            //         address1: 'address',
+            //         address2: 'address 2',
+            //         city: 'city',
+            //         stateProvinceRegion: 'state',
+            //         postalCode: 'zipcode',
+            //         country: 'country',
+            //     },
+            // },
         };
         return customer as customers.ICustomer;
     }
@@ -159,12 +172,24 @@ export class SandboxPaymentClient extends PaymentClient {
         return 'paymentsUri';
     }
     async listBusinessClassification(): Promise<any> {
-        const retVal = {};
-        retVal['business-classifications'][0]['_embedded']['industry-classifications'][0] = {
-            id: '9ed3f671-7d6f-11e3-803c-5404a6144203',
-            name: 'Contractor Employer',
+        return {
+            'business-classifications': [
+                {
+                    _embedded: {
+                        'industry-classifications': [
+                            {
+                                id: '9ed3f669-7d6f-11e3-b545-5404a6144203',
+                                name: 'Food retail and service',
+                            },
+                            {
+                                id: '9ed3f66c-7d6f-11e3-86ae-5404a6144203',
+                                name: 'Other',
+                            },
+                        ],
+                    },
+                },
+            ],
         };
-        return retVal;
     }
     async listEvents(_limit: any, _offset: number): Promise<any> {}
     async getEvents(_limit?: number, _offset?: number) {}

@@ -115,7 +115,7 @@ export class CreateFundingSourceFromBankAccountLogic extends Logic {
     @Inject private userService: UserService;
     @Inject private paymentClient: payments.PaymentClient;
 
-    async execute(data: any, userId: string): Promise<any> {
+    async execute(userId: string, data: any): Promise<any> {
         try {
             const user = await this.userService.get(userId);
             if (!user) {

@@ -98,7 +98,7 @@ export class UserFundingSourceController extends BaseController {
     ): Promise<models.FundingSourceResponse> {
         const parsedData: models.FundingSourceRequest = await this.validate(data, models.fundingSourceRequestSchema);
         const logic = new logicLayer.CreateFundingSourceFromBankAccountLogic(this.getRequestContext());
-        const fundingSource = await logic.execute(parsedData, userId);
+        const fundingSource = await logic.execute(userId, parsedData);
         return this.map(models.FundingSourceResponse, fundingSource);
     }
 
@@ -252,6 +252,23 @@ export class ContractorFundingSourceController extends BaseController {
     async deleteFundingSource(@PathParam('id') id: string) {
         const logic = new logicLayer.DeleteFundingSourceLogic(this.getRequestContext());
         await logic.execute(id, this.getRequestContext().getUserId());
+    }
+
+    /**
+     * Create your funding source using a bank account
+     *
+     * @param {string} userId
+     * @param {models.FundingSourceRequest} data
+     * @returns {Promise<models.FundingSourceResponse>}
+     * @memberof UserFundingSourceController
+     */
+    @POST
+    @Path('')
+    async createFundingSourceFromBankAccount(data: models.FundingSourceRequest): Promise<models.FundingSourceResponse> {
+        const parsedData: models.FundingSourceRequest = await this.validate(data, models.fundingSourceRequestSchema);
+        const logic = new logicLayer.CreateFundingSourceFromBankAccountLogic(this.getRequestContext());
+        const fundingSource = await logic.execute(this.getRequestContext().getUserId(), parsedData);
+        return this.map(models.FundingSourceResponse, fundingSource);
     }
 
     /**
