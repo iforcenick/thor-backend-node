@@ -1,9 +1,12 @@
-import Joi = require('joi');
+import BaseJoi = require('joi');
+import Extension = require('joi-date-extensions');
 import moment = require('moment');
 import {mapper, PaginatedResponse} from '../api';
 import {Mapper} from '../mapper';
-import * as profile from '../profile/models';
+import * as profiles from '../profile/models';
 import * as regex from '../validation/regex';
+
+const Joi = BaseJoi.extend(Extension);
 
 export class UserBaseInfo extends Mapper {}
 
@@ -35,13 +38,13 @@ export class UserResponse extends UserBaseInfo {
     lastActivity: Date = mapper.FIELD_DATE;
     rank: number = mapper.FIELD_NUM;
     prev: number = mapper.FIELD_NUM;
-    @mapper.object(profile.ProfileResponse)
-    tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
+    @mapper.object(profiles.ProfileResponse)
+    tenantProfile: profiles.ProfileResponse = new profiles.ProfileResponse();
 }
 
 export class UserPatchRequest extends UserBaseInfo {
-    @mapper.object(profile.ProfilePatchRequest)
-    profile: profile.ProfilePatchRequest = new profile.ProfilePatchRequest();
+    @mapper.object(profiles.ProfilePatchRequest)
+    profile: profiles.ProfilePatchRequest = new profiles.ProfilePatchRequest();
 }
 
 export class AdminUserProfileRequest extends Mapper {
@@ -64,13 +67,8 @@ export interface PaginatedRankingJobsResponse extends PaginatedResponse {
     items: Array<RankingJobsResponse>;
 }
 
-export const userRequestSchema = Joi.object().keys({
-    password: Joi.string().allow('', null),
-    profile: profile.profileRequestSchema.required(),
-});
-
 export const userPatchSchema = Joi.object().keys({
-    profile: profile.profilePatchSchema.required(),
+    profile: profiles.profilePatchSchema.required(),
 });
 
 export const rankingRequestSchema = Joi.object().keys({
@@ -78,16 +76,14 @@ export const rankingRequestSchema = Joi.object().keys({
     endDate: Joi.date().required(),
 });
 
-export const adminUserProfileRequestSchema = Joi.object().keys({
-    firstName: Joi.string().allow('', null),
-    lastName: Joi.string().allow('', null),
-    email: Joi.string().required().email(),
-    role: Joi.string().required(),
-});
-
 export const adminUserRequestSchema = Joi.object().keys({
-    profile: adminUserProfileRequestSchema.required(),
-});
+    profile: {
+        firstName: Joi.string().allow('', null),
+        lastName: Joi.string().allow('', null),
+        email: Joi.string().required().email(),
+        role: Joi.string().required(),
+    },
+}).requiredKeys('profile');
 
 export class UserStatisticsResponse extends Mapper {
     rank: number = mapper.FIELD_NUM;
@@ -98,8 +94,8 @@ export class UserStatisticsResponse extends Mapper {
 }
 
 export class ContractorOnRetryRequest extends UserBaseInfo {
-    @mapper.object(profile.ProfileBaseInfo)
-    profile: profile.ProfileBaseInfo = new profile.ProfileBaseInfo();
+    @mapper.object(profiles.ProfileBaseInfo)
+    profile: profiles.ProfileBaseInfo = new profiles.ProfileBaseInfo();
 }
 
 export class ContractorOnRetryResponse extends UserBaseInfo {
@@ -107,12 +103,12 @@ export class ContractorOnRetryResponse extends UserBaseInfo {
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
     lastActivity: Date = mapper.FIELD_DATE;
-    @mapper.object(profile.ProfileResponse)
-    tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
+    @mapper.object(profiles.ProfileResponse)
+    tenantProfile: profiles.ProfileResponse = new profiles.ProfileResponse();
 }
 
 export const contractorOnRetryRequestSchema = Joi.object().keys({
-    profile: profile.profileRequestSchema.required(),
+    profile: profiles.profileRequestSchema.required(),
 });
 
 export const statisticsRequestSchema = Joi.object().keys({
@@ -123,8 +119,8 @@ export const statisticsRequestSchema = Joi.object().keys({
 });
 
 export class AddContractorUserRequest extends Mapper {
-    @mapper.object(profile.ProfileRequest)
-    profile: profile.ProfileRequest = new profile.ProfileRequest();
+    @mapper.object(profiles.ProfileRequest)
+    profile: profiles.ProfileRequest = new profiles.ProfileRequest();
 }
 
 export class AddContractorUserResponse extends Mapper {
@@ -132,30 +128,27 @@ export class AddContractorUserResponse extends Mapper {
     createdAt: Date = mapper.FIELD_DATE;
     updatedAt: Date = mapper.FIELD_DATE;
     lastActivity: Date = mapper.FIELD_DATE;
-    @mapper.object(profile.ProfileResponse)
-    tenantProfile: profile.ProfileResponse = new profile.ProfileResponse();
-    token: string = mapper.FIELD_STR;
+    @mapper.object(profiles.ProfileResponse)
+    tenantProfile: profiles.ProfileResponse = new profiles.ProfileResponse();
 }
 
-const addContractorUserProfileRequestSchema = Joi.object().keys({
-    firstName: Joi.string().required(),
-    lastName: Joi.string().required(),
-    email: Joi.string().required().email(),
-    phone: Joi.string().allow('', null).regex(regex.phoneRegex),
-    dateOfBirth: Joi.date()
-        .max(moment(Date.now()).subtract(18, 'years').calendar())
-        .error(message => {
-            return 'You must be at least 18 years old';
-        }),
-    country: Joi.string(),
-    state: Joi.string().uppercase().length(2),
-    city: Joi.string().regex(/[a-zA-Z]+/),
-    postalCode: Joi.string(),
-    address1: Joi.string().max(50),
-    address2: Joi.string().allow('', null).max(50),
-    externalId: Joi.string().allow('', null),
-});
-
 export const addContractorUserRequestSchema = Joi.object().keys({
-    profile: addContractorUserProfileRequestSchema.required(),
-});
+    profile: {
+        externalId: Joi.string().allow('', null),
+        firstName: Joi.string().required(),
+        lastName: Joi.string().required(),
+        phone: Joi.string().allow('', null).regex(regex.phoneRegex),
+        email: Joi.string().required().email(),
+        dateOfBirth: Joi.date().format('YYYY-MM-DD').required()
+            .max(moment(Date.now()).subtract(18, 'years').calendar()).error(message => {
+                return 'You must be at least 18 years old';
+            }),
+        ssn: Joi.string().allow('', null),
+        country: Joi.string().required(),
+        state: Joi.string().required().uppercase().length(2),
+        city: Joi.string().required().regex(/[a-zA-Z]+/),
+        postalCode: Joi.string().required(),
+        address1: Joi.string().required().max(50),
+        address2: Joi.string().allow('', null).max(50),
+    }
+}).requiredKeys('profile');

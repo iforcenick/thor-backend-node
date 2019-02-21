@@ -1,10 +1,9 @@
 import Joi = require('joi');
-import {Relation} from 'objection'; // for ManyToManyRelation compilation
 import {mapper} from '../api';
 import * as db from '../db';
-import * as dwolla from '../dwolla';
 import {Mapper} from '../mapper';
 import {Profile} from '../profile/models';
+import * as payments from '../payment';
 
 export const enum Relations {
     profiles = 'profiles',
@@ -234,7 +233,7 @@ export const tenantCompanyRequestSchema = Joi.object().keys({
     businessClassification: Joi.string().required(),
     website: Joi.string().allow('', null), // optional
     ein: Joi.string().when('businessType', {
-        is: Joi.equal(dwolla.customer.BUSINESS_TYPE.Sole),
+        is: Joi.equal(payments.customers.BUSINESS_TYPE.Sole),
         then: Joi.allow('', null), // optional for sole
         otherwise: Joi.required(),
     }),
@@ -249,18 +248,18 @@ export const tenantCompanyRequestSchema = Joi.object().keys({
     lastName: Joi.string().required(),
     email: Joi.string().required().email(),
     dateOfBirth: Joi.string().when('businessType', {
-        is: Joi.equal(dwolla.customer.BUSINESS_TYPE.Sole),
+        is: Joi.equal(payments.customers.BUSINESS_TYPE.Sole),
         then: Joi.allow('', null), // optional for sole
         otherwise: Joi.required(),
     }),
     ssn: Joi.string().invalid(['0000']).when('businessType', {
-        is: Joi.equal(dwolla.customer.BUSINESS_TYPE.Sole),
+        is: Joi.equal(payments.customers.BUSINESS_TYPE.Sole),
         then: Joi.required(), // required for sole
         otherwise: Joi.allow('', null),
     }),
     // controller
     controller: tenantControllerSchema.when('businessType', {
-        is: Joi.equal(dwolla.customer.BUSINESS_TYPE.Sole),
+        is: Joi.equal(payments.customers.BUSINESS_TYPE.Sole),
         then: Joi.forbidden(),
         otherwise: Joi.required(),
     }),

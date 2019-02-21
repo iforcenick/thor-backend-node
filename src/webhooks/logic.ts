@@ -1,7 +1,6 @@
 import {AutoWired, Inject} from 'typescript-ioc';
 import {RequestContext} from '../context';
-import * as dwolla from '../dwolla';
-import {IEvent} from '../dwolla/event';
+import {IEvent} from '../payment/event';
 import {Logger} from '../logger';
 import {Logic} from '../logic';
 import {UpdateTransactionStatusLogic as UpdateTransactionsStatusLogic} from '../transaction/logic';
@@ -10,6 +9,7 @@ import {MailerService} from '../mailer';
 import {Statuses, Transaction} from '../transaction/models';
 import {Profile} from '../profile/models';
 import {FundingSource} from '../fundingSource/models';
+import * as payments from '../payment';
 import {ProfileService} from '../profile/service';
 import {UserService} from '../user/service';
 import {FundingSourceService} from '../fundingSource/services';
@@ -18,7 +18,7 @@ import {TenantService} from '../tenant/service';
 import {User} from '../user/models';
 import {Tenant} from '../tenant/models';
 
-const TAG = '[dwolla-webhook]';
+const TAG = '[payments-webhook]';
 
 export class EventFactory {
     @Inject static logger: Logger;
@@ -27,38 +27,38 @@ export class EventFactory {
         this.logger.info(`${TAG}: ${event.topic} - ${event['_links']['resource']['href']}`);
         try {
             switch (event.topic) {
-                case dwolla.event.TYPE.customer.verificationDocumentNeeded:
-                case dwolla.event.TYPE.customer.verificationDocumentUploaded:
-                case dwolla.event.TYPE.customer.verificationDocumentApproved:
-                case dwolla.event.TYPE.customer.verificationDocumentFailed:
-                case dwolla.event.TYPE.customer.reverificationNeeded:
-                case dwolla.event.TYPE.customer.verified:
-                case dwolla.event.TYPE.customer.created:
-                case dwolla.event.TYPE.customer.suspended:
+                case payments.events.TYPE.customer.verificationDocumentNeeded:
+                case payments.events.TYPE.customer.verificationDocumentUploaded:
+                case payments.events.TYPE.customer.verificationDocumentApproved:
+                case payments.events.TYPE.customer.verificationDocumentFailed:
+                case payments.events.TYPE.customer.reverificationNeeded:
+                case payments.events.TYPE.customer.verified:
+                case payments.events.TYPE.customer.created:
+                case payments.events.TYPE.customer.suspended:
                     return new CustomerEventLogic(context);
 
-                case dwolla.event.TYPE.customerBankTransfer.creationFailed:
-                case dwolla.event.TYPE.customerBankTransfer.created:
-                case dwolla.event.TYPE.customerTransfer.created:
-                case dwolla.event.TYPE.transfer.created:
-                case dwolla.event.TYPE.customerBankTransfer.completed:
-                case dwolla.event.TYPE.customerTransfer.completed:
-                case dwolla.event.TYPE.transfer.completed:
-                case dwolla.event.TYPE.customerBankTransfer.failed:
-                case dwolla.event.TYPE.customerTransfer.failed:
-                case dwolla.event.TYPE.transfer.failed:
-                case dwolla.event.TYPE.transfer.reclaimed:
-                case dwolla.event.TYPE.customerBankTransfer.cancelled:
-                case dwolla.event.TYPE.customerTransfer.cancelled:
-                case dwolla.event.TYPE.transfer.cancelled:
+                case payments.events.TYPE.customerBankTransfer.creationFailed:
+                case payments.events.TYPE.customerBankTransfer.created:
+                case payments.events.TYPE.customerTransfer.created:
+                case payments.events.TYPE.transfer.created:
+                case payments.events.TYPE.customerBankTransfer.completed:
+                case payments.events.TYPE.customerTransfer.completed:
+                case payments.events.TYPE.transfer.completed:
+                case payments.events.TYPE.customerBankTransfer.failed:
+                case payments.events.TYPE.customerTransfer.failed:
+                case payments.events.TYPE.transfer.failed:
+                case payments.events.TYPE.transfer.reclaimed:
+                case payments.events.TYPE.customerBankTransfer.cancelled:
+                case payments.events.TYPE.customerTransfer.cancelled:
+                case payments.events.TYPE.transfer.cancelled:
                     return new CustomerTransferEventLogic(context);
 
-                case dwolla.event.TYPE.customerFundingSource.added:
-                case dwolla.event.TYPE.customerFundingSource.removed:
-                case dwolla.event.TYPE.customerFundingSource.verified:
+                case payments.events.TYPE.customerFundingSource.added:
+                case payments.events.TYPE.customerFundingSource.removed:
+                case payments.events.TYPE.customerFundingSource.verified:
                     return new CustomerFundingSourceEventLogic(context);
 
-                case dwolla.event.TYPE.customerBeneficialOwner.verified:
+                case payments.events.TYPE.customerBeneficialOwner.verified:
                     return new CustomerBeneficialOwnerEventLogic(context);
 
                 default:
@@ -71,7 +71,7 @@ export class EventFactory {
             }
         } catch (error) {
             this.logger.error(`${TAG} ${error.message}`);
-            // don't throw an error back at dwolla right now
+            // don't throw an error back at payments right now
             throw error;
         }
     }
@@ -131,20 +131,20 @@ export class CustomerFundingSourceEventLogic extends Logic {
 
         try {
             switch (event.topic) {
-                case dwolla.event.TYPE.customerFundingSource.added:
+                case payments.events.TYPE.customerFundingSource.added:
                     await this.mailer.sendFundingSourceAdded(user, fundingSource);
                     break;
-                case dwolla.event.TYPE.customerFundingSource.removed:
+                case payments.events.TYPE.customerFundingSource.removed:
                     await this.mailer.sendFundingSourceRemoved(user, fundingSource);
                     break;
-                case dwolla.event.TYPE.customerFundingSource.verified:
+                case payments.events.TYPE.customerFundingSource.verified:
                     await this.mailer.sendFundingSourceVerified(user, fundingSource);
                     break;
                 default:
                     break;
             }
         } catch (error) {
-            // don't throw an error back at dwolla if the email fails
+            // don't throw an error back at payments if the email fails
             this.logger.error(`${TAG} ${error.message}`);
         }
     }
@@ -178,31 +178,31 @@ export class CustomerTransferEventLogic extends Logic {
         // customer bank transfer created
         // customer bank transfer completed - send completed email
         switch (event.topic) {
-            case dwolla.event.TYPE.customerTransfer.created:
+            case payments.events.TYPE.customerTransfer.created:
                 await logic.execute(transactions, Statuses.processing);
                 break;
 
-            case dwolla.event.TYPE.customerBankTransfer.completed:
+            case payments.events.TYPE.customerBankTransfer.completed:
                 await logic.execute(transactions, Statuses.processed);
                 break;
 
-            case dwolla.event.TYPE.transfer.reclaimed:
-            case dwolla.event.TYPE.customerBankTransfer.failed:
-            case dwolla.event.TYPE.customerTransfer.failed:
-            case dwolla.event.TYPE.transfer.failed:
+            case payments.events.TYPE.transfer.reclaimed:
+            case payments.events.TYPE.customerBankTransfer.failed:
+            case payments.events.TYPE.customerTransfer.failed:
+            case payments.events.TYPE.transfer.failed:
                 await logic.execute(transactions, Statuses.failed);
                 break;
 
             // TODO: unsupported transfer events
-            // case dwolla.event.TYPE.customerTransfer.completed:
-            // case dwolla.event.TYPE.transfer.completed:
-            // case dwolla.event.TYPE.customerBankTransfer.created:
-            // case dwolla.event.TYPE.customerTransfer.created:
-            // case dwolla.event.TYPE.transfer.created:
-            // case dwolla.event.TYPE.customerBankTransfer.creationFailed:
-            case dwolla.event.TYPE.customerBankTransfer.cancelled:
-            case dwolla.event.TYPE.customerTransfer.cancelled:
-            case dwolla.event.TYPE.transfer.cancelled:
+            // case payments.events.TYPE.customerTransfer.completed:
+            // case payments.events.TYPE.transfer.completed:
+            // case payments.events.TYPE.customerBankTransfer.created:
+            // case payments.events.TYPE.customerTransfer.created:
+            // case payments.events.TYPE.transfer.created:
+            // case payments.events.TYPE.customerBankTransfer.creationFailed:
+            case payments.events.TYPE.customerBankTransfer.cancelled:
+            case payments.events.TYPE.customerTransfer.cancelled:
+            case payments.events.TYPE.transfer.cancelled:
                 await logic.execute(transactions, Statuses.cancelled);
                 break;
 
@@ -236,31 +236,31 @@ export class CustomerEventLogic extends Logic {
         // some events are only passed on to the users
         // others trigger updates to the status'
         switch (event.topic) {
-            case dwolla.event.TYPE.customer.verificationDocumentNeeded:
-                await logic.execute(user, dwolla.customer.CUSTOMER_STATUS.Document);
+            case payments.events.TYPE.customer.verificationDocumentNeeded:
+                await logic.execute(user, payments.customers.CUSTOMER_STATUS.Document);
                 break;
-            case dwolla.event.TYPE.customer.verificationDocumentUploaded:
+            case payments.events.TYPE.customer.verificationDocumentUploaded:
                 await this.mailer.sendCustomerVerificationDocumentUploaded(user);
                 break;
-            case dwolla.event.TYPE.customer.verificationDocumentApproved:
+            case payments.events.TYPE.customer.verificationDocumentApproved:
                 await this.mailer.sendCustomerVerificationDocumentApproved(user);
                 break;
-            case dwolla.event.TYPE.customer.verificationDocumentFailed:
+            case payments.events.TYPE.customer.verificationDocumentFailed:
                 await this.mailer.sendCustomerVerificationDocumentFailed(user);
                 break;
-            case dwolla.event.TYPE.customer.reverificationNeeded:
-                await logic.execute(user, dwolla.customer.CUSTOMER_STATUS.Retry);
+            case payments.events.TYPE.customer.reverificationNeeded:
+                await logic.execute(user, payments.customers.CUSTOMER_STATUS.Retry);
                 break;
-            case dwolla.event.TYPE.customer.verified:
-                await logic.execute(user, dwolla.customer.CUSTOMER_STATUS.Verified);
+            case payments.events.TYPE.customer.verified:
+                await logic.execute(user, payments.customers.CUSTOMER_STATUS.Verified);
                 break;
-            case dwolla.event.TYPE.customer.created:
-                // TODO: dwolla sends verified event before the created event...
+            case payments.events.TYPE.customer.created:
+                // TODO: payments sends verified event before the created event...
                 // TODO: move from when we create the customer
                 // await this.mailer.sendCustomerCreated(user);
                 break;
-            case dwolla.event.TYPE.customer.suspended:
-                await logic.execute(user, dwolla.customer.CUSTOMER_STATUS.Suspended);
+            case payments.events.TYPE.customer.suspended:
+                await logic.execute(user, payments.customers.CUSTOMER_STATUS.Suspended);
                 break;
             default:
                 break;
@@ -270,22 +270,24 @@ export class CustomerEventLogic extends Logic {
 
 @AutoWired
 export class CustomerBeneficialOwnerEventLogic extends Logic {
-    @Inject private client: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
     @Inject private logger: Logger;
 
     async execute(event: IEvent): Promise<any> {
         switch (event.topic) {
-            case dwolla.event.TYPE.customerBeneficialOwner.verificationDocumentNeeded:
-            case dwolla.event.TYPE.customerBeneficialOwner.verificationDocumentUploaded:
-            case dwolla.event.TYPE.customerBeneficialOwner.verificationDocumentApproved:
-            case dwolla.event.TYPE.customerBeneficialOwner.verificationDocumentFailed:
-            case dwolla.event.TYPE.customerBeneficialOwner.reverificationNeeded:
-            case dwolla.event.TYPE.customerBeneficialOwner.created:
-            case dwolla.event.TYPE.customerBeneficialOwner.removed:
+            case payments.events.TYPE.customerBeneficialOwner.verificationDocumentNeeded:
+            case payments.events.TYPE.customerBeneficialOwner.verificationDocumentUploaded:
+            case payments.events.TYPE.customerBeneficialOwner.verificationDocumentApproved:
+            case payments.events.TYPE.customerBeneficialOwner.verificationDocumentFailed:
+            case payments.events.TYPE.customerBeneficialOwner.reverificationNeeded:
+            case payments.events.TYPE.customerBeneficialOwner.created:
+            case payments.events.TYPE.customerBeneficialOwner.removed:
                 break;
-            case dwolla.event.TYPE.customerBeneficialOwner.verified:
+            case payments.events.TYPE.customerBeneficialOwner.verified:
                 try {
-                    await this.client.certifyBusinessVerifiedBeneficialOwnership(event['_links']['customer']['href']);
+                    await this.paymentClient.certifyBusinessVerifiedBeneficialOwnership(
+                        event['_links']['customer']['href'],
+                    );
                 } catch (e) {
                     this.logger.error(e);
                 }

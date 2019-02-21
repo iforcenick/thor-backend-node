@@ -1,19 +1,16 @@
+import express = require('express');
+import {Model} from 'objection';
+import {Inject} from 'typescript-ioc';
 import {Server} from 'typescript-rest';
 import {Config} from './config';
-import {Logger, ExpressLogger} from './logger';
-import {Inject} from 'typescript-ioc';
 import {AuthController} from './auth/controller';
 import {UserController, ContractorUserController} from './user/controller';
 import {MonitoringController} from './monitoring/controller';
-import {Model} from 'objection';
 import {TenantController, TenantCompanyController} from './tenant/controller';
 import {ProfileController, UserProfileController} from './profile/controller';
-import express = require('express');
 import {TransactionController, UserTransactionController} from './transaction/controller';
 import {JobController} from './job/controller';
-import * as dwolla from './dwolla';
-import * as middleware from './middleware';
-import {DwollaController} from './dwolla/controller';
+import {WebhookController} from './webhooks/controller';
 import {InvitationController, UserInvitationController, InvitationCheckController} from './invitation/controller';
 import {ContractorController} from './contractor/controller';
 import {DocumentController, UserDocumentController, ContractorDocumentController} from './document/controller';
@@ -24,6 +21,9 @@ import {
 } from './fundingSource/controller';
 import {BeneficialOwnerController} from './tenant/beneficialOwner/controller';
 import {TenantFundingSourcesController} from './tenant/fundingSource/controller';
+import {Logger, ExpressLogger} from './logger';
+import * as middleware from './middleware';
+import * as payments from './payment';
 
 const knex = require('knex');
 const path = require('path');
@@ -36,7 +36,7 @@ export class ApiServer {
     @Inject private config: Config;
     @Inject private logger: Logger;
     @Inject private expressLogger: ExpressLogger;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
     private app: express.Application;
     private server: any = null;
     private port: number;
@@ -86,7 +86,7 @@ export class ApiServer {
                 this.logger.info(`Listening to http://${this.server.address().address}:${this.server.address().port}`);
 
                 try {
-                    await this.dwollaClient.webhooksCleanup();
+                    await this.paymentClient.webhooksCleanup();
                 } catch (e) {
                     this.logger.error(`Dwolla webhooks cleanup error: ${e.message}`);
                 }
@@ -171,7 +171,7 @@ export class ApiServer {
             // /jobs
             JobController,
             // /dwolla
-            DwollaController,
+            WebhookController,
             // /
             MonitoringController,
             // /contractors

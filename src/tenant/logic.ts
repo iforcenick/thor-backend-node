@@ -3,7 +3,7 @@ import {transaction} from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {Errors} from 'typescript-rest';
 import {Config} from '../config';
-import * as dwolla from '../dwolla';
+import {DwollaRequestError} from '../payment/dwolla';
 import {Logger} from '../logger';
 import {Logic} from '../logic';
 import {MailerService} from '../mailer';
@@ -13,6 +13,7 @@ import * as profiles from '../profile/models';
 import {Role, Types} from '../user/role/models';
 import {Settings} from './settings/models';
 import * as invitations from '../invitation/models';
+import * as payments from '../payment';
 import {UserService} from '../user/service';
 import {ProfileService} from '../profile/service';
 import {TenantService} from './service';
@@ -54,7 +55,7 @@ export class GetTenantCompanyLogic extends Logic {
 @AutoWired
 export class GetTenantCompanyOwnerLogic extends Logic {
     @Inject private tenantService: TenantService;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
     @Inject private logger: Logger;
 
     async execute(tenantId: string): Promise<any> {
@@ -64,7 +65,7 @@ export class GetTenantCompanyOwnerLogic extends Logic {
         }
 
         try {
-            const customer = await this.dwollaClient.getCustomer(tenant.paymentsUri);
+            const customer = await this.paymentClient.getCustomer(tenant.paymentsUri);
             return customer.controller;
         } catch (e) {
             this.logger.error(e);
@@ -76,7 +77,7 @@ export class GetTenantCompanyOwnerLogic extends Logic {
 @AutoWired
 export class AddTenantCompanyLogic extends Logic {
     @Inject private tenantService: TenantService;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(data: any, tenantId: string): Promise<any> {
         const tenant: Tenant = await this.tenantService.get(tenantId);
@@ -89,10 +90,10 @@ export class AddTenantCompanyLogic extends Logic {
         }
 
         try {
-            const customer = dwolla.customer.factory(data);
-            customer.type = dwolla.customer.TYPE.Business;
-            tenant.paymentsUri = await this.dwollaClient.createCustomer(customer);
-            const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.paymentsUri);
+            const customer = payments.customers.factory(data);
+            customer.type = payments.customers.TYPE.Business;
+            tenant.paymentsUri = await this.paymentClient.createCustomer(customer);
+            const dwollaCustomer = await this.paymentClient.getCustomer(tenant.paymentsUri);
             tenant.paymentsStatus = dwollaCustomer.status;
             tenant.paymentsType = dwollaCustomer.type;
             tenant.status = Statuses.bank;
@@ -100,7 +101,7 @@ export class AddTenantCompanyLogic extends Logic {
 
             await this.tenantService.update(tenant);
         } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
+            if (err instanceof DwollaRequestError) {
                 throw err.toValidationError();
             }
             throw new Errors.InternalServerError(err.message);
@@ -113,7 +114,7 @@ export class AddTenantCompanyLogic extends Logic {
 @AutoWired
 export class UpdateTenantCompanyLogic extends Logic {
     @Inject private tenantService: TenantService;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(data: any, tenantId: string): Promise<any> {
         const tenant: Tenant = await this.tenantService.get(tenantId);
@@ -125,21 +126,21 @@ export class UpdateTenantCompanyLogic extends Logic {
             throw new Errors.NotFoundError('Tenant company details not found');
         }
 
-        if (tenant.company.status != dwolla.customer.CUSTOMER_STATUS.Verified) {
+        if (tenant.company.status != payments.customers.CUSTOMER_STATUS.Verified) {
             throw new Errors.NotAcceptableError('Tenant company cannot be edited, not in verified status');
         }
 
         try {
-            const customer = dwolla.customer.factory(data);
+            const customer = payments.customers.factory(data);
             customer.type = tenant.paymentsType;
-            await this.dwollaClient.updateCustomer(tenant.paymentsUri, customer.updateableFields());
-            const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.paymentsUri);
+            await this.paymentClient.updateCustomer(tenant.paymentsUri, customer.updateableFields());
+            const dwollaCustomer = await this.paymentClient.getCustomer(tenant.paymentsUri);
             tenant.paymentsStatus = dwollaCustomer.status;
             tenant.merge(data);
 
             await this.tenantService.update(tenant);
         } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
+            if (err instanceof DwollaRequestError) {
                 throw err.toValidationError();
             }
             throw new Errors.InternalServerError(err.message);
@@ -152,7 +153,7 @@ export class UpdateTenantCompanyLogic extends Logic {
 @AutoWired
 export class RetryTenantCompanyLogic extends Logic {
     @Inject private tenantService: TenantService;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(data: any, tenantId: string): Promise<any> {
         const tenant: Tenant = await this.tenantService.get(tenantId);
@@ -164,21 +165,21 @@ export class RetryTenantCompanyLogic extends Logic {
             throw new Errors.NotFoundError('Tenant company details not found');
         }
 
-        if (tenant.company.status != dwolla.customer.CUSTOMER_STATUS.Retry) {
+        if (tenant.company.status != payments.customers.CUSTOMER_STATUS.Retry) {
             throw new Errors.NotAcceptableError('Tenant company cannot be retried, not in retry status');
         }
 
         try {
-            const customer = dwolla.customer.factory(data);
+            const customer = payments.customers.factory(data);
             customer.type = tenant.paymentsType;
-            await this.dwollaClient.updateCustomer(tenant.paymentsUri, customer);
-            const dwollaCustomer = await this.dwollaClient.getCustomer(tenant.paymentsUri);
+            await this.paymentClient.updateCustomer(tenant.paymentsUri, customer);
+            const dwollaCustomer = await this.paymentClient.getCustomer(tenant.paymentsUri);
             tenant.paymentsStatus = dwollaCustomer.status;
             tenant.merge(data);
 
             await this.tenantService.update(tenant);
         } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
+            if (err instanceof DwollaRequestError) {
                 throw err.toValidationError();
             }
             throw new Errors.InternalServerError(err.message);
@@ -191,7 +192,7 @@ export class RetryTenantCompanyLogic extends Logic {
 @AutoWired
 export class ListTenantCompanyDocumentsLogic extends Logic {
     @Inject private tenantService: TenantService;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(tenantId: string): Promise<any> {
         const tenant: Tenant = await this.tenantService.get(tenantId);
@@ -199,18 +200,18 @@ export class ListTenantCompanyDocumentsLogic extends Logic {
             throw new Errors.NotFoundError('Tenant not found');
         }
 
-        if (tenant.company.status != dwolla.customer.CUSTOMER_STATUS.Document) {
+        if (tenant.company.status != payments.customers.CUSTOMER_STATUS.Document) {
             throw new Errors.NotAcceptableError('Tenant has no pending documents');
         }
 
-        return await this.dwollaClient.listDocuments(tenant.paymentsUri);
+        return await this.paymentClient.listDocuments(tenant.paymentsUri);
     }
 }
 
 @AutoWired
 export class AddTenantCompanyDocumentsLogic extends Logic {
     @Inject private tenantService: TenantService;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(tenantId: string, file: any, type: string): Promise<any> {
         const tenant: Tenant = await this.tenantService.get(tenantId);
@@ -218,12 +219,17 @@ export class AddTenantCompanyDocumentsLogic extends Logic {
             throw new Errors.NotFoundError('Tenant not found');
         }
 
-        if (tenant.company.status != dwolla.customer.CUSTOMER_STATUS.Document) {
+        if (tenant.company.status != payments.customers.CUSTOMER_STATUS.Document) {
             throw new Errors.NotAcceptableError('No additional documents required');
         }
 
-        const location = await this.dwollaClient.createDocument(tenant.paymentsUri, file.buffer, file.originalname, type);
-        return await this.dwollaClient.getDocument(location);
+        const location = await this.paymentClient.createDocument(
+            tenant.paymentsUri,
+            file.buffer,
+            file.originalname,
+            type,
+        );
+        return await this.paymentClient.getDocument(location);
     }
 }
 

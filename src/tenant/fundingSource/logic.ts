@@ -1,22 +1,22 @@
 import {AutoWired, Inject} from 'typescript-ioc';
-import {CreateTenantFundingSourceRequest} from './models';
-import * as dwolla from '../../dwolla';
-import {TenantService} from '../service';
-import {Tenant, Statuses} from '../models';
-import {Logic} from '../../logic';
 import {Errors} from 'typescript-rest';
+import {DwollaRequestError} from '../../payment/dwolla';
+import {ISource} from '../../payment/fundingSource';
+import {Logger} from '../../logger';
+import {Logic} from '../../logic';
+import {MailerService} from '../../mailer';
+import {Tenant, Statuses} from '../models';
+import {User} from '../../user/models';
 import {FundingSource, Statuses as VerificationStatuses} from '../../fundingSource/models';
+import {CreateTenantFundingSourceRequest} from './models';
+import * as payments from '../../payment';
 import {FundingSourceService} from '../../fundingSource/services';
 import {UserService} from '../../user/service';
-import {User} from '../../user/models';
-import {ISource} from '../../dwolla/funding';
-import {MailerService} from '../../mailer';
-import {Logger} from '../../logger';
-
+import {TenantService} from '../service';
 
 @AutoWired
 export class CreateTenantFundingSourceLogic extends Logic {
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
     @Inject private tenantService: TenantService;
 
     async execute(request: CreateTenantFundingSourceRequest, tenantId: string): Promise<Tenant> {
@@ -31,12 +31,14 @@ export class CreateTenantFundingSourceLogic extends Logic {
 
         if (!tenant.paymentsUri) {
             throw new Errors.NotAcceptableError('Tenant has to have company details');
-
         }
 
-        tenant.fundingSourceUri = await this.dwollaClient.createFundingSource(
-            tenant.paymentsUri, request.routing,
-            request.account, request.bankAccountType, request.name
+        tenant.fundingSourceUri = await this.paymentClient.createFundingSource(
+            tenant.paymentsUri,
+            request.routing,
+            request.account,
+            request.bankAccountType,
+            request.name,
         );
 
         tenant.fundingSourceName = request.name;
@@ -67,7 +69,7 @@ export class GetTenantFundingSourceLogic extends Logic {
 @AutoWired
 export class DeleteTenantFundingSourcesLogic extends Logic {
     @Inject private tenantService: TenantService;
-    @Inject private client: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(tenantId: string) {
         const tenant = await this.tenantService.get(tenantId);
@@ -79,7 +81,7 @@ export class DeleteTenantFundingSourcesLogic extends Logic {
             throw new Errors.NotFoundError('Funding source not found');
         }
 
-        await this.client.deleteFundingSource(tenant.fundingSourceUri);
+        await this.paymentClient.deleteFundingSource(tenant.fundingSourceUri);
 
         tenant.fundingSourceUri = null;
         tenant.fundingSourceName = null;
@@ -92,7 +94,7 @@ export class DeleteTenantFundingSourcesLogic extends Logic {
 @AutoWired
 export class InitiateTenantFundingSourceVerificationLogic extends Logic {
     @Inject private tenantService: TenantService;
-    @Inject private client: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(tenantId: string) {
         const tenant = await this.tenantService.get(tenantId);
@@ -104,7 +106,7 @@ export class InitiateTenantFundingSourceVerificationLogic extends Logic {
             throw new Errors.NotAcceptableError('Funding source verification cannot be initiated');
         }
 
-        if (!await this.client.createFundingSourceMicroDeposit(tenant.fundingSourceUri)) {
+        if (!(await this.paymentClient.createFundingSourceMicroDeposit(tenant.fundingSourceUri))) {
             throw new Errors.NotAcceptableError('Funding source verification initiation failed');
         }
 
@@ -116,7 +118,7 @@ export class InitiateTenantFundingSourceVerificationLogic extends Logic {
 @AutoWired
 export class VerifyTenantFundingSourceLogic extends Logic {
     @Inject private tenantService: TenantService;
-    @Inject private client: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(amount1, amount2: number, tenantId: string) {
         const tenant = await this.tenantService.get(tenantId);
@@ -129,9 +131,9 @@ export class VerifyTenantFundingSourceLogic extends Logic {
         }
 
         try {
-            await this.client.verifyFundingSourceMicroDeposit(tenant.fundingSourceUri, amount1, amount2);
+            await this.paymentClient.verifyFundingSourceMicroDeposit(tenant.fundingSourceUri, amount1, amount2);
         } catch (e) {
-            if (e instanceof dwolla.DwollaRequestError) {
+            if (e instanceof DwollaRequestError) {
                 // I HATE DWOLLA SO MUCH SINCE THEY MADE ME DO IT!
                 if (e.message.search('Wrong amount') != -1) {
                     throw new Errors.ConflictError('Wrong amounts');
@@ -153,7 +155,7 @@ export class VerifyTenantFundingSourceLogic extends Logic {
 export class AddVerifyingFundingSourceForTenantLogic extends Logic {
     @Inject fundingService: FundingSourceService;
     @Inject tenantService: TenantService;
-    @Inject client: dwolla.Client;
+    @Inject paymentClient: payments.PaymentClient;
     @Inject mailer: MailerService;
     @Inject logger: Logger;
 
@@ -171,7 +173,7 @@ export class AddVerifyingFundingSourceForTenantLogic extends Logic {
 
         let dwollaFunding: ISource;
         try {
-            dwollaFunding = await this.client.getFundingSource(uri);
+            dwollaFunding = await this.paymentClient.getFundingSource(uri);
         } catch (e) {
             throw new Errors.NotFoundError(e.toValidationError().message);
         }
@@ -197,13 +199,13 @@ export class AddVerifyingFundingSourceForTenantLogic extends Logic {
 @AutoWired
 export class GetIavTokenForTenantLogic extends Logic {
     @Inject protected userService: UserService;
-    @Inject private client: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(tenant: Tenant) {
         try {
-            return await this.client.getIavToken(tenant.paymentsUri);
+            return await this.paymentClient.getIavToken(tenant.paymentsUri);
         } catch (e) {
-            if (e instanceof dwolla.DwollaRequestError) {
+            if (e instanceof DwollaRequestError) {
                 throw e.toValidationError();
             }
 

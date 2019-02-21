@@ -3,7 +3,7 @@ import {DELETE, GET, Path, PathParam, POST, Preprocessor, PUT, QueryParam} from 
 import {Security, Tags} from 'typescript-rest-swagger';
 import {BaseController} from '../api';
 import * as dto from './dto';
-import * as dwolla from '../dwolla';
+import {DwollaRequestError} from '../payment/dwolla';
 import {AddContractorOnRetryStatusLogic} from '../contractor/logic';
 import * as usersLogic from './logic';
 import * as invitationsLogic from '../invitation/logic';
@@ -265,7 +265,7 @@ export class ContractorUserController extends BaseController {
 
             return this.map(dto.ContractorOnRetryResponse, user);
         } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
+            if (err instanceof DwollaRequestError) {
                 throw err.toValidationError('profile');
             }
             throw err;

@@ -32,4 +32,8 @@ export class Config {
     static isDev() {
         return process.env['NODE_ENV'].startsWith('development');
     }
+
+    static isSandbox() {
+        return process.env['NODE_ENV'].startsWith('development-kubernetes-sand');
+    }
 }

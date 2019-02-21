@@ -1,13 +1,13 @@
-import {DELETE, Errors, GET, HttpError, PATCH, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
-import {BaseController} from '../api';
+import moment from 'moment';
 import {Inject} from 'typescript-ioc';
+import {DELETE, Errors, GET, HttpError, PATCH, Path, PathParam, POST, Preprocessor, QueryParam} from 'typescript-rest';
+import {Security, Tags} from 'typescript-rest-swagger';
+import {BaseController} from '../api';
+import {DwollaRequestError} from '../payment/dwolla';
+import * as logicLayer from './logic';
 import * as models from './models';
 import {TransactionService} from './service';
 import {UserService} from '../user/service';
-import {Security, Tags} from 'typescript-rest-swagger';
-import moment from 'moment';
-import * as logicLayer from './logic';
-import * as dwolla from '../dwolla';
 
 @Security('api_key')
 @Path('/transactions')
@@ -87,7 +87,7 @@ export class TransactionController extends BaseController {
                 throw err;
             }
 
-            if (err instanceof dwolla.DwollaRequestError) {
+            if (err instanceof DwollaRequestError) {
                 throw err.toValidationError();
             }
 
@@ -120,7 +120,7 @@ export class TransactionController extends BaseController {
                 throw err;
             }
 
-            if (err instanceof dwolla.DwollaRequestError) {
+            if (err instanceof DwollaRequestError) {
                 throw err.toValidationError();
             }
 

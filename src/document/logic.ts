@@ -4,7 +4,7 @@ import {AutoWired, Inject} from 'typescript-ioc';
 import {Errors} from 'typescript-rest';
 import uuidv4 from 'uuid/v4';
 import {Paginated, Pagination} from '../db';
-import * as dwolla from '../dwolla';
+import * as payments from '../payment';
 import {Logic} from '../logic';
 import {Document, DocumentPatchRequest} from './models';
 import {UserDocument, Statuses} from './userDocument/models';
@@ -144,14 +144,14 @@ export class AddUserDocumentLogic extends Logic {
 @AutoWired
 export class AddDwollaDocumentLogic extends Logic {
     @Inject private userService: UserService;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(userId: string, type: string, file: any) {
         if (!file) {
             throw new Errors.NotAcceptableError('File missing');
         }
 
-        if (!_.has(dwolla.documents.TYPE, type)) {
+        if (!_.has(payments.documents.TYPE, type)) {
             throw new Errors.ConflictError('Invalid type');
         }
 
@@ -160,17 +160,17 @@ export class AddDwollaDocumentLogic extends Logic {
             throw new Errors.NotFoundError('User not found');
         }
 
-        if (user.baseProfile.paymentsStatus != dwolla.customer.CUSTOMER_STATUS.Document) {
+        if (user.baseProfile.paymentsStatus != payments.customers.CUSTOMER_STATUS.Document) {
             throw new Errors.NotAcceptableError('User cannot upload documents');
         }
 
-        const location = await this.dwollaClient.createDocument(
+        const location = await this.paymentClient.createDocument(
             user.baseProfile.paymentsUri,
             file.buffer,
             file.originalname,
             type,
         );
-        const dwollaDoc = await this.dwollaClient.getDocument(location);
+        const dwollaDoc = await this.paymentClient.getDocument(location);
         if (dwollaDoc.failureReason) throw new Errors.InternalServerError(dwollaDoc.failureReason);
     }
 }
@@ -178,14 +178,14 @@ export class AddDwollaDocumentLogic extends Logic {
 @AutoWired
 export class GetDwollaDocumentsLogic extends Logic {
     @Inject private userService: UserService;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(userId: string) {
         const user = await this.userService.get(userId);
         if (!user) {
             throw new Errors.NotFoundError('User not found');
         }
-        const dwollaDocuments = await this.dwollaClient.listDocuments(user.baseProfile.paymentsUri);
+        const dwollaDocuments = await this.paymentClient.listDocuments(user.baseProfile.paymentsUri);
         return dwollaDocuments;
     }
 }

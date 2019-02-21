@@ -1,9 +1,9 @@
 import 'reflect-metadata';
-import {Container} from 'typescript-ioc';
-import {AddTenantLogic} from '../../tenant/logic';
-import {Config} from '../../config';
-import {Model} from 'objection';
 import Joi = require('joi');
+import {Model} from 'objection';
+import {Container} from 'typescript-ioc';
+import {Config} from '../../config';
+import {AddTenantLogic} from '../../tenant/logic';
 
 const logic: AddTenantLogic = Container.get(AddTenantLogic);
 const config: Config = Container.get(Config);

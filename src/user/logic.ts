@@ -353,6 +353,18 @@ export class CreatePasswordResetLogic extends Logic {
 }
 
 @AutoWired
+export class CreateEmailPasswordResetLogic extends Logic {
+    @Inject private userService: UserService;
+    @Inject private mailerService: MailerService;
+    @Inject private config: Config;
+    @Inject private logger: Logger;
+
+    async execute(email: string): Promise<any> {
+
+    }
+}
+
+@AutoWired
 export class ResetPasswordLogic extends Logic {
     @Inject private userService: UserService;
 

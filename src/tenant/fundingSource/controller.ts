@@ -3,7 +3,7 @@ import {DELETE, GET, PATCH, Path, POST, Preprocessor} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {NotFoundError} from 'typescript-rest/dist/server-errors';
 import {BaseController} from '../../api';
-import * as dwolla from '../../dwolla';
+import {DwollaRequestError} from '../../payment/dwolla';
 import {GetIavTokenForTenantLogic} from './logic';
 import * as logicLayer from './logic';
 import * as models from './models';
@@ -30,7 +30,7 @@ export class TenantFundingSourcesController extends BaseController {
             const result = await logic.execute(parsedData, this.getRequestContext().getTenantId());
             return this.map(models.TenantFundingSourceResponse, result);
         } catch (e) {
-            if (e instanceof dwolla.DwollaRequestError) {
+            if (e instanceof DwollaRequestError) {
                 throw e.toValidationError(null, {
                     account: 'account',
                     routing: 'routing',

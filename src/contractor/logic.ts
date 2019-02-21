@@ -2,20 +2,20 @@ import * as _ from 'lodash';
 import * as objection from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {Errors} from 'typescript-rest';
-import * as dwolla from '../dwolla';
 import {Logger} from '../logger';
 import {Logic} from '../logic';
 import {MailerService} from '../mailer';
 import {User} from '../user/models';
 import {Statuses} from '../profile/models';
 import {Transaction} from '../transaction/models';
+import * as payments from '../payment';
 import {UserService} from '../user/service';
 import {ProfileService} from '../profile/service';
 import {TransactionService} from '../transaction/service';
 
 @AutoWired
 export class AddContractorOnRetryStatusLogic extends Logic {
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
     @Inject private userService: UserService;
 
     async execute(profileData: any, tenantId, userId: string) {
@@ -32,11 +32,11 @@ export class AddContractorOnRetryStatusLogic extends Logic {
         user.tenantProfile.merge(profileData);
 
         // update the payments (dwolla) account with the profile data
-        const customer = dwolla.customer.factory(profileData);
-        customer.type = dwolla.customer.TYPE.Personal;
+        const customer = payments.customers.factory(profileData);
+        customer.type = payments.customers.TYPE.Personal;
         const updateableFields = customer.updateableFields();
-        await this.dwollaClient.updateCustomer(user.baseProfile.paymentsUri, updateableFields);
-        const dwollaCustomer = await this.dwollaClient.getCustomer(user.baseProfile.paymentsUri);
+        await this.paymentClient.updateCustomer(user.baseProfile.paymentsUri, updateableFields);
+        const dwollaCustomer = await this.paymentClient.getCustomer(user.baseProfile.paymentsUri);
         user.baseProfile.paymentsType = dwollaCustomer.type;
 
         // update the status and send emails in necessary
@@ -55,7 +55,7 @@ export class AddContractorOnRetryStatusLogic extends Logic {
 @AutoWired
 export class CreateContractorLogic extends Logic {
     @Inject private userService: UserService;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
     @Inject private mailerService: MailerService;
     @Inject private logger: Logger;
 
@@ -74,10 +74,10 @@ export class CreateContractorLogic extends Logic {
         let status = user.baseProfile.paymentsStatus;
         if (!user.baseProfile.paymentsUri) {
             user.baseProfile.merge(profileData);
-            const customer = dwolla.customer.factory(profileData);
-            customer.type = dwolla.customer.TYPE.Personal;
-            user.baseProfile.paymentsUri = await this.dwollaClient.createCustomer(customer);
-            const dwollaCustomer = await this.dwollaClient.getCustomer(user.baseProfile.paymentsUri);
+            const customer = payments.customers.factory(profileData);
+            customer.type = payments.customers.TYPE.Personal;
+            user.baseProfile.paymentsUri = await this.paymentClient.createCustomer(customer);
+            const dwollaCustomer = await this.paymentClient.getCustomer(user.baseProfile.paymentsUri);
             status = dwollaCustomer.status;
             user.baseProfile.paymentsType = dwollaCustomer.type;
         }
@@ -123,16 +123,16 @@ export class UpdateContractorStatusLogic extends Logic {
         // TODO: move to background task
         try {
             switch (status) {
-                case dwolla.customer.CUSTOMER_STATUS.Retry:
+                case payments.customers.CUSTOMER_STATUS.Retry:
                     await this.mailerService.sendCustomerVerificationRetry(user);
                     break;
-                case dwolla.customer.CUSTOMER_STATUS.Document:
+                case payments.customers.CUSTOMER_STATUS.Document:
                     await this.mailerService.sendCustomerVerificationDocumentRequired(user);
                     break;
-                case dwolla.customer.CUSTOMER_STATUS.Suspended:
+                case payments.customers.CUSTOMER_STATUS.Suspended:
                     await this.mailerService.sendCustomerSuspended(user);
                     break;
-                case dwolla.customer.CUSTOMER_STATUS.Verified:
+                case payments.customers.CUSTOMER_STATUS.Verified:
                     await this.mailerService.sendCustomerVerified(user);
                     break;
                 default:

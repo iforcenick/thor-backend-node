@@ -28,7 +28,6 @@ export class UserAuthorizationLogic extends Logic {
         }
 
         let user;
-
         try {
             user = await this.authenticate(login, password, tenant);
         } catch (err) {
@@ -42,7 +41,6 @@ export class UserAuthorizationLogic extends Logic {
         }
 
         user.token = await new GenerateJwtLogic().execute(user);
-
         return user;
     }
 
@@ -94,26 +92,23 @@ export class RegisterUserLogic extends Logic {
         if (!user) {
             throw new Errors.NotFoundError('User not found');
         }
-
         user.password = await user.hashPassword(password);
-        // TODO: create function for the status state machine
-        user.tenantProfile.status = Statuses.profile;
 
         await objection.transaction(this.invitationService.transaction(), async _trx => {
             // create a new base profile with payment account if none exists
             await this.userService.update(user, _trx);
             if (!user.baseProfile) {
                 const baseProfile = Profile.factory({
-                    status: user.tenantProfile.status,
                     email: user.tenantProfile.email,
                     userId: user.id,
                 });
+                user.baseProfile = baseProfile;
                 await this.profileService.insert(baseProfile, _trx, false);
             }
             await this.profileService.update(user.tenantProfile, _trx);
 
             invitation.status = invitations.Status.used;
-            return await this.invitationService.update(invitation, _trx);
+            await this.invitationService.update(invitation, _trx);
         });
 
         const token = await new GenerateJwtLogic().execute(user);

@@ -2,12 +2,12 @@ import {transaction} from 'objection';
 import {AutoWired, Inject} from 'typescript-ioc';
 import {Errors} from 'typescript-rest';
 import * as db from '../db';
-import * as dwolla from '../dwolla';
+import {DwollaRequestError} from '../payment/dwolla';
 import {Logic} from '../logic';
 import {FundingSource, Statuses as VerificationStatuses} from './models';
 import {User} from '../user/models';
-import * as profiles from '../profile/models';
-import {Profile, Statuses} from '../profile/models';
+import {Statuses} from '../profile/models';
+import * as payments from '../payment';
 import {UserService} from '../user/service';
 import {FundingSourceService} from './services';
 import {ProfileService} from '../profile/service';
@@ -52,10 +52,8 @@ export class GetFundingSourcesLogic extends Logic {
 
         // NOTE: or clause to check both tenant and base profiles
         // for funding sources in order to be backwards compatible
-        const query = this.fundingService
-            .query()
-            .where(`${db.Tables.fundingSources}.profileId`, user.baseProfile.id)
-            .orWhere(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id);
+        const profileId = user.baseProfile ? user.baseProfile.id : user.tenantProfile.id;
+        const query = this.fundingService.query().where(`${db.Tables.fundingSources}.profileId`, profileId);
         const pag = this.userService.addPagination(query, page, limit);
         const fundingSources = await query;
         return new db.Paginated(new db.Pagination(pag.page, pag.limit, fundingSources.total), fundingSources.results);
@@ -75,10 +73,10 @@ export class GetDefaultFundingSourceLogic extends Logic {
 
         // NOTE: or clause to check both tenant and base profiles
         // for funding sources in order to be backwards compatible
+        const profileId = user.baseProfile ? user.baseProfile.id : user.tenantProfile.id;
         const query = this.fundingService
             .query()
-            .where(`${db.Tables.fundingSources}.profileId`, user.baseProfile.id)
-            .orWhere(`${db.Tables.fundingSources}.profileId`, user.tenantProfile.id)
+            .where(`${db.Tables.fundingSources}.profileId`, profileId)
             .andWhere('isDefault', true)
             .first();
 
@@ -115,7 +113,7 @@ export class SetDefaultFundingSourceLogic extends Logic {
 @AutoWired
 export class CreateFundingSourceFromBankAccountLogic extends Logic {
     @Inject private userService: UserService;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(data: any, userId: string): Promise<any> {
         try {
@@ -125,7 +123,7 @@ export class CreateFundingSourceFromBankAccountLogic extends Logic {
             }
 
             const profile = user.baseProfile;
-            const sourceUri = await this.dwollaClient.createFundingSource(
+            const sourceUri = await this.paymentClient.createFundingSource(
                 profile.paymentsUri,
                 data.routing,
                 data.account,
@@ -146,7 +144,7 @@ export class CreateFundingSourceFromBankAccountLogic extends Logic {
             const logic = new CreateFundingSourceLogic(this.context);
             return await logic.execute(user, fundingSource);
         } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
+            if (err instanceof DwollaRequestError) {
                 throw err.toValidationError(null, {
                     accountNumber: 'account',
                     routingNumber: 'routing',
@@ -160,8 +158,7 @@ export class CreateFundingSourceFromBankAccountLogic extends Logic {
 @AutoWired
 export class DeleteFundingSourceLogic extends Logic {
     @Inject private userService: UserService;
-    @Inject private dwollaClient: dwolla.Client;
-    @Inject private profileService: ProfileService;
+    @Inject private paymentClient: payments.PaymentClient;
     @Inject private fundingSourceService: FundingSourceService;
 
     async execute(id: string, userId: string): Promise<any> {
@@ -175,23 +172,22 @@ export class DeleteFundingSourceLogic extends Logic {
             throw new Errors.NotFoundError(`Could not find funding source by id ${id}`);
         }
 
-        if (fundingSource.profileId != user.baseProfile.id) {
-            await this._deleteFundingSource(user.baseProfile, fundingSource);
-        } else if (fundingSource.profileId != user.tenantProfile.id) {
-            await this._deleteFundingSource(user.tenantProfile, fundingSource);
+        if (fundingSource.profileId != user.baseProfile.id || fundingSource.profileId != user.tenantProfile.id) {
+            await this._deleteFundingSource(fundingSource);
         } else {
             throw new Errors.ConflictError('Funding source can only be delete by its owner.');
         }
     }
 
-    private async _deleteFundingSource(profile: Profile, fundingSource: FundingSource) {
-        await this.dwollaClient.deleteFundingSource(fundingSource.paymentsUri);
-        await transaction(this.profileService.transaction(), async trx => {
-            await profile
-                .$relatedQuery(profiles.Relations.fundingSources, trx)
-                .unrelate()
-                .where(`${FundingSource.tableName}.id`, fundingSource.id);
+    private async _deleteFundingSource(fundingSource: FundingSource) {
+        await transaction(this.fundingSourceService.transaction(), async trx => {
+            await this.fundingSourceService
+                .query(trx)
+                .table(db.Tables.profilesFundingSources)
+                .del()
+                .where('fundingSourceId', fundingSource.id);
             await this.fundingSourceService.delete(fundingSource, trx);
+            await this.paymentClient.deleteFundingSource(fundingSource.paymentsUri);
         });
     }
 }
@@ -199,7 +195,7 @@ export class DeleteFundingSourceLogic extends Logic {
 @AutoWired
 export class InitiateFundingSourceVerificationLogic extends Logic {
     @Inject private fundingService: FundingSourceService;
-    @Inject private client: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(id: string) {
         const fundingSource = await this.fundingService.get(id);
@@ -211,7 +207,7 @@ export class InitiateFundingSourceVerificationLogic extends Logic {
             throw new Errors.NotAcceptableError('Funding source verification cannot be initiated');
         }
 
-        if (!(await this.client.createFundingSourceMicroDeposit(fundingSource.paymentsUri))) {
+        if (!(await this.paymentClient.createFundingSourceMicroDeposit(fundingSource.paymentsUri))) {
             throw new Errors.NotAcceptableError('Funding source verification initiation failed');
         }
 
@@ -223,7 +219,7 @@ export class InitiateFundingSourceVerificationLogic extends Logic {
 @AutoWired
 export class VerifyFundingSourceLogic extends Logic {
     @Inject private fundingService: FundingSourceService;
-    @Inject private client: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(amount1: number, amount2: number, id: string) {
         const fundingSource = await this.fundingService.get(id);
@@ -236,9 +232,9 @@ export class VerifyFundingSourceLogic extends Logic {
         }
 
         try {
-            await this.client.verifyFundingSourceMicroDeposit(fundingSource.paymentsUri, amount1, amount2);
+            await this.paymentClient.verifyFundingSourceMicroDeposit(fundingSource.paymentsUri, amount1, amount2);
         } catch (e) {
-            if (e instanceof dwolla.DwollaRequestError) {
+            if (e instanceof DwollaRequestError) {
                 // I HATE DWOLLA SO MUCH SINCE THEY MADE ME DO IT!
                 if (e.message.search('Wrong amount') != -1) {
                     throw new Errors.ConflictError('Wrong amounts');
@@ -259,7 +255,7 @@ export class VerifyFundingSourceLogic extends Logic {
 @AutoWired
 export class GetIavTokenLogic extends Logic {
     @Inject private userService: UserService;
-    @Inject private client: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(userId: string) {
         const user = await this.userService.get(userId);
@@ -267,9 +263,9 @@ export class GetIavTokenLogic extends Logic {
             throw new Errors.NotFoundError();
         }
         try {
-            return await this.client.getIavToken(user.baseProfile.paymentsUri);
+            return await this.paymentClient.getIavToken(user.baseProfile.paymentsUri);
         } catch (e) {
-            if (e instanceof dwolla.DwollaRequestError) {
+            if (e instanceof DwollaRequestError) {
                 throw e.toValidationError();
             }
             throw e;
@@ -281,7 +277,7 @@ export class GetIavTokenLogic extends Logic {
 export class CreateFundingSourceFromIavLogic extends Logic {
     @Inject private userService: UserService;
     @Inject private fundingService: FundingSourceService;
-    @Inject private client: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(userId: string, uri: string): Promise<FundingSource> {
         const user = await this.userService.get(userId);
@@ -295,7 +291,7 @@ export class CreateFundingSourceFromIavLogic extends Logic {
 
         let dwollaFunding;
         try {
-            dwollaFunding = await this.client.getFundingSource(uri);
+            dwollaFunding = await this.paymentClient.getFundingSource(uri);
         } catch (e) {
             throw new Errors.NotFoundError(e.toValidationError().message);
         }

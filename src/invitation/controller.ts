@@ -117,7 +117,7 @@ export class UserInvitationController extends BaseController {
     @Preprocessor(BaseController.requireAdmin)
     async resendInvitation(@PathParam('userId') userId: string) {
         const logic = new logicLayer.ResendInvitationLogic(this.getRequestContext());
-        await logic.execute(userId);
+        await logic.execute(null, userId);
     }
 
     /**

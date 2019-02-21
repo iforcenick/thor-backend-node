@@ -1,15 +1,18 @@
-import Joi = require('joi');
+import BaseJoi = require('joi');
+import Extension = require('joi-date-extensions');
 import * as _ from 'lodash';
 import moment = require('moment');
 import {mapper} from '../api';
 import * as db from '../db';
-import * as dwolla from '../dwolla';
 import {Mapper} from '../mapper';
 import * as tenant from '../tenant/models';
 import * as user from '../user/models';
 import {FundingSource} from '../fundingSource/models';
+import * as payments from '../payment';
 import * as regex from '../validation/regex';
 import * as role from '../user/role';
+
+const Joi = BaseJoi.extend(Extension);
 
 export const enum Relations {
     user = 'user',
@@ -140,7 +143,7 @@ export class Profile extends db.Model {
     }
 
     dwollaUpdateAvailable() {
-        return [dwolla.customer.CUSTOMER_STATUS.Verified, dwolla.customer.CUSTOMER_STATUS.Unverified].includes(
+        return [payments.customers.CUSTOMER_STATUS.Verified, payments.customers.CUSTOMER_STATUS.Unverified].includes(
             this.paymentsStatus,
         );
     }
@@ -186,10 +189,10 @@ export const profileRequestSchema = Joi.object().keys({
     lastName: Joi.string().required(),
     phone: Joi.string().allow('', null).regex(regex.phoneRegex),
     email: Joi.string().required().email(),
-    dateOfBirth: Joi.date().max(moment(Date.now()).subtract(18, 'years')
-                .calendar()).error(message => {
+    dateOfBirth: Joi.date().format('YYYY-MM-DD').required()
+        .max(moment(Date.now()).subtract(18, 'years').calendar()).error(message => {
             return 'You must be at least 18 years old';
-        }).required(),
+        }),
     ssn: Joi.string().required(),
     country: Joi.string().required(),
     state: Joi.string().required().uppercase().length(2),
@@ -200,7 +203,6 @@ export const profileRequestSchema = Joi.object().keys({
 });
 
 export const profilePatchSchema = Joi.object().keys({
-    externalId: Joi.string().allow('', null),
     firstName: Joi.string(),
     lastName: Joi.string(),
     phone: Joi.string().regex(regex.phoneRegex),
@@ -210,8 +212,8 @@ export const profilePatchSchema = Joi.object().keys({
     postalCode: Joi.string(),
     address1: Joi.string().max(50),
     address2: Joi.string().allow('', null).max(50),
-    dateOfBirth: Joi.date().max(moment(Date.now()).subtract(18, 'years')
-            .calendar()).error(message => {
+    dateOfBirth: Joi.date().format('YYYY-MM-DD').allow(null)
+        .max(moment(Date.now()).subtract(18, 'years').calendar()).error(message => {
             return 'You must be at least 18 years old';
-        }).allow(null),
+        }),
 });

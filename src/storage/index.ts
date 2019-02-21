@@ -1,3 +1,3 @@
 import {StorageClient, StorageClientError} from './client';
 
-export {StorageClientError, StorageClient};
+export {StorageClient, StorageClientError};

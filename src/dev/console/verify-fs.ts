@@ -1,9 +1,9 @@
 import {Container} from 'typescript-ioc';
-import * as dwolla from '../../dwolla';
+import {DwollaPaymentClient} from '../../payment/dwolla';
 
-const client: dwolla.Client = Container.get(dwolla.Client);
+const client: DwollaPaymentClient = Container.get(DwollaPaymentClient);
 
-const verify = async (uri) => {
+const verify = async uri => {
     try {
         if (await client.createFundingSourceMicroDeposit(uri)) {
             const result = await client.verifyFundingSourceMicroDeposit(uri, 0.01, 0.02);

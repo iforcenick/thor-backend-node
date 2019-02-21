@@ -4,7 +4,7 @@ import {Security, Tags} from 'typescript-rest-swagger';
 import * as Errors from 'typescript-rest/dist/server-errors';
 import {BaseController} from '../../api';
 import {Pagination} from '../../db';
-import * as dwolla from '../../dwolla';
+import {DwollaRequestError} from '../../payment/dwolla';
 import * as logicLayer from './logic';
 import * as models from './models';
 
@@ -26,7 +26,7 @@ export abstract class BeneficialOwnerController extends BaseController {
             const beneficialOwner = await logic.execute(validateResult, this.getRequestContext().getTenantId());
             return this.map(models.BeneficialOwnerResponse, beneficialOwner);
         } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
+            if (err instanceof DwollaRequestError) {
                 throw err.toValidationError(null, null);
             }
 
@@ -51,7 +51,7 @@ export abstract class BeneficialOwnerController extends BaseController {
             const beneficialOwner = await retryLogic.execute(validateResult, this.getRequestContext().getTenantId());
             return this.map(models.BeneficialOwnerResponse, beneficialOwner);
         } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
+            if (err instanceof DwollaRequestError) {
                 throw err.toValidationError(null, null);
             }
 
@@ -75,7 +75,7 @@ export abstract class BeneficialOwnerController extends BaseController {
             const beneficialOwner = await logic.execute(validateResult);
             return this.map(models.EditBeneficialOwnerResponse, beneficialOwner);
         } catch (err) {
-            if (err instanceof dwolla.DwollaRequestError) {
+            if (err instanceof DwollaRequestError) {
                 throw err.toValidationError(null, null);
             }
             throw new Errors.InternalServerError(err.message);

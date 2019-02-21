@@ -5,8 +5,8 @@ import {AutoWired, Inject} from 'typescript-ioc';
 import {Errors} from 'typescript-rest';
 import {BaseError} from '../api';
 import {Config} from '../config';
-import * as dwolla from '../dwolla';
-import {DwollaRequestError} from '../dwolla';
+import * as payments from '../payment';
+import {DwollaRequestError} from '../payment/dwolla';
 import {Logger} from '../logger';
 import {Logic} from '../logic';
 import {GetDefaultFundingSourceLogic} from '../fundingSource/logic';
@@ -79,7 +79,9 @@ export class UpdateTransactionStatusLogic extends Logic {
         try {
             const user = await this.userService.get(transactions[0].userId);
             const admin = await this.userService.get(transactions[0].adminId);
-            const destination = await this.fundingSourceService.getByPaymentsUri(transactions[0].transfer.destinationUri);
+            const destination = await this.fundingSourceService.getByPaymentsUri(
+                transactions[0].transfer.destinationUri,
+            );
             switch (status) {
                 case Statuses.processing:
                     await this.mailer.sendCustomerTransferCreatedSender(user, admin, transactions[0], destination);
@@ -106,7 +108,7 @@ export class UpdateTransactionStatusLogic extends Logic {
 @AutoWired
 export class CancelTransferLogic extends Logic {
     @Inject private transactionService: TransactionService;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(transferId: string): Promise<any> {
         const transactions: Array<Transaction> = await this.transactionService.getByTransferId(transferId);
@@ -114,7 +116,7 @@ export class CancelTransferLogic extends Logic {
             throw new Errors.NotFoundError('transfer could not be found');
         }
         const logic = new UpdateTransactionStatusLogic(this.context);
-        const result = await this.dwollaClient.cancelTransfer(transactions[0].transfer.paymentsUri);
+        const result = await this.paymentClient.cancelTransfer(transactions[0].transfer.paymentsUri);
 
         if (result) {
             await logic.execute(transactions, Statuses.cancelled);
@@ -124,7 +126,7 @@ export class CancelTransferLogic extends Logic {
 
 @AutoWired
 export class ChargeTenantLogic extends Logic {
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
     @Inject private tenantService: TenantService;
     @Inject private transferService: TransferService;
     @Inject private config: Config;
@@ -146,15 +148,15 @@ export class ChargeTenantLogic extends Logic {
         transfer.sourceUri = tenant.fundingSourceUri;
         transfer.value = value;
 
-        const dwollaTransfer = dwolla.transfer.factory({});
+        const dwollaTransfer = payments.transfers.factory({});
         dwollaTransfer.setSource(transfer.sourceUri);
         dwollaTransfer.setDestination(transfer.destinationUri);
         dwollaTransfer.setAmount(transfer.value);
         dwollaTransfer.setCurrency('USD');
 
         try {
-            transfer.paymentsUri = await this.dwollaClient.createTransfer(dwollaTransfer);
-            const _transfer = await this.dwollaClient.getTransfer(transfer.paymentsUri);
+            transfer.paymentsUri = await this.paymentClient.createTransfer(dwollaTransfer);
+            const _transfer = await this.paymentClient.getTransfer(transfer.paymentsUri);
             transfer.status = _transfer.status;
             transfer.tenantId = tenant.id;
             return await this.transferService.createTransfer(transfer);
@@ -233,7 +235,7 @@ export class CreateTransactionsTransferLogic extends Logic {
     @Inject private transactionService: TransactionService;
     @Inject private userService: UserService;
     @Inject private transferService: TransferService;
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     async execute(data: Array<string>): Promise<any> {
         const transactions = [];
@@ -286,7 +288,7 @@ export class CreateTransactionsTransferLogic extends Logic {
     }
 
     private async createExternalTransfer(_transfer: Transfer, transactions: Array<Transaction>) {
-        const transfer = dwolla.transfer.factory({});
+        const transfer = payments.transfers.factory({});
         transfer.setSource(_transfer.sourceUri);
         transfer.setDestination(_transfer.destinationUri);
         transfer.setAmount(_transfer.value);
@@ -294,8 +296,8 @@ export class CreateTransactionsTransferLogic extends Logic {
 
         // TODO: better error handling
         try {
-            _transfer.paymentsUri = await this.dwollaClient.createTransfer(transfer);
-            const _dwollaTransfer = await this.dwollaClient.getTransfer(_transfer.paymentsUri);
+            _transfer.paymentsUri = await this.paymentClient.createTransfer(transfer);
+            const _dwollaTransfer = await this.paymentClient.getTransfer(_transfer.paymentsUri);
             _transfer.status = _dwollaTransfer.status;
             await transaction(this.transactionService.transaction(), async trx => {
                 await this.transferService.update(_transfer, trx);

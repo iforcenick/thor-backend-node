@@ -3,16 +3,16 @@ import {AutoWired, Inject} from 'typescript-ioc';
 import {Config} from '../config';
 import * as crypto from '../crypto';
 import * as db from '../db';
-import * as dwolla from '../dwolla';
 import {FundingSource} from '../fundingSource/models';
 import {Profile} from './models';
 import * as models from './models';
+import * as payments from '../payment';
 import {RoleService} from '../user/role/service';
 
 @AutoWired
 export class ProfileService extends db.ModelService<models.Profile> {
     @Inject protected roleService: RoleService;
-    @Inject protected dwollaClient: dwolla.Client;
+    @Inject protected paymentClient: payments.PaymentClient;
     @Inject protected config: Config;
 
     protected setModelType() {
@@ -21,10 +21,10 @@ export class ProfileService extends db.ModelService<models.Profile> {
 
     async updateWithDwolla(profile: models.Profile, trx?: objection.Transaction): Promise<any> {
         try {
-            const customer = dwolla.customer.factory(profile);
+            const customer = payments.customers.factory(profile);
             customer.status = profile.paymentsStatus;
             customer.type = profile.paymentsType;
-            await this.dwollaClient.updateCustomer(profile.paymentsUri, customer.updateableFields());
+            await this.paymentClient.updateCustomer(profile.paymentsUri, customer.updateableFields());
             return await this.update(profile, trx);
         } catch (err) {
             throw err;

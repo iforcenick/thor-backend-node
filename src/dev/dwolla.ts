@@ -1,14 +1,15 @@
 import {Container} from 'typescript-ioc';
-import * as dwolla from '../dwolla';
+import {DwollaPaymentClient} from '../payment/dwolla';
+import * as payments from '../payment';
 
-const client: dwolla.Client = Container.get(dwolla.Client);
+const client: DwollaPaymentClient = Container.get(DwollaPaymentClient);
 const customerId = 'f1a19d24-55c5-4819-8378-b6b8f5a4a040';
 const baseUrl = 'https://api-sandbox.dwolla.com/';
 const customersUrl = baseUrl + 'customers/';
 const transfersUrl = baseUrl + 'transfers/';
 const fundingSources = baseUrl + 'funding-sources/';
 
-const getCustomer = async (id) => {
+const getCustomer = async id => {
     try {
         const customer = await client.getCustomer(customersUrl + id);
         console.log(customer);
@@ -17,7 +18,7 @@ const getCustomer = async (id) => {
     }
 };
 
-const listDocuments = async (id) => {
+const listDocuments = async id => {
     try {
         const docs = await client.listDocuments(customersUrl + id);
         console.log(docs);
@@ -26,7 +27,7 @@ const listDocuments = async (id) => {
     }
 };
 
-const listBusinessVerifiedBeneficialOwners = async (id) => {
+const listBusinessVerifiedBeneficialOwners = async id => {
     try {
         const docs = await client.listBusinessVerifiedBeneficialOwners(customersUrl + id);
         console.log(docs);
@@ -35,9 +36,9 @@ const listBusinessVerifiedBeneficialOwners = async (id) => {
     }
 };
 
-const createBusinessVerifiedBeneficialOwner = async (id) => {
+const createBusinessVerifiedBeneficialOwner = async id => {
     try {
-        let owner = dwolla.customer.beneficialOwnerFactory({
+        let owner = payments.customers.beneficialOwnerFactory({
             firstName: 'firstName',
             lastName: 'lastName',
             title: 'chief',
@@ -50,7 +51,7 @@ const createBusinessVerifiedBeneficialOwner = async (id) => {
                 stateProvinceRegion: 'stateProvinceRegion',
                 postalCode: 'postalCode',
                 country: 'US',
-            }
+            },
         });
         const location = await client.createBusinessVerifiedBeneficialOwner(customersUrl + id, owner);
         owner = await client.getBusinessVerifiedBeneficialOwner(location);
@@ -60,7 +61,7 @@ const createBusinessVerifiedBeneficialOwner = async (id) => {
     }
 };
 
-const listFundingSources = async (id) => {
+const listFundingSources = async id => {
     try {
         const sources = await client.listFundingSource(customersUrl + id);
         console.log(sources);
@@ -69,7 +70,7 @@ const listFundingSources = async (id) => {
     }
 };
 
-const getBalanceSource = async (id) => {
+const getBalanceSource = async id => {
     try {
         const source = await client.getBalanceFundingSource(customersUrl + id);
         console.log(source);
@@ -78,7 +79,7 @@ const getBalanceSource = async (id) => {
     }
 };
 
-const getFundingSource = async (id) => {
+const getFundingSource = async id => {
     try {
         const source = await client.getFundingSource(fundingSources + id);
         console.log(source);
@@ -87,7 +88,7 @@ const getFundingSource = async (id) => {
     }
 };
 
-const cancelTransfer = async (id) => {
+const cancelTransfer = async id => {
     try {
         await client.getTransfer(transfersUrl + id);
         const source = await client.cancelTransfer(transfersUrl + id);
@@ -110,7 +111,7 @@ const listBusinessClassification = async () => {
 
 const createTransfer = async (from, to, amount) => {
     try {
-        const transfer = dwolla.transfer.factory({});
+        const transfer = payments.transfers.factory({});
         transfer.setSource(from);
         transfer.setDestination(to);
         transfer.setAmount(amount);
@@ -122,7 +123,7 @@ const createTransfer = async (from, to, amount) => {
     }
 };
 
-const certifyBusinessVerifiedBeneficialOwnership = async (uri) => {
+const certifyBusinessVerifiedBeneficialOwnership = async uri => {
     try {
         const result = await client.certifyBusinessVerifiedBeneficialOwnership(uri);
         console.log(result);
@@ -131,7 +132,7 @@ const certifyBusinessVerifiedBeneficialOwnership = async (uri) => {
     }
 };
 
-const createFundingSourceMicroDeposit = async (uri) => {
+const createFundingSourceMicroDeposit = async uri => {
     try {
         const result = await client.createFundingSourceMicroDeposit(uri);
         console.log(result);

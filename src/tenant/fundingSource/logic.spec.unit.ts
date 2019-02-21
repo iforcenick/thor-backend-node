@@ -8,8 +8,8 @@ import {AddVerifyingFundingSourceForTenantLogic} from './logic';
 import {FundingSourceService} from '../../fundingSource/services';
 import {TenantService} from '../service';
 import {Tenant} from '../models';
-import * as dwolla from '../../dwolla';
-import {Source} from '../../dwolla/funding';
+import * as payments from '../../payment';
+import {Source} from '../../payment/fundingSource';
 import {User} from '../../user/models';
 import {Auth, AuthType} from '../../auth/models';
 import {Types} from '../../user/role/models';
@@ -18,7 +18,7 @@ import {MailerService} from '../../mailer';
 import {Profile} from '../../profile/models';
 import {NotAcceptableError, NotFoundError} from 'typescript-rest/dist/server-errors';
 import {ValidationError} from '../../errors';
-import {DwollaRequestError} from '../../dwolla';
+import {DwollaRequestError, DwollaPaymentClient} from '../../payment/dwolla';
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -68,9 +68,9 @@ describe('AddVerifyingFundingSourceForTenantLogic', () => {
             });
             sandbox.stub(sourceStub, 'verificationStatus').returns('completed');
 
-            const clientStub = Container.get(dwolla.Client);
+            const clientStub = Container.get(DwollaPaymentClient);
             sandbox.stub(clientStub, 'getFundingSource').returns(Promise.resolve(sourceStub));
-            sut.client = clientStub;
+            sut.paymentClient = clientStub;
 
             const mailerStub = Container.get(MailerService);
             sandbox.stub(mailerStub, 'sendFundingSourceAdded').returns(Promise.resolve());
@@ -128,9 +128,9 @@ describe('AddVerifyingFundingSourceForTenantLogic', () => {
             });
             sandbox.stub(sourceStub, 'verificationStatus').returns('completed');
 
-            const clientStub = Container.get(dwolla.Client);
+            const clientStub = Container.get(DwollaPaymentClient);
             sandbox.stub(clientStub, 'getFundingSource').returns(Promise.resolve(sourceStub));
-            sut.client = clientStub;
+            sut.paymentClient = clientStub;
 
             const mailerStub = Container.get(MailerService);
             sandbox.stub(mailerStub, 'sendFundingSourceAdded').returns(Promise.resolve());
@@ -174,7 +174,7 @@ describe('AddVerifyingFundingSourceForTenantLogic', () => {
             });
             sandbox.stub(sourceStub, 'verificationStatus').returns('completed');
 
-            const clientStub = Container.get(dwolla.Client);
+            const clientStub = Container.get(DwollaPaymentClient);
 
             const error = new DwollaRequestError();
             const parsedErrors = [];
@@ -187,7 +187,7 @@ describe('AddVerifyingFundingSourceForTenantLogic', () => {
             const validationError = new ValidationError({details: parsedErrors});
             sandbox.stub(error, 'toValidationError').returns(validationError);
             sandbox.stub(clientStub, 'getFundingSource').throws(error);
-            sut.client = clientStub;
+            sut.paymentClient = clientStub;
 
             const mailerStub = Container.get(MailerService);
             sandbox.stub(mailerStub, 'sendFundingSourceAdded').returns(Promise.resolve());

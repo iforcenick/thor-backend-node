@@ -1,8 +1,9 @@
 import {Container} from 'typescript-ioc';
-import * as dwolla from '../../dwolla';
 import {Config} from '../../config';
+import * as payments from '../../payment';
+import {DwollaPaymentClient} from '../../payment/dwolla';
 
-const client: dwolla.Client = Container.get(dwolla.Client);
+const client: DwollaPaymentClient = Container.get(DwollaPaymentClient);
 const config: Config = Container.get(Config);
 const masterBalance = config.get('dwolla.masterFunding');
 const dwollaUri = 'https://api-sandbox.dwolla.com'; // TODO: get from config
@@ -16,14 +17,18 @@ const transfer = async (from, amount) => {
     }
 
     try {
-        const transfer = dwolla.transfer.factory({});
+        const transfer = payments.transfers.factory({});
         transfer.setSource(from);
         transfer.setDestination(masterBalance);
         transfer.setAmount(amount);
         transfer.setCurrency('USD');
         const result = await client.createTransfer(transfer);
         const dwollaTransfer = await client.getTransfer(result);
-        console.log(`Transfer created, amount: ${dwollaTransfer.getAmount()}, status: ${dwollaTransfer.status}, uri: ${dwollaTransfer.localization}`);
+        console.log(
+            `Transfer created, amount: ${dwollaTransfer.getAmount()}, status: ${dwollaTransfer.status}, uri: ${
+                dwollaTransfer.localization
+            }`,
+        );
     } catch (e) {
         console.log(e);
     }

@@ -1,87 +1,44 @@
-import {AutoWired, Inject, Singleton} from 'typescript-ioc';
-import {Storage} from '@google-cloud/storage';
+import {AutoWired, Inject} from 'typescript-ioc';
 import {Config} from '../config';
+import {Logger} from '../logger';
 
-@Singleton
 @AutoWired
-export class StorageClient {
-    @Inject private config: Config;
-    private storage;
-    private bucket;
+export abstract class StorageClient {
+    @Inject protected config: Config;
+    @Inject protected logger: Logger;
 
-    constructor() {
-        this.storage = new Storage();
-        this.bucket = this.storage.bucket(this.config.get('storage.bucket'));
-    }
-
-    private async _save(fileName: string, data: any): Promise<boolean> {
-        const file = this.bucket.file(fileName);
-
-        try {
-            await file.save(data);
-        } catch (e) {
-            throw new StorageClientError(e);
-        }
-
-        return true;
-    }
-
-    private async _getDownloadLink(fileName: string): Promise<string> {
-        const file = this.bucket.file(fileName);
-
-        const options = {
-            action: 'read',
-            expires: Date.now() + 1000 * 60 * 60, // one hour
-        };
-
-        try {
-            const [url] = await file.getSignedUrl(options);
-            return url;
-        } catch (e) {
-            throw new StorageClientError(e);
-        }
-    }
-
-    private async _delete(fileName: string): Promise<boolean> {
-        const file = this.bucket.file(fileName);
-
-        try {
-            await file.delete();
-        } catch (e) {
-            throw new StorageClientError(e);
-        }
-
-        return true;
-    }
+    abstract async save(fileName: string, data: any): Promise<boolean>;
+    abstract async getDownloadLink(fileName: string): Promise<string>;
+    abstract async delete(fileName: string): Promise<boolean>;
 
     public async saveDocument(fileName: string, data: any) {
         fileName = `documents/${fileName}`;
-        return await this._save(fileName, data);
+        return await this.save(fileName, data);
     }
 
     public async getDocumentDownloadLink(fileName: string) {
         fileName = `documents/${fileName}`;
-        return await this._getDownloadLink(fileName);
+        return await this.getDownloadLink(fileName);
     }
 
     public async deleteDocument(fileName: string) {
         fileName = `documents/${fileName}`;
-        return await this._delete(fileName);
+        return await this.delete(fileName);
     }
 
     public async saveUserDocument(fileName: string, data: any) {
         fileName = `users/documents/${fileName}`;
-        return await this._save(fileName, data);
+        return await this.save(fileName, data);
     }
 
     public async getUserDocumentDownloadLink(fileName: string) {
         fileName = `users/documents/${fileName}`;
-        return await this._getDownloadLink(fileName);
+        return await this.getDownloadLink(fileName);
     }
 
     public async deleteUserDocument(fileName: string) {
         fileName = `users/documents/${fileName}`;
-        return await this._delete(fileName);
+        return await this.delete(fileName);
     }
 }
 

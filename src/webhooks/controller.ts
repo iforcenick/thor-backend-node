@@ -1,26 +1,22 @@
-import {Errors, Path, POST} from 'typescript-rest';
-import {BaseController} from '../api';
 import {Inject} from 'typescript-ioc';
-import * as dwolla from '../dwolla';
-import {event} from './index';
-import {IEvent} from './event';
+import {Path, POST} from 'typescript-rest';
 import {Tags} from 'typescript-rest-swagger';
-import {TransactionService} from '../transaction/service';
-import {UpdateTransactionStatusLogic} from '../transaction/logic';
-import {EventFactory} from '../webhooks/logic';
+import {BaseController} from '../api';
 import {Config} from '../config';
+import {IEvent} from '../payment/event';
+import {EventFactory} from '../webhooks/logic';
+import {events} from '../payment';
 
 @Tags('dwolla')
 @Path('/dwolla/events')
-export class DwollaController extends BaseController {
-
+export class WebhookController extends BaseController {
     @Inject config: Config;
 
     @POST
     @Path('')
     async events(data: IEvent) {
         try {
-            const _event = event.factory(data);
+            const _event = events.factory(data);
             this.logger.info('Dwolla event: ' + JSON.stringify(_event, null, 2));
 
             const eventLogic = EventFactory.get(_event, this.getRequestContext());

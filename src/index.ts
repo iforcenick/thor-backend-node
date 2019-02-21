@@ -1,9 +1,11 @@
 'use strict';
 
 import 'reflect-metadata';
+import SandboxIoC from './ioc';
 import {ApiServer} from './server';
 
 export const start = (): Promise<void> => {
+    SandboxIoC.configure();
     return new Promise<void>((resolve, reject) => {
         const apiServer = new ApiServer();
         apiServer.start()

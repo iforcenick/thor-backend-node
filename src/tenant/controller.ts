@@ -1,13 +1,13 @@
+import * as _ from 'lodash';
 import {Inject} from 'typescript-ioc';
 import {Errors, FileParam, GET, PATCH, Path, POST, Preprocessor, PUT, QueryParam} from 'typescript-rest';
 import {Security, Tags} from 'typescript-rest-swagger';
 import {BaseController} from '../api';
-import * as dwolla from '../dwolla';
-import * as _ from 'lodash';
 import * as logicLayer from './logic';
 import * as models from './models';
 import {BusinessClassificationsResponse} from './models';
 import {TenantCompanyDocument} from './models';
+import * as payments from '../payment';
 
 @Security('api_key')
 @Path('/tenants')
@@ -76,7 +76,7 @@ export class TenantController extends BaseController {
 @Path('/tenants/company')
 @Tags('tenants', 'company')
 export class TenantCompanyController extends BaseController {
-    @Inject private dwollaClient: dwolla.Client;
+    @Inject private paymentClient: payments.PaymentClient;
 
     /**
      * Create the current tenant company profile
@@ -182,7 +182,7 @@ export class TenantCompanyController extends BaseController {
     async getBusinessCategories() {
         let businessCategories;
 
-        businessCategories = await this.dwollaClient.listBusinessClassification();
+        businessCategories = await this.paymentClient.listBusinessClassification();
         return this.map(BusinessClassificationsResponse, businessCategories);
     }
 
@@ -223,7 +223,7 @@ export class TenantCompanyController extends BaseController {
             throw new Errors.NotAcceptableError('File missing');
         }
 
-        if (!_.has(dwolla.documents.TYPE, type)) {
+        if (!_.has(payments.documents.TYPE, type)) {
             throw new Errors.ConflictError('Invalid type');
         }
 

@@ -266,8 +266,15 @@ export class ResendInvitationLogic extends Logic {
     @Inject private logger: Logger;
     @Inject private config: Config;
 
-    async execute(id: string) {
-        const invitation = await this.invitationService.get(id);
+    async execute(id?: string, userId?: string) {
+        let invitation;
+        if (id) {
+            invitation = await this.invitationService.get(id);
+        } else if (userId) {
+            invitation = await this.invitationService.getByUserId(userId);
+        } else {
+            throw new Errors.BadRequestError('missing id');
+        }
         if (!invitation) {
             throw new Errors.NotFoundError('Invitation not found');
         }

@@ -1,9 +1,9 @@
 import {Container} from 'typescript-ioc';
-import * as dwolla from '../../dwolla';
+import {DwollaPaymentClient} from '../../payment/dwolla';
 
-const client: dwolla.Client = Container.get(dwolla.Client);
+const client: DwollaPaymentClient = Container.get(DwollaPaymentClient);
 
-const certify = async (uri) => {
+const certify = async uri => {
     try {
         const result = await client.certifyBusinessVerifiedBeneficialOwnership(uri);
         console.log(result);
