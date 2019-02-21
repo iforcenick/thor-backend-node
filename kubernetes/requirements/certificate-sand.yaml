@@ -6,7 +6,7 @@ metadata:
 spec:
   secretName: odin-api-tls
   issuerRef:
-    name: letsencrypt-staging
+    name: letsencrypt-prod
     kind: ClusterIssuer
   commonName: odin-api.sand.gothor.com
   dnsNames:

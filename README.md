@@ -55,7 +55,20 @@ example usage:
 node /dist/dev/console create-tenant.js thor godOfThunder@thor.com
 ```
 
-### Clusters
+### Deploy to Cluster
+* Commit the build to the branch
+* Find the version tag in Google Container Repository
+* Get the credentials for the desired cluster
+   ```
+   gcloud container clusters get-credentials ${CLUSTER_NAME}
+   ```
+* Push the image to the cluster
+   ```
+   helm upgrade --values ${VALUES_FILE} thor-api kubernetes/thor-api --set env.DOCKER_REPOSITORY="us.gcr.io/odin-214321/thor-api" --set env.TAG=${BUILD_TAG} --wait --timeout 600
+   ```
+
+### Creating Clusters
+* Install gcloud CLI tools
 * Install Helm locally 
    ```
    brew install kubernetes-helm
@@ -82,7 +95,7 @@ node /dist/dev/console create-tenant.js thor godOfThunder@thor.com
    ```
    gcloud compute addresses create ${STATIC_ADDRESS_NAME} --global
    ```
-* Add IP address to domain DNS
+* Add IP address to your domain DNS
 * Install Tiller on Cluster 
    ```
    kubectl create serviceaccount tiller --namespace=kube-system
@@ -95,7 +108,7 @@ node /dist/dev/console create-tenant.js thor godOfThunder@thor.com
    ```
 * Create a namespace
    ```
-   kubectl create namespace thor-api
+   kubectl apply -f ./kubernetes/requirements/namespace.yaml
    ```
 * Create the credentials
 
@@ -122,6 +135,8 @@ node /dist/dev/console create-tenant.js thor godOfThunder@thor.com
    * Encoding a secret to base 64: ```echo -n '${STRING_TO_ENCODE}' | base64```
    * Decoding a secret from base 64: ```echo -n '${STRING_TO_DECODE}' | base64 --decode```
 * Deploy the storage key
+   * Create a new service account with storage admin access using the Google Cloud Console
+   * Download the json key file
    ```
    kubectl create secret generic storage-key --from-file=key.json=${KEY_FILE} --namespace thor-api
    ```
@@ -129,6 +144,7 @@ node /dist/dev/console create-tenant.js thor godOfThunder@thor.com
    ```
    helm install --values ${VALUES_FILE} kubernetes/thor-api --set env.DOCKER_REPOSITORY="us.gcr.io/odin-214321/thor-api" --set env.TAG=${BUILD_TAG} --name thor-api --namespace thor-api
    ```
+   *Initially set the ingress->enabled key to false*
 * Deploy Cert Manager
    ```
    kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/00-crds.yaml --namespace=thor-api
