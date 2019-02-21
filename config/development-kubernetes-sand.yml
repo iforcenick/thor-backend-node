@@ -8,3 +8,6 @@ db:
 swagger:
   host: odin-api.sand.gothor.com
   schema: https
+mailer:
+  override:
+    to: thorodin@mailinator.com
