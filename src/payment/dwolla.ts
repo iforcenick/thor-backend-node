@@ -1,6 +1,6 @@
 import moment = require('moment');
 import * as dwolla from 'dwolla-v2';
-import {AutoWired, Singleton} from 'typescript-ioc';
+import {AutoWired, Singleton, Provides} from 'typescript-ioc';
 import {Errors} from 'typescript-rest';
 import {PaymentClient} from './client';
 import * as customers from './customer';
@@ -77,6 +77,7 @@ class AuthorizationState {
 
 @AutoWired
 @Singleton
+@Provides(PaymentClient)
 export class DwollaPaymentClient extends PaymentClient {
     private key: string;
     private secret: string;
@@ -91,14 +92,14 @@ export class DwollaPaymentClient extends PaymentClient {
         this.secret = this.config.get('dwolla.secret');
         this.environment = this.config.get('dwolla.environment');
         this.authState = new AuthorizationState();
-        this._client = new dwolla.client({
+        this._client = new dwolla.Client({
             key: this.key,
             secret: this.secret,
             environment: this.environment,
         });
     }
 
-    public async authorize(): Promise<any> {
+    async authorize(): Promise<any> {
         if (this.authState.requiresAuthorization()) {
             this.client = await this._client.auth.client();
             this.authState.authorize(this.config.get('dwolla.expirationTime'));
@@ -155,65 +156,65 @@ export class DwollaPaymentClient extends PaymentClient {
         return await this.post(`webhook-subscriptions/${id}`, {paused: false});
     }
 
-    public async getRoot(): Promise<any> {
+    async getRoot(): Promise<any> {
         return await this.client.get('/');
     }
 
-    public async createCustomer(_customer: customers.ICustomer): Promise<string> {
+    async createCustomer(_customer: customers.ICustomer): Promise<string> {
         const response = await this.post('customers', _customer);
         return response.headers.get('location');
     }
 
-    public async updateCustomer(uri: string, _customer: any) {
+    async updateCustomer(uri: string, _customer: any) {
         return await this.post(uri, customers.factory(_customer));
     }
 
-    public async getCustomer(localization: string): Promise<customers.ICustomer> {
+    async getCustomer(localization: string): Promise<customers.ICustomer> {
         const response = await this.get(localization);
         return customers.factory(response.body).setLocalization(localization);
     }
 
-    public async getBusinessVerifiedBeneficialOwner(localization: string): Promise<customers.BeneficialOwner> {
+    async getBusinessVerifiedBeneficialOwner(localization: string): Promise<customers.BeneficialOwner> {
         const response = await this.get(localization);
         return customers.beneficialOwnerFactory(response.body).setLocalization(localization);
     }
 
-    public async getIavToken(localization: string): Promise<any> {
+    async getIavToken(localization: string): Promise<any> {
         const response = await this.post(`${localization}/iav-token`, {});
         return response.body.token;
     }
 
-    public async createBusinessVerifiedBeneficialOwner(localization: string, owner: customers.BeneficialOwner) {
+    async createBusinessVerifiedBeneficialOwner(localization: string, owner: customers.BeneficialOwner) {
         const response = await this.post(`${localization}/beneficial-owners`, owner);
         return response.headers.get('location');
     }
 
-    public async deleteBusinessVerifiedBeneficialOwner(id: string) {
+    async deleteBusinessVerifiedBeneficialOwner(id: string) {
         return await this.delete(PaymentClient.beneficialOwnerUri(id));
     }
 
-    public async editBusinessVerifiedBeneficialOwner(id: string, owner: customers.BeneficialOwner) {
+    async editBusinessVerifiedBeneficialOwner(id: string, owner: customers.BeneficialOwner) {
         const response = await this.post(PaymentClient.beneficialOwnerUri(id), owner);
         return response.headers.get('location');
     }
-    public async retryBusinessVerifiedBeneficialOwner(id: string, owner: customers.BeneficialOwner) {
+    async retryBusinessVerifiedBeneficialOwner(id: string, owner: customers.BeneficialOwner) {
         const response = await this.post(PaymentClient.beneficialOwnerUri(id), owner);
         return response.body;
     }
 
-    public async checkBeneficialOwnerVerificationStatus(id: string, owner: customers.BeneficialOwner) {
+    async checkBeneficialOwnerVerificationStatus(id: string, owner: customers.BeneficialOwner) {
         const response = await this.get(PaymentClient.beneficialOwnerUri(id));
         return response.headers.get('status');
     }
 
-    public async certifyBusinessVerifiedBeneficialOwnership(uri: string) {
+    async certifyBusinessVerifiedBeneficialOwnership(uri: string) {
         const response = await this.post(`${uri}/beneficial-ownership`, {
             status: 'certified',
         });
         return response.body.status;
     }
 
-    public async listBusinessVerifiedBeneficialOwners(localization: string) {
+    async listBusinessVerifiedBeneficialOwners(localization: string) {
         const response = await this.get(`${localization}/beneficial-owners`);
         const owners = [];
         for (const owner of response.body._embedded['beneficial-owners']) {
@@ -223,7 +224,7 @@ export class DwollaPaymentClient extends PaymentClient {
         return owners;
     }
 
-    public async createFundingSource(localization, routing, account, accountType, name: string): Promise<string> {
+    async createFundingSource(localization, routing, account, accountType, name: string): Promise<string> {
         const response = await this.post(`${localization}/funding-sources`, {
             routingNumber: routing,
             accountNumber: account,
@@ -233,13 +234,13 @@ export class DwollaPaymentClient extends PaymentClient {
         return response.headers.get('location');
     }
 
-    public async deleteFundingSource(localization: string): Promise<string> {
+    async deleteFundingSource(localization: string): Promise<string> {
         return await this.post(localization, {
             removed: true,
         });
     }
 
-    public async createPlaidFundingSource(localization, plaidToken, accountName: string): Promise<string> {
+    async createPlaidFundingSource(localization, plaidToken, accountName: string): Promise<string> {
         const response = await this.post(`${localization}/funding-sources`, {
             plaidToken,
             name: accountName,
@@ -247,7 +248,7 @@ export class DwollaPaymentClient extends PaymentClient {
         return response.headers.get('location');
     }
 
-    public async listFundingSource(localization: string): Promise<any> {
+    async listFundingSource(localization: string): Promise<any> {
         const response = await this.get(`${localization}/funding-sources`);
         const sources = [];
 
@@ -258,17 +259,17 @@ export class DwollaPaymentClient extends PaymentClient {
         return sources;
     }
 
-    public async getFundingSource(localization: string): Promise<fundingSources.ISource> {
+    async getFundingSource(localization: string): Promise<fundingSources.ISource> {
         const response = await this.get(localization);
         return fundingSources.factory(response.body).setLocalization(localization);
     }
 
-    public async createFundingSourceMicroDeposit(localization: string): Promise<boolean> {
+    async createFundingSourceMicroDeposit(localization: string): Promise<boolean> {
         const response = await this.post(`${localization}/micro-deposits`, {});
         return response.status == 201;
     }
 
-    public async verifyFundingSourceMicroDeposit(localization: string, amount1, amount2: number): Promise<boolean> {
+    async verifyFundingSourceMicroDeposit(localization: string, amount1, amount2: number): Promise<boolean> {
         const response = await this.post(`${localization}/micro-deposits`, {
             amount1: {
                 value: amount1,
@@ -282,33 +283,33 @@ export class DwollaPaymentClient extends PaymentClient {
         return response;
     }
 
-    public async createTransfer(trans: transactions.ITransfer): Promise<string> {
+    async createTransfer(trans: transactions.ITransfer): Promise<string> {
         const response = await this.post('transfers', trans);
 
         return response.headers.get('location');
     }
 
-    public async cancelTransfer(localization: string): Promise<boolean> {
+    async cancelTransfer(localization: string): Promise<boolean> {
         const response = await this.post(localization, {status: 'cancelled'});
 
         return response.body.status == 'cancelled';
     }
 
-    public async getTransfer(localization: string): Promise<transactions.ITransfer> {
+    async getTransfer(localization: string): Promise<transactions.ITransfer> {
         const response = await this.get(localization);
         return transactions.factory(response.body).setLocalization(localization);
     }
 
-    public async listEvents(limit, offset: number): Promise<any> {
+    async listEvents(limit, offset: number): Promise<any> {
         return await this.get(`events?limit=${limit}&offset=${offset}`);
     }
 
-    public async getDocument(localization: string): Promise<documents.IDocument> {
+    async getDocument(localization: string): Promise<documents.IDocument> {
         const response = await this.get(localization);
         return documents.factory(response.body).setLocalization(localization);
     }
 
-    public async listDocuments(localization: string): Promise<Array<documents.IDocument>> {
+    async listDocuments(localization: string): Promise<Array<documents.IDocument>> {
         const response = await this.get(`${localization}/documents`);
         const _documents = [];
 
@@ -319,7 +320,7 @@ export class DwollaPaymentClient extends PaymentClient {
         return _documents;
     }
 
-    public async createDocument(localization: string, data: Buffer, name, type: string): Promise<any> {
+    async createDocument(localization: string, data: Buffer, name, type: string): Promise<any> {
         const form = new FormData();
         form.append('file', data, {filename: name});
         form.append('documentType', type);
@@ -328,7 +329,7 @@ export class DwollaPaymentClient extends PaymentClient {
         return response.headers.get('location');
     }
 
-    public async webhooksCleanup() {
+    async webhooksCleanup() {
         const res = await this.listWebhookEndpoints();
         const unsubscribe = [];
         const endpointUrl = this.config.get('dwolla.webhookUri');
@@ -364,7 +365,7 @@ export class DwollaPaymentClient extends PaymentClient {
         }
     }
 
-    public async getBalanceFundingSource(localization: string): Promise<fundingSources.ISource> {
+    async getBalanceFundingSource(localization: string): Promise<fundingSources.ISource> {
         const sources = await this.listFundingSource(localization);
 
         for (const source of sources) {
@@ -376,11 +377,11 @@ export class DwollaPaymentClient extends PaymentClient {
         return undefined;
     }
 
-    public async listBusinessClassification(): Promise<any> {
+    async listBusinessClassification(): Promise<any> {
         return (await this.get(`business-classifications`)).body._embedded;
     }
 
-    public async getEvents(limit?: number, offset?: number) {
+    async getEvents(limit?: number, offset?: number) {
         let eventPath = 'events';
         let params = '';
         if (limit) {
